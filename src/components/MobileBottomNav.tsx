@@ -1,10 +1,11 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, User, Users } from "lucide-react";
+import { Home, User, Users, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 
 const navItems = [
   { path: "/", icon: Home, label: "Home" },
+  { path: "/concierge", icon: Sparkles, label: "Concierge" },
   { path: "/founders", icon: Users, label: "Founders" },
   { path: "/account", icon: User, label: "Account" },
 ];
