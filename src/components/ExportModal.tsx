@@ -18,7 +18,8 @@ interface ExportModalProps {
 export const ExportModal = ({ episodeId, open, onOpenChange }: ExportModalProps) => {
   const [exporting, setExporting] = useState(false);
   const { toast } = useToast();
-  const isDespia = useDespia();
+  const { isDespia: checkIsDespia } = useDespia();
+  const isDespiaApp = checkIsDespia();
 
   const fetchEpisodeData = async (id: string) => {
     const { data: episode } = await supabase
@@ -48,7 +49,7 @@ export const ExportModal = ({ episodeId, open, onOpenChange }: ExportModalProps)
   };
 
   const handleExport = async (blob: Blob, filename: string, mimeType: string) => {
-    if (isDespia) {
+    if (isDespiaApp) {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("User not authenticated");
