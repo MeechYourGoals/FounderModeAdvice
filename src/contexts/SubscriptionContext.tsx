@@ -49,12 +49,12 @@ const SubscriptionContext = createContext<SubscriptionContextType | null>(null);
 
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const { isDespia } = useDespia();
+  const { isDespia: checkIsDespia } = useDespia();
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const isNative = Capacitor.isNativePlatform();
-  const isDespiaApp = isDespia();
+  const isDespiaApp = checkIsDespia();
 
   const refreshSubscription = useCallback(async () => {
     if (!user) {
@@ -70,7 +70,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       // On native platforms, also check RevenueCat entitlements
       if (isNative && !isDespiaApp) {
         await getRevenueCatEntitlements();
-      } else if (isDespia) {
+      } else if (isDespiaApp) {
         const tier = await getDespiaEntitlements();
         await syncSubscriptionToSupabase(tier);
       }
