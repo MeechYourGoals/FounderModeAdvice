@@ -537,9 +537,6 @@ export async function getStripePortalUrl(): Promise<string | null> {
   }
 }
 
-export async function launchDespiaPaywall(userId: string, offering: string): Promise<void> {
-  await despia(`revenuecat://launchPaywall?external_id=${userId}&offering=${offering}`);
-}
 
 export async function restoreDespiaPurchases(): Promise<any[]> {
   const data = await despia('getpurchasehistory://', ['restoredData']);
