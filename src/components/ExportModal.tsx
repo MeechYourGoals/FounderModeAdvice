@@ -35,7 +35,15 @@ export const ExportModal = ({ episodeId, open, onOpenChange }: ExportModalProps)
   };
 
   const fetchAllData = async () => {
-    const { data: episodes } = await supabase
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data: isAdmin } = await supabase.rpc("has_role", {
+      _user_id: user.id,
+      _role: "admin",
+    });
+
+    let query = supabase
       .from('episodes')
       .select(`
         *,
@@ -44,6 +52,12 @@ export const ExportModal = ({ episodeId, open, onOpenChange }: ExportModalProps)
         chavel_callouts(*)
       `)
       .order('created_at', { ascending: false });
+
+    if (!isAdmin) {
+      query = query.eq('analyzed_by', user.id);
+    }
+
+    const { data: episodes } = await query;
     return episodes;
   };
 

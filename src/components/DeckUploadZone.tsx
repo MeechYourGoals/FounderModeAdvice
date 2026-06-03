@@ -17,15 +17,10 @@ export const DeckUploadZone = ({ onSummaryExtracted }: DeckUploadZoneProps) => {
   const { toast } = useToast();
 
   const handleFile = useCallback(async (file: File) => {
-    const validTypes = [
-      "application/pdf",
-      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-      "application/vnd.ms-powerpoint",
-    ];
-    if (!validTypes.includes(file.type)) {
+    if (file.type !== "application/pdf") {
       toast({
-        title: "Invalid file type",
-        description: "Please upload a PDF or PowerPoint file.",
+        title: "PDF only",
+        description: "Please upload a PDF. Export your PowerPoint to PDF and try again.",
         variant: "destructive",
       });
       return;
@@ -157,7 +152,7 @@ export const DeckUploadZone = ({ onSummaryExtracted }: DeckUploadZoneProps) => {
           <input
             type="file"
             className="hidden"
-            accept=".pdf,.pptx,.ppt"
+            accept=".pdf,application/pdf"
             onChange={handleFileInput}
             disabled={isProcessing}
           />
@@ -171,9 +166,9 @@ export const DeckUploadZone = ({ onSummaryExtracted }: DeckUploadZoneProps) => {
               <>
                 <Upload className="w-4 h-4" />
                 <span>
-                  Drop your pitch deck here or <span className="text-primary underline">browse</span>
+                  Drop your pitch deck (PDF) here or <span className="text-primary underline">browse</span>
                 </span>
-                <span className="text-xs">(PDF, PPTX)</span>
+                <span className="text-xs">(PDF only)</span>
               </>
             )}
           </div>
