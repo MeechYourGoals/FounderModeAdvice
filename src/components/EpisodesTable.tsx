@@ -410,7 +410,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
 
     return (
       <div
-        className="p-4 min-h-[72px] border-b border-border last:border-b-0 active:bg-muted/50 transition-colors cursor-pointer touch-manipulation"
+        className="p-4 min-h-[72px] border-b border-border last:border-b-0 active:bg-primary/5 transition-colors cursor-pointer touch-manipulation"
         onClick={() => onSelectEpisode(episode.id)}
         role="button"
         tabIndex={0}
@@ -508,8 +508,8 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
 
   return (
     <>
-      <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow">
-        <div className="p-4 sm:p-6 border-b bg-muted/30 space-y-4">
+      <Card className="overflow-hidden rounded-2xl shadow-lg hover:shadow-xl transition-shadow">
+        <div className="glass p-4 sm:p-6 border-b space-y-4">
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
               <h2 className="text-lg sm:text-2xl font-bold flex items-center gap-2">
@@ -688,7 +688,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                   return (
                     <TableRow
                       key={episode.id}
-                      className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      className="cursor-pointer hover:bg-primary/5 transition-colors"
                       onClick={() => onSelectEpisode(episode.id)}
                     >
                       <TableCell className="font-medium max-w-md">

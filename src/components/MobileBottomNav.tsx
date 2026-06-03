@@ -15,7 +15,7 @@ export const MobileBottomNav = () => {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border safe-bottom md:hidden"
+      className="glass-nav fixed bottom-0 left-0 right-0 z-50 border-t border-border safe-bottom md:hidden"
       role="navigation"
       aria-label="Main navigation"
     >
@@ -27,7 +27,7 @@ export const MobileBottomNav = () => {
               key={path}
               onClick={() => { triggerHapticFeedback('light'); navigate(path); }}
               className={cn(
-                "flex flex-col items-center justify-center flex-1 min-h-[44px] gap-0.5 transition-colors touch-manipulation",
+                "flex flex-col items-center justify-center flex-1 min-h-[44px] gap-0.5 transition-colors touch-manipulation [&>svg]:transition-transform active:[&>svg]:scale-90",
                 isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
               )}
               aria-current={isActive ? "page" : undefined}

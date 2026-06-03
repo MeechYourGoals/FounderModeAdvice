@@ -491,7 +491,7 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
       )}
 
       {personalizedInsights.length > 0 && (
-        <Card className="p-4 sm:p-8 bg-gradient-to-br from-primary/5 to-accent/5">
+        <Card className="glass p-4 sm:p-8 border-primary/15">
           <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 flex items-center gap-2">
             <Target className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             Personalized for Your Startup ({personalizedInsights.length})
@@ -503,7 +503,7 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
               
               return (
                 <div key={lesson.id} className="space-y-3 sm:space-y-4">
-                  <div className="p-3 sm:p-5 bg-card rounded-lg border-2 border-primary/20">
+                  <div className="p-3 sm:p-5 bg-card rounded-xl border border-primary/15 shadow-sm">
                     <div className="flex-1 mb-3">
                       <h3 className="font-semibold text-sm sm:text-lg mb-2">{lesson.lesson_text}</h3>
                       <div className="flex gap-2 mb-3 flex-wrap">
@@ -512,7 +512,7 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
                       </div>
                     </div>
                     
-                    <div className="bg-gradient-to-r from-primary/10 to-accent/10 p-3 sm:p-4 rounded-lg">
+                    <div className="bg-primary/8 border border-primary/15 p-3 sm:p-4 rounded-xl">
                       <div className="flex items-start gap-2 mb-3">
                         <Lightbulb className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0 mt-1" />
                         <div className="flex-1 min-w-0">

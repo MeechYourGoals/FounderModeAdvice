@@ -68,15 +68,15 @@ export function PricingPlans({ onSelect, showCurrentPlan = true }: PricingPlansP
     <div className="space-y-4">
       {/* Billing period toggle */}
       <div className="flex justify-center">
-        <div className="inline-flex items-center rounded-lg border border-border p-1 bg-muted/50">
+        <div className="glass inline-flex items-center rounded-xl p-1">
           {(['monthly', 'yearly', 'lifetime'] as BillingPeriod[]).map((period) => (
             <button
               key={period}
               onClick={() => setBillingPeriod(period)}
               className={cn(
-                'px-3 py-1.5 text-xs font-medium rounded-md transition-colors capitalize',
+                'px-3 py-1.5 text-xs font-medium rounded-lg transition-all capitalize',
                 billingPeriod === period
-                  ? 'bg-background text-foreground shadow-sm'
+                  ? 'bg-card text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
@@ -103,8 +103,8 @@ export function PricingPlans({ onSelect, showCurrentPlan = true }: PricingPlansP
             <Card
               key={tierKey}
               className={cn(
-                'relative flex flex-col',
-                tier.recommended && 'border-primary shadow-lg',
+                'relative flex flex-col transition-all',
+                tier.recommended && 'glass border-primary shadow-[0_0_0_1px_hsl(var(--primary)/0.4),0_20px_50px_-16px_hsl(var(--primary)/0.35)]',
                 isCurrentPlan && showCurrentPlan && 'ring-2 ring-primary'
               )}
             >

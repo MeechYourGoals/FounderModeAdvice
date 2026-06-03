@@ -10,7 +10,7 @@ export const PublicLanding = () => {
   return (
     <div className="h-screen flex flex-col bg-gradient-to-b from-background to-muted/20">
       {/* Navigation - relative top bar with safe area (Despia pattern) */}
-      <nav className="relative z-50 bg-background/80 backdrop-blur-sm border-b border-border" style={{ paddingTop: 'var(--safe-area-top)' }}>
+      <nav className="glass-nav relative z-50 border-b border-border" style={{ paddingTop: 'var(--safe-area-top)' }}>
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
@@ -34,27 +34,31 @@ export const PublicLanding = () => {
       <div className="despia-scroll">
       {/* Hero Section */}
       <section className="relative overflow-hidden">
-        <div 
-          className="absolute inset-0 opacity-20"
-          style={{ 
+        <div
+          className="absolute inset-0 opacity-10"
+          style={{
             backgroundImage: `url(${heroBg})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center'
           }}
         />
-        <div 
-          className="absolute inset-0 opacity-60"
+        <div
+          className="absolute inset-0"
           style={{ background: 'var(--gradient-hero)' }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{ background: 'var(--gradient-mesh)' }}
         />
         <div className="container relative mx-auto px-4 py-16 sm:py-24 md:py-32">
           <div className="max-w-4xl mx-auto text-center space-y-6 sm:space-y-8">
-            <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-in fade-in slide-in-from-bottom-4 duration-1000">
+            <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold tracking-tight bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent animate-slide-up">
               Learn From Founders Who've Been There
             </h1>
-            <p className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-5 duration-1000 delay-150">
+            <p className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto animate-slide-up">
               Extract tactical insights from top founder podcasts. Learn from their crucible moments before making the same mistakes.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-300">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center animate-slide-up">
               <Button size="lg" className="text-base sm:text-lg px-6 sm:px-8" onClick={() => navigate("/auth")}>
                 Start Learning Free
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -147,7 +151,7 @@ export const PublicLanding = () => {
 
 const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) => {
   return (
-    <div className="group p-4 sm:p-6 rounded-xl bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+    <div className="group glass elevate-hover p-4 sm:p-6 rounded-2xl hover:border-primary/30">
       <div className="text-primary mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
         {icon}
       </div>

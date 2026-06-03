@@ -48,7 +48,7 @@ export function UsageDisplay({ showUpgrade = true, compact = false }: UsageDispl
       icon: Bookmark,
       used: limits.bookmarks.used,
       max: limits.bookmarks.max,
-      color: 'bg-green-500',
+      color: 'bg-success',
     },
     {
       label: 'Analyses this month',
