@@ -223,7 +223,19 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
 
   const fetchEpisodes = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setAllEpisodes([]);
+        return;
+      }
+
+      // Admins see every episode; everyone else only sees what they analyzed.
+      const { data: isAdmin } = await supabase.rpc("has_role", {
+        _user_id: user.id,
+        _role: "admin",
+      });
+
+      let query = supabase
         .from("episodes")
         .select(`
             id, title, release_date, url, founder_names, analysis_status, company_id, created_at,
@@ -235,6 +247,12 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
             )
         `)
         .order("created_at", { ascending: false });
+
+      if (!isAdmin) {
+        query = query.eq("analyzed_by", user.id);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       setAllEpisodes(data || []);
     } catch (error) {
