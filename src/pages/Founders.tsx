@@ -78,7 +78,7 @@ export default function Founders() {
   return (
     <div className="h-screen flex flex-col bg-gradient-to-b from-background to-muted/20">
        {/* Top bar with safe area (Despia pattern) */}
-       <div className="relative z-50 bg-background/80 backdrop-blur-sm border-b border-border" style={{ paddingTop: 'var(--safe-area-top)' }}>
+       <div className="glass-nav relative z-50 border-b border-border" style={{ paddingTop: 'var(--safe-area-top)' }}>
          <div className="flex items-center justify-between px-4 py-3 max-w-6xl mx-auto">
            <div className="flex items-center gap-4">
              <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="md:hidden">
@@ -103,7 +103,7 @@ export default function Founders() {
              {founders.map((founder) => (
                <Card
                  key={founder.name}
-                 className="p-4 hover:shadow-lg transition-shadow cursor-pointer border-l-4 border-l-primary/50"
+                 className="glass elevate-hover rounded-2xl p-4 cursor-pointer border-l-4 border-l-primary"
                  onClick={() => navigate(`/?founder=${encodeURIComponent(founder.name)}`)}
                >
                  <h3 className="font-bold text-lg mb-1 truncate" title={founder.name}>{founder.name}</h3>

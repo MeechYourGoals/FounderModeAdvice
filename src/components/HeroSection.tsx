@@ -4,27 +4,31 @@ import heroBg from "@/assets/hero-bg.jpg";
 export const HeroSection = () => {
   return (
     <section className="relative overflow-hidden">
-      <div 
-        className="absolute inset-0 opacity-20"
-        style={{ 
+      <div
+        className="absolute inset-0 opacity-10"
+        style={{
           backgroundImage: `url(${heroBg})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center'
         }}
       />
-      <div 
-        className="absolute inset-0 opacity-60"
+      <div
+        className="absolute inset-0"
         style={{ background: 'var(--gradient-hero)' }}
+      />
+      <div
+        className="absolute inset-0"
+        style={{ background: 'var(--gradient-mesh)' }}
       />
       <div className="container relative mx-auto px-4 py-12 sm:py-24">
         <div className="max-w-4xl mx-auto text-center space-y-4 sm:space-y-6">
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-in fade-in slide-in-from-bottom-4 duration-1000">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent animate-slide-up">
             Founder Lessons Database
           </h1>
-          <p className="text-base sm:text-xl text-muted-foreground max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-5 duration-1000 delay-150">
+          <p className="text-base sm:text-xl text-muted-foreground max-w-2xl mx-auto animate-slide-up">
             Extract tactical insights from top founder podcasts. Learn from their crucible moments before making the same mistakes.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 pt-4 sm:pt-8 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-300">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 pt-4 sm:pt-8 animate-slide-up">
             <FeatureCard 
               icon={<Brain className="w-6 h-6 sm:w-8 sm:h-8" />}
               title="AI-Powered Analysis"
@@ -49,7 +53,7 @@ export const HeroSection = () => {
 
 const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) => {
   return (
-    <div className="group p-4 sm:p-6 rounded-xl bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+    <div className="group glass elevate-hover p-4 sm:p-6 rounded-2xl hover:border-primary/30">
       <div className="text-primary mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
         {icon}
       </div>

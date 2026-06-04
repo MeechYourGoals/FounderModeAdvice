@@ -73,7 +73,7 @@ const Index = () => {
     <div className="h-screen flex flex-col bg-gradient-to-b from-background to-muted/20">
       {/* Mobile & Tablet nav - relative top bar with safe area (Despia pattern) */}
       {!isDesktop ? (
-        <div className="relative z-50 bg-background/80 backdrop-blur-sm border-b border-border" style={{ paddingTop: 'var(--safe-area-top)' }}>
+        <div className="glass-nav relative z-50 border-b border-border" style={{ paddingTop: 'var(--safe-area-top)' }}>
           <div className="flex items-center justify-between px-4 py-2">
             <span className="font-bold text-sm text-primary">Founder Lessons</span>
             <div className="flex items-center gap-1">

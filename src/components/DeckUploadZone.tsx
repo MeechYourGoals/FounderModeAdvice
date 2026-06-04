@@ -116,7 +116,7 @@ export const DeckUploadZone = ({ onSummaryExtracted }: DeckUploadZoneProps) => {
 
   return (
     <div
-      className={`relative border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+      className={`relative border-2 border-dashed rounded-xl p-4 text-center transition-all ${
         isDragging
           ? "border-primary bg-primary/5"
           : isProcessing
@@ -159,8 +159,8 @@ export const DeckUploadZone = ({ onSummaryExtracted }: DeckUploadZoneProps) => {
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
             {fileName && progress === 100 ? (
               <>
-                <FileText className="w-4 h-4 text-primary" />
-                <span className="text-primary">Deck analyzed successfully!</span>
+                <FileText className="w-4 h-4 text-success" />
+                <span className="text-success">Deck analyzed successfully!</span>
               </>
             ) : (
               <>

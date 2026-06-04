@@ -223,8 +223,9 @@ const Auth = () => {
   };
 
   return (
-    <div className="h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/20 p-4" style={{ paddingTop: 'calc(1rem + var(--safe-area-top))', paddingBottom: 'calc(1rem + var(--safe-area-bottom))' }}>
-      <Card className="w-full max-w-md max-h-[calc(100vh-2rem-var(--safe-area-top)-var(--safe-area-bottom))] overflow-y-auto">
+    <div className="relative h-screen flex items-center justify-center p-4" style={{ background: 'var(--gradient-hero)', paddingTop: 'calc(1rem + var(--safe-area-top))', paddingBottom: 'calc(1rem + var(--safe-area-bottom))' }}>
+      <div className="pointer-events-none absolute inset-0" style={{ background: 'var(--gradient-mesh)' }} />
+      <Card className="glass-strong relative w-full max-w-md max-h-[calc(100vh-2rem-var(--safe-area-top)-var(--safe-area-bottom))] overflow-y-auto rounded-2xl shadow-glass">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Welcome</CardTitle>
           <CardDescription className="text-center">
