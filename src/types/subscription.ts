@@ -39,29 +39,52 @@ export interface UserMonthlyUsage {
   updated_at: string;
 }
 
+/**
+ * Sentinel used throughout the app to represent an "unlimited" allowance.
+ * A real usage count will always be below this, so limit checks naturally pass.
+ * UI helpers render this value as "Unlimited" instead of a number.
+ */
+export const UNLIMITED = 9999;
+
+export function isUnlimited(max: number): boolean {
+  return max >= UNLIMITED;
+}
+
+/** Tiers that include the transcript-grounded "Ask this video" AI chat feature. */
+export function hasVideoChat(tier: SubscriptionTier): boolean {
+  return TIER_LIMITS[tier].videoChat;
+}
+
 export const TIER_LIMITS: Record<SubscriptionTier, Omit<TierLimits, 'profiles' | 'bookmarks' | 'analyses'> & {
   profiles: { max: number };
   bookmarks: { max: number };
   bookmarksPerProfile: number;
   analyses: { max: number };
+  /** Whether the plan unlocks the "Ask this video" AI chat. */
+  videoChat: boolean;
 }> = {
   free: {
     profiles: { max: 1 },
     bookmarks: { max: 5 },
     bookmarksPerProfile: 5,
-    analyses: { max: 4 },
+    analyses: { max: 3 },
+    videoChat: false,
   },
+  // "The C-Suite" — entry paid plan.
   seed: {
     profiles: { max: 3 },
     bookmarks: { max: 30 },
     bookmarksPerProfile: 10,
-    analyses: { max: 10 },
+    analyses: { max: 20 },
+    videoChat: false,
   },
+  // "The Boardroom" — power plan. Everything unlimited + Ask-the-video AI chat.
   series_z: {
-    profiles: { max: 10 },
-    bookmarks: { max: 100 },
-    bookmarksPerProfile: 10,
-    analyses: { max: 25 },
+    profiles: { max: UNLIMITED },
+    bookmarks: { max: UNLIMITED },
+    bookmarksPerProfile: UNLIMITED,
+    analyses: { max: UNLIMITED },
+    videoChat: true,
   },
 };
 
@@ -85,46 +108,38 @@ export const TIER_PRICING: Record<SubscriptionTier, TierPricing> = {
     price: 0,
     priceDisplay: 'Free',
     features: [
-      '1 startup profile',
-      '5 bookmarks total',
-      '4 video analyses per month',
-      'Basic insights',
+      '1 business profile',
+      '3 video analyses per month',
+      'Universal, industry-aware insights',
+      'Organize analyses into folders',
     ],
   },
   seed: {
     name: 'seed',
-    displayName: 'Seed',
-    price: 4.99,
-    priceDisplay: '$4.99/month',
-    yearlyPrice: 39.99,
-    yearlyPriceDisplay: '$39.99/year',
-    lifetimePrice: 79.99,
-    lifetimePriceDisplay: '$79.99 once',
+    displayName: 'The C-Suite',
+    price: 9.99,
+    priceDisplay: '$9.99/month',
     features: [
-      '3 startup profiles',
-      '10 bookmarks per profile',
-      '10 video analyses per month',
-      'Personalized insights',
-      'Export to CSV/JSON',
+      '20 video analyses per month',
+      'Up to 3 business profiles',
+      'Personalized insights by industry & stage',
+      'Folder organization',
+      'Standard analysis speed',
     ],
     recommended: true,
   },
   series_z: {
     name: 'series_z',
-    displayName: 'Series Z',
-    price: 14.99,
-    priceDisplay: '$14.99/month',
-    yearlyPrice: 119.99,
-    yearlyPriceDisplay: '$119.99/year',
-    lifetimePrice: 249.99,
-    lifetimePriceDisplay: '$249.99 once',
+    displayName: 'The Boardroom',
+    price: 19.99,
+    priceDisplay: '$19.99/month',
     features: [
-      '10 startup profiles',
-      '10 bookmarks per profile',
-      '25 video analyses per month',
-      'Advanced personalized insights',
-      'Priority support',
-      'API access (coming soon)',
+      'Unlimited video analyses',
+      'Unlimited business profiles',
+      'Ask-the-video AI chat (unlimited)',
+      'Personalized insights by industry & stage',
+      'Priority feature access',
+      'Best for multiple ventures & clients',
     ],
   },
 };
@@ -145,11 +160,7 @@ export const REVENUECAT_ENTITLEMENTS = {
  */
 export const REVENUECAT_PRODUCTS = {
   SEED_MONTHLY: 'seed_monthly',
-  SEED_YEARLY: 'seed_yearly',
-  SEED_LIFETIME: 'seed_lifetime',
   SERIES_Z_MONTHLY: 'series_z_monthly',
-  SERIES_Z_YEARLY: 'series_z_yearly',
-  SERIES_Z_LIFETIME: 'series_z_lifetime',
 } as const;
 
 /** RevenueCat offering identifiers */

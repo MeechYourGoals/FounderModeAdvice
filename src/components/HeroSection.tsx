@@ -26,7 +26,7 @@ export const HeroSection = () => {
             Founder Mode Advice
           </h1>
           <p className="text-base sm:text-xl text-muted-foreground max-w-2xl mx-auto animate-slide-up">
-            Turn any video on the web into tactical advice tailored to you, your situation, and your startup.
+            Turn any video on the web into tactical advice tailored to you, your situation, and your business.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 pt-4 sm:pt-8 animate-slide-up">
             <FeatureCard
@@ -42,7 +42,7 @@ export const HeroSection = () => {
             <FeatureCard
               icon={<Target className="w-6 h-6 sm:w-8 sm:h-8" />}
               title="Tailored to You"
-              description="Relevant callouts for your startup"
+              description="Relevant callouts for your business"
             />
           </div>
         </div>

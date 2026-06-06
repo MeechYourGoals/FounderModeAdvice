@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DeckUploadZone } from "@/components/DeckUploadZone";
+import { IndustrySelect } from "@/components/IndustrySelect";
 
 type StageType = "pre_seed" | "seed" | "series_a" | "series_b_plus" | "growth" | "public" | "bootstrapped";
 
@@ -205,14 +206,10 @@ export const StartupProfileDialog = ({
                   onChange={(e) => setFormData({ ...formData, employee_count: parseInt(e.target.value) || 0 })}
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Industry</Label>
-                <Input
-                  value={formData.industry}
-                  onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
-                  placeholder=""
-                />
-              </div>
+              <IndustrySelect
+                value={formData.industry}
+                onChange={(value) => setFormData({ ...formData, industry: value })}
+              />
             </div>
 
             <div className="space-y-2">

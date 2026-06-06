@@ -4,35 +4,55 @@ import { useNavigate } from "react-router-dom";
 
 const FAQS: { q: string; a: React.ReactNode }[] = [
   {
-    q: "What is Founder Mode Advice?",
-    a: "Founder Mode Advice turns any video on the web — a TED talk, an interview, a founder's talk, or a creator on YouTube — into tactical advice tailored to you, your situation, and your startup. Instead of watching for hours, you paste a link and get the lessons that matter, applied to your context.",
+    q: "What does Founder Mode Advice do?",
+    a: "Founder Mode Advice turns any business, founder, operator, investor, strategy, or leadership video into tactical advice tailored to you and your business. Instead of watching for hours, you paste a link and get the takeaways, risks, opportunities, and action items that matter — applied to your industry and stage.",
   },
   {
-    q: "Who is it for?",
-    a: "Founders, operators, and builders who want to learn fast from the best thinking available online — without being locked into a single platform's roster of experts.",
+    q: "Do I need an account to analyze a video?",
+    a: "Yes. Creating a free account takes a few seconds and lets us save your analyses, profiles, and folders. The free plan includes a few analyses per month with no credit card required.",
   },
   {
-    q: "How is this different from MasterClass, Augment, or Delphi?",
-    a: "Those platforms cost more and only give you the people they have on their roster, with one-size-fits-all takes. Founder Mode Advice lets you learn from anyone with a video online and tailors every video to your specific situation and startup.",
+    q: "Is this only for tech startups?",
+    a: "No. It's built for every kind of builder — local business owners, mom-and-pop shops, service providers, clothing brands, restaurants, fitness businesses, agencies, creators, consultants, bootstrapped founders, and venture-backed startups alike. Set your industry on your business profile and the advice adapts to your business type.",
+  },
+  {
+    q: "What kinds of videos can I analyze?",
+    a: "Most public YouTube, Spotify, and Apple Podcasts links work. You're responsible for ensuring you have the right to submit a given link.",
+  },
+  {
+    q: "How do business profiles work?",
+    a: "Create a profile for each company, idea, side hustle, store, agency, or project — with its name, description, industry, stage, and context. The selected profile personalizes every analysis (and, on The Boardroom, every video chat) to that business.",
+  },
+  {
+    q: "How do folders work?",
+    a: "Folders let you organize your analyses and bookmarks by topic, business, workflow, or learning path so your advice stays structured and easy to revisit.",
+  },
+  {
+    q: "What is included in The C-Suite plan?",
+    a: "The C-Suite ($9.99/month) includes 20 video analyses per month, up to 3 business profiles, folder organization, and personalized insights tuned to your industry and stage.",
+  },
+  {
+    q: "What is included in The Boardroom plan?",
+    a: "The Boardroom ($19.99/month) includes unlimited video analyses, unlimited business profiles, and unlimited Ask-the-video AI chat — a transcript-grounded assistant you can ask follow-up questions about each analyzed video. It's best for people running multiple ventures, clients, or business ideas.",
+  },
+  {
+    q: "What happens if I hit my monthly limits?",
+    a: "We'll let you know and prompt you to upgrade. Your saved analyses, profiles, and folders stay intact, and your monthly analysis allowance resets at the start of each month.",
+  },
+  {
+    q: "Can I cancel anytime?",
+    a: "Yes. Manage or cancel your subscription anytime from your Account page (Stripe customer portal on web, or the App Store/Customer Center in the app). You keep access until the end of your current billing period.",
   },
   {
     q: "How does the AI-generated advice work?",
-    a: "Our AI analyzes the video you submit along with the context in your startup profile, then surfaces and ranks the most relevant, actionable lessons for you. Advice is informational only and is not professional, legal, or financial advice — always use your own judgment.",
+    a: "Our AI analyzes the video you submit along with the context in your business profile, then surfaces and ranks the most relevant, actionable lessons for you. The Ask-the-video chat only answers questions about the video and your business — not unrelated topics. Advice is informational only and is not professional, legal, or financial advice — always use your own judgment.",
   },
   {
-    q: "What kinds of videos can I use?",
-    a: "Most public video links work, including YouTube. You're responsible for ensuring you have the right to submit a given link.",
+    q: "Is my business information private?",
+    a: "Yes. Your profiles, analyses, chats, and billing metadata are tied to your account and protected by row-level security so only you can access them. See our Privacy Policy and Cookie Policy for details. You can delete your account and data at any time.",
   },
   {
-    q: "How do I sign in?",
-    a: "You can sign in with Google or with an email and password. Your session is kept securely on your device so you stay signed in between visits.",
-  },
-  {
-    q: "How is my data handled?",
-    a: "We store your account information and the advice you save so we can provide the service. See our Privacy Policy and Cookie Policy for details. You can delete your account and data at any time.",
-  },
-  {
-    q: "How do I get support?",
+    q: "How do I contact support?",
     a: "Email us at CA@saintmarlolabs.com or visit the Contact page and we'll help.",
   },
 ];

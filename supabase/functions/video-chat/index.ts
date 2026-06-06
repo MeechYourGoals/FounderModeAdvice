@@ -20,6 +20,23 @@ const MAX_TRANSCRIPT_CHARS = 22000;
 const CHUNK_SIZE = 2200;
 const CHUNK_OVERLAP = 250;
 
+/** Founder/Super Admin emails with unlimited access - no feature limits */
+const FOUNDER_EMAILS = ["ccamechi@gmail.com"];
+
+/**
+ * Ask-the-video chat is gated to the Boardroom (series_z) plan.
+ * Enforced here server-side so the entitlement can never be bypassed from the client.
+ */
+const userCanChat = async (supabase: any, user: any): Promise<boolean> => {
+  if (user?.email && FOUNDER_EMAILS.includes(user.email.toLowerCase())) return true;
+  const { data: sub } = await supabase
+    .from("user_subscriptions")
+    .select("tier")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  return (sub?.tier || "free") === "series_z";
+};
+
 const jsonResponse = (body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -203,6 +220,18 @@ serve(async (req) => {
       return jsonResponse({ error: "videoId is required." }, 400);
     }
 
+    // Boardroom-only entitlement (defense-in-depth; the UI also gates this).
+    if (!(await userCanChat(supabase, user))) {
+      return jsonResponse(
+        {
+          error:
+            "Ask-the-video chat is available on The Boardroom plan. Upgrade to unlock unlimited transcript-grounded video Q&A.",
+          upgradeRequired: true,
+        },
+        403,
+      );
+    }
+
     const context = await fetchOwnedEpisodeContext(supabase, videoId, user.id);
     if ("error" in context) {
       return jsonResponse({ error: context.error }, context.status);
@@ -253,14 +282,19 @@ serve(async (req) => {
     const transcriptContext = selectTranscriptContext(transcriptText, trimmedMessage);
     const insightsContext = buildInsightsContext(context.lessons, context.callouts, context.insights);
 
-    const systemPrompt = `You are a transcript-grounded startup analyst for Founder Lessons.
-Answer only from the selected video's transcript and extracted app insights. Do not claim the investor, founder, operator, or expert personally reviewed the user's startup. Do not imply endorsement, affiliation, partnership, cap-table access, or private network access.
+    const systemPrompt = `You are a transcript-grounded business analyst for Founder Mode Advice.
+Answer only from the selected video's transcript and extracted app insights. Do not claim the investor, founder, operator, or expert personally reviewed the user's business. Do not imply endorsement, affiliation, partnership, cap-table access, or private network access.
 
-For every answer:
-- Separate what the video explicitly says from your interpretation and startup-specific application when useful.
-- If the transcript does not support an answer, say that clearly and ask for the missing startup context or a different source.
+SCOPE — this is critical:
+- Only answer questions about THIS video's content and how it applies to the user's business, company, product, strategy, operations, marketing, hiring, finance, leadership, or growth.
+- If the user asks about anything unrelated to the video or to building/running a business (for example: sports scores, recipes, celebrity gossip, general trivia, homework, coding help unrelated to their business, medical, legal, or other random topics), politely decline in one sentence and steer them back to the video or their business. Do not answer the off-topic question, even partially.
+
+For every in-scope answer:
+- Separate what the video explicitly says from your interpretation and business-specific application when useful.
+- Adapt to the user's industry and stage; do not assume they are a venture-backed tech startup unless their context says so.
+- If the transcript does not support an answer, say that clearly and ask for the missing business context or a different source.
 - Avoid inventing names, facts, metrics, quotes, or advice not grounded in the provided transcript/context.
-- Keep answers concise, tactical, and useful to a founder.`;
+- Keep answers concise, tactical, and useful to a business builder.`;
 
     const userPrompt = `Video metadata:
 Title: ${context.episode.title}

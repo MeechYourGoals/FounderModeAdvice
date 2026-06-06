@@ -76,11 +76,12 @@ const extractYouTubeTranscript = async (videoId: string) => {
   }
 };
 
-// Tier limits configuration
+// Tier limits configuration (keep in sync with src/types/subscription.ts)
+// free = 3/mo, seed = "The C-Suite" 20/mo, series_z = "The Boardroom" unlimited.
 const TIER_LIMITS = {
-  free: { analyses: 4 },
-  seed: { analyses: 10 },
-  series_z: { analyses: 25 },
+  free: { analyses: 3 },
+  seed: { analyses: 20 },
+  series_z: { analyses: 999999 },
 } as const;
 
 /** Founder/Super Admin emails with unlimited access - no feature limits */
@@ -223,36 +224,44 @@ serve(async (req) => {
 
     const transcript = isYouTube ? await extractYouTubeTranscript(videoId) : null;
 
+    // Optional context about the viewer's own business, used to bias examples/jargon.
+    const viewerBusiness = startupProfile && (startupProfile.company_name || startupProfile.industry || startupProfile.stage)
+      ? `\n\nViewer's business context (adapt examples, jargon, KPIs, and risks to THIS type of business — do NOT assume a venture-backed tech startup unless stated):
+- Business: ${startupProfile.company_name || 'Not specified'}
+- Industry: ${startupProfile.industry || 'Not specified'}
+- Stage/type: ${startupProfile.stage || 'Not specified'}
+${startupProfile.description ? `- About: ${startupProfile.description}` : ''}`
+      : '';
+
     // Step 2: Use AI to analyze the episode with tool calling
-    const systemPrompt = `You are an expert at extracting founder lessons from podcast episodes. 
-Your task is to deeply analyze podcast content and extract comprehensive, actionable insights.
+    const systemPrompt = `You are an expert at extracting practical business lessons from videos and podcasts for founders, operators, and business owners across every industry — including local shops, restaurants, agencies, creators, service businesses, ecommerce brands, bootstrapped companies, and venture-backed startups.
 
 CRITICAL REQUIREMENTS:
 - Extract EXACTLY 10 tactical lessons ranked by actionability and impact (each 3-4 sentences with specific context)
-- Extract EXACTLY 5 startup-relevant callouts (key takeaways for founders at any stage)
-- Research and include actual company data (funding, valuation, stage, employee count)
-- Cite specific examples and stories from the founder
-- If data is unavailable, mark as "Unknown" or "Not disclosed"
+- Extract EXACTLY 5 business-relevant callouts (key takeaways useful to a business builder at any stage or size)
+- Research and include actual company data (funding, valuation, stage, employee count) when the subject is a company; mark "Unknown" or "Not disclosed" otherwise
+- Cite specific examples and stories from the speaker
 - DO NOT provide mock or placeholder data
-- Extract the podcast series name from the episode context if not provided
-- Assign relevant TAGS to each lesson (e.g., #funding, #hiring, #product, #marketing)`;
+- Extract the series/source name from the episode context if not provided
+- Do NOT assume the audience is raising venture capital; keep lessons applicable to many business types
+- Assign relevant TAGS to each lesson (e.g., #marketing, #hiring, #operations, #pricing, #growth)`;
 
-    const userPrompt = `Analyze this podcast episode:
+    const userPrompt = `Analyze this episode/video:
 URL: ${episodeUrl}
 ${videoTitle ? `Title: ${videoTitle}` : ''}
-${podcastName ? `Podcast Series: ${podcastName}` : 'Podcast Series: Please extract from the episode'}
+${podcastName ? `Source: ${podcastName}` : 'Source: Please extract from the episode'}
 ${transcript?.transcriptText ? `Transcript excerpt for grounding:
-${transcript.transcriptText.slice(0, 30000)}` : 'Transcript excerpt: Not available; analyze only if the model can access the public episode content.'}
+${transcript.transcriptText.slice(0, 30000)}` : 'Transcript excerpt: Not available; analyze only if the model can access the public episode content.'}${viewerBusiness}
 
 INSTRUCTIONS:
 1. Watch/listen to the episode and extract real insights from the actual content
-2. Identify the founder(s) and their company
-3. Research the company's current metrics (funding, valuation, stage, employees, industry)
-4. Extract EXACTLY 10 tactical, actionable lessons with specific context from the founder's stories
-5. Extract EXACTLY 5 startup-relevant callouts (key takeaways for early-stage founders)
+2. Identify the speaker(s) and the company or topic discussed
+3. Research relevant metrics (funding, valuation, stage, employees, industry) when applicable
+4. Extract EXACTLY 10 tactical, actionable lessons with specific context from the speaker's stories
+5. Extract EXACTLY 5 business-relevant callouts useful to a builder of any business type
 6. Rank lessons by actionability (1-10) and impact (1-10)
-7. Include founder attribution for each lesson
-8. Assign 1-3 relevant tags to each lesson (e.g. #growth, #culture, #fundraising)
+7. Include speaker attribution for each lesson
+8. Assign 1-3 relevant tags to each lesson (e.g. #growth, #culture, #pricing)
 9. If you cannot access the content, return an error - do NOT provide mock data`;
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -601,26 +610,26 @@ INSTRUCTIONS:
       
       for (const lesson of insertedLessons) {
         const personalizationPrompt = `
-Startup Context:
-- Company: ${profileToUse.company_name}
-- Stage: ${profileToUse.stage}
+Business Context:
+- Business: ${profileToUse.company_name}
+- Stage/type: ${profileToUse.stage}
 - Funding: ${profileToUse.funding_raised || 'Not specified'}
 - Team Size: ${profileToUse.employee_count || 'Not specified'}
 - Industry: ${profileToUse.industry || 'Not specified'}
 - Description: ${profileToUse.description}
-${profileToUse.deck_summary ? `- Deck Summary (additional context from pitch deck): ${profileToUse.deck_summary}` : ''}
+${profileToUse.deck_summary ? `- Additional context: ${profileToUse.deck_summary}` : ''}
 
 Universal Lesson from Episode:
 "${lesson.lesson_text}"
 
 Generate a personalized insight in JSON format:
 {
-  "personalizedText": "2-3 sentences explaining how this lesson specifically applies to their startup context and what they should focus on",
+  "personalizedText": "2-3 sentences explaining how this lesson specifically applies to THIS business and what they should focus on",
   "relevanceScore": 1-10 (how relevant is this lesson to their specific situation),
   "actionItems": ["Specific action 1", "Specific action 2", "Specific action 3"]
 }
 
-Make it tactical and specific to their company stage, industry, and challenges.`;
+Adapt the language, examples, KPIs, risks, and recommended actions to their industry and business type. Do NOT assume they are a venture-backed tech startup raising capital unless their stage/industry indicates it — tailor advice for the kind of business they actually run (e.g. a local shop, restaurant, agency, creator, service business, ecommerce brand, or bootstrapped company). Make it tactical and specific.`;
 
           try {
             const personalizationResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {

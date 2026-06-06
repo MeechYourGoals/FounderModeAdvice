@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Loader2, FileText } from "lucide-react";
+import { IndustrySelect } from "@/components/IndustrySelect";
 
 interface StartupProfile {
   company_name: string;
@@ -181,7 +182,7 @@ export const StartupProfileForm = ({ onSubmit, savedProfiles = [], isAnalyzing =
                     onCheckedChange={setSaveProfile}
                   />
                   <Label htmlFor="save-profile" className="cursor-pointer">
-                    Save as Profile (max 3)
+                    Save as Profile
                   </Label>
                 </div>
               </div>
@@ -273,16 +274,11 @@ export const StartupProfileForm = ({ onSubmit, savedProfiles = [], isAnalyzing =
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="industry">Industry</Label>
-              <Input
-                id="industry"
-                value={formData.industry}
-                onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
-                placeholder=""
-                disabled={useExisting || isAnalyzing}
-              />
-            </div>
+            <IndustrySelect
+              value={formData.industry}
+              onChange={(value) => setFormData({ ...formData, industry: value })}
+              disabled={useExisting || isAnalyzing}
+            />
           </div>
 
           <div className="space-y-2">

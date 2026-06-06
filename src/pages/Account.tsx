@@ -7,7 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { UsageDisplay, PricingPlans } from "@/components/subscription";
-import { ArrowLeft, LogOut, Mail, Calendar, Loader2, RotateCcw, Shield, FileText, Trash2, ExternalLink, LifeBuoy } from "lucide-react";
+import { ArrowLeft, LogOut, Mail, Calendar, Loader2, RotateCcw, Shield, FileText, Trash2, ExternalLink, LifeBuoy, Sparkles } from "lucide-react";
+import { useOnboarding } from "@/hooks/useOnboarding";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useToast } from "@/hooks/use-toast";
@@ -33,6 +34,13 @@ const Account = () => {
   const { toast } = useToast();
   const isMobile = useMediaQuery("(max-width: 767px)");
   const [isDeleting, setIsDeleting] = useState(false);
+  const { restart: restartOnboarding } = useOnboarding();
+
+  const handleReplayTour = async () => {
+    triggerHapticFeedback('light');
+    await restartOnboarding();
+    navigate("/");
+  };
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -165,10 +173,14 @@ const Account = () => {
 
               <Separator />
 
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button variant="outline" onClick={handleSignOut}>
                   <LogOut className="h-4 w-4 mr-2" />
                   Sign Out
+                </Button>
+                <Button variant="ghost" onClick={handleReplayTour}>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Replay Product Tour
                 </Button>
               </div>
             </CardContent>

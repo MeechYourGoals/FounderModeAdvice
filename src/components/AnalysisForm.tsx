@@ -6,6 +6,7 @@ import { Loader2, ArrowLeft, Zap, FastForward } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useSubscription } from "@/contexts/SubscriptionContext";
+import { isUnlimited } from "@/types/subscription";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { StartupProfileForm } from "./StartupProfileForm";
 import { UpgradePrompt } from "./subscription";
@@ -266,7 +267,9 @@ export const AnalysisForm = () => {
         <div className="mb-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
           <Zap className="h-4 w-4" />
           <span>
-            {subscription.limits.analyses.used}/{subscription.limits.analyses.max} analyses used this month
+            {isUnlimited(subscription.limits.analyses.max)
+              ? `${subscription.limits.analyses.used} analyses this month · Unlimited`
+              : `${subscription.limits.analyses.used}/${subscription.limits.analyses.max} analyses used this month`}
           </span>
         </div>
       )}
