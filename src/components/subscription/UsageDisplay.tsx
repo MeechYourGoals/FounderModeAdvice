@@ -219,7 +219,7 @@ export function UsageDisplay({ showUpgrade = true, compact = false }: UsageDispl
               onClick={() => upgradeTo(tier === 'free' ? 'seed' : 'series_z')}
             >
               <Zap className="h-4 w-4 mr-2" />
-              Upgrade to {tier === 'free' ? 'Seed' : 'Series Z'}
+              Upgrade to {TIER_PRICING[tier === 'free' ? 'seed' : 'series_z'].displayName}
             </Button>
           </div>
         )}

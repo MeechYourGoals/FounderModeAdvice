@@ -6,20 +6,22 @@ import { TIER_PRICING } from '@/types/subscription';
 
 interface UpgradePromptProps {
   message: string;
-  feature?: 'profile' | 'bookmark' | 'analysis';
+  feature?: 'profile' | 'bookmark' | 'analysis' | 'videoChat';
   onUpgrade?: () => void;
   compact?: boolean;
 }
 
 export function UpgradePrompt({ message, feature, onUpgrade, compact = false }: UpgradePromptProps) {
-  const { upgradeTo, subscription } = useSubscription();
+  const { upgradeTo } = useSubscription();
+
+  // Ask-the-video chat is a Boardroom-only feature; everything else upgrades to The C-Suite first.
+  const targetTier: 'seed' | 'series_z' = feature === 'videoChat' ? 'series_z' : 'seed';
 
   const handleUpgrade = async () => {
     if (onUpgrade) {
       onUpgrade();
     } else {
-      // Default to Seed tier upgrade
-      await upgradeTo('seed');
+      await upgradeTo(targetTier);
     }
   };
 
@@ -37,7 +39,7 @@ export function UpgradePrompt({ message, feature, onUpgrade, compact = false }: 
     );
   }
 
-  const seedTier = TIER_PRICING.seed;
+  const planTier = TIER_PRICING[targetTier];
 
   return (
     <Card className="border-amber-500/30 bg-gradient-to-br from-amber-500/5 to-orange-500/5">
@@ -55,11 +57,11 @@ export function UpgradePrompt({ message, feature, onUpgrade, compact = false }: 
       <CardContent className="space-y-4">
         <div className="p-4 bg-background/50 rounded-lg border">
           <div className="flex justify-between items-center mb-2">
-            <span className="font-semibold">{seedTier.displayName}</span>
-            <span className="text-lg font-bold">{seedTier.priceDisplay}</span>
+            <span className="font-semibold">{planTier.displayName}</span>
+            <span className="text-lg font-bold">{planTier.priceDisplay}</span>
           </div>
           <ul className="space-y-1">
-            {seedTier.features.slice(0, 3).map((feature, i) => (
+            {planTier.features.slice(0, 3).map((feature, i) => (
               <li key={i} className="text-sm text-muted-foreground flex items-center gap-2">
                 <ArrowRight className="h-3 w-3 text-primary" />
                 {feature}
@@ -69,7 +71,7 @@ export function UpgradePrompt({ message, feature, onUpgrade, compact = false }: 
         </div>
         <Button onClick={handleUpgrade} className="w-full">
           <Zap className="h-4 w-4 mr-2" />
-          Upgrade to {seedTier.displayName}
+          Upgrade to {planTier.displayName}
         </Button>
       </CardContent>
     </Card>

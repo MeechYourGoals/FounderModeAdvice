@@ -3,10 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
+import { TIER_PRICING, type SubscriptionTier } from "@/types/subscription";
 import heroBg from "@/assets/hero-bg.jpg";
 
 export const PublicLanding = () => {
   const navigate = useNavigate();
+
+  const goToAuth = () => navigate("/auth");
+  const scrollToPricing = () => {
+    document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" });
+  };
 
   return (
     <div className="h-screen flex flex-col bg-gradient-to-b from-background to-muted/20">
@@ -17,11 +23,14 @@ export const PublicLanding = () => {
             <button onClick={() => navigate("/")} className="font-bold text-sm sm:text-lg hover:text-primary transition-colors">Founder Mode Advice</button>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
+            <Button variant="ghost" size="sm" className="hidden sm:flex" onClick={scrollToPricing}>
+              Pricing
+            </Button>
             <ThemeToggle />
-            <Button variant="ghost" size="sm" className="hidden sm:flex" onClick={() => navigate("/auth")}>
+            <Button variant="ghost" size="sm" className="hidden sm:flex" onClick={goToAuth}>
               Sign In
             </Button>
-            <Button size="sm" onClick={() => navigate("/auth")}>
+            <Button size="sm" onClick={goToAuth}>
               <span className="sm:hidden">Sign In</span>
               <span className="hidden sm:inline">Get Started</span>
               <ArrowRight className="ml-1 h-4 w-4 hidden sm:inline-block" />
@@ -53,19 +62,24 @@ export const PublicLanding = () => {
         <div className="container relative mx-auto px-4 py-16 sm:py-24 md:py-32">
           <div className="max-w-4xl mx-auto text-center space-y-6 sm:space-y-8">
             <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold tracking-tight text-foreground animate-slide-up">
-              VC-grade insight without VC access
+              Build Your Boardroom
             </h1>
             <p className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto animate-slide-up">
-              Turn public VC, operator, and founder interviews into startup-specific strategy. Paste a high-signal video, extract the pattern recognition, then ask follow-up questions grounded in the transcript.
+              Turn founder, operator, and business-building videos into personalized advice for your company, industry, and stage — whether you run a startup, an agency, a local shop, a storefront, or a side hustle.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center animate-slide-up">
-              <Button size="lg" className="text-base sm:text-lg px-6 sm:px-8" onClick={() => navigate("/auth")}>
-                Analyze a Video Free
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-              <Button size="lg" variant="outline" className="text-base sm:text-lg px-6 sm:px-8" onClick={() => navigate("/auth")}>
-                Sign In
-              </Button>
+            <div className="flex flex-col items-center gap-2 animate-slide-up">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+                <Button size="lg" className="text-base sm:text-lg px-6 sm:px-8" onClick={goToAuth}>
+                  Analyze a Video Free
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+                <Button size="lg" variant="outline" className="text-base sm:text-lg px-6 sm:px-8" onClick={goToAuth}>
+                  Sign In
+                </Button>
+              </div>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                Create your free account to start — no credit card required.
+              </p>
             </div>
           </div>
         </div>
@@ -75,49 +89,49 @@ export const PublicLanding = () => {
       <section className="container mx-auto px-4 py-12 sm:py-16 md:py-24">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-8 sm:mb-12">
-            Turn expert content into private strategic guidance
+            Turn expert content into personalized strategy
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
             <FeatureCard
               icon={<Brain className="w-6 h-6 sm:w-8 sm:h-8" />}
               title="Beyond passive watching"
-              description="Convert public interviews and podcasts into structured lessons, risks, and strategic takeaways for founders"
+              description="Convert interviews, talks, and podcasts into structured lessons, risks, and action items for your business"
             />
             <FeatureCard
               icon={<TrendingUp className="w-6 h-6 sm:w-8 sm:h-8" />}
-              title="Tailored startup insight"
-              description="Map the expert's public thinking to your stage, market, company context, and next decision"
+              title="Tailored to your business"
+              description="Map the speaker's thinking to your industry, stage, customers, and next decision"
             />
             <FeatureCard
               icon={<Target className="w-6 h-6 sm:w-8 sm:h-8" />}
               title="Ask any video"
-              description="Open a transcript-grounded chat after analysis and query the source behind each recommendation"
+              description="Open a transcript-grounded chat after analysis and dig into the advice behind each recommendation"
             />
           </div>
         </div>
       </section>
 
-      {/* VC Access Positioning */}
+      {/* Positioning */}
       <section className="container mx-auto px-4 pb-12 sm:pb-16 md:pb-24">
         <div className="max-w-5xl mx-auto glass rounded-3xl p-5 sm:p-8 md:p-10 border-primary/15">
           <div className="grid grid-cols-1 md:grid-cols-[1.1fr_0.9fr] gap-6 md:gap-10 items-start">
             <div className="space-y-4">
-              <BadgeLabel>VC-grade insight without VC access</BadgeLabel>
+              <BadgeLabel>Advice for every kind of builder</BadgeLabel>
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
-                You do not need a top-tier investor on your cap table to learn from their public thinking.
+                You do not need a boardroom of advisors to learn like you have one.
               </h2>
               <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-                The best investors and operators have shared thousands of hours of pattern recognition in public interviews, podcasts, and talks. Founder Mode Advice turns that public content into structured, startup-specific guidance without implying affiliation, endorsement, or replacing real advisors.
+                The best founders, operators, and business owners have shared thousands of hours of hard-won lessons in public interviews, podcasts, and talks. Founder Mode Advice turns that content into structured guidance tailored to your business — without implying affiliation, endorsement, or replacing real advisors.
               </p>
             </div>
             <div className="space-y-3">
-              <MiniFeature icon={<ShieldCheck className="w-4 h-4" />} title="Public content in" description="Paste a public expert video from categories like VC interviews, operator podcasts, YC-style talks, or founder deep dives." />
-              <MiniFeature icon={<Target className="w-4 h-4" />} title="Tailored strategy out" description="Distinguish summaries from decision-ready insight mapped to your company stage, market, and constraints." />
-              <MiniFeature icon={<MessageSquare className="w-4 h-4" />} title="Transcript-grounded Q&A" description="Ask follow-up questions directly against the video transcript and extracted lessons after analysis." />
+              <MiniFeature icon={<ShieldCheck className="w-4 h-4" />} title="Any public video in" description="Paste a business, founder, operator, investor, strategy, or leadership video from YouTube, Spotify, or Apple Podcasts." />
+              <MiniFeature icon={<Target className="w-4 h-4" />} title="Tailored advice out" description="Insight mapped to your industry, stage, customers, and constraints — not generic venture-scale playbooks." />
+              <MiniFeature icon={<MessageSquare className="w-4 h-4" />} title="Transcript-grounded Q&A" description="Ask follow-up questions directly against the video transcript and your business context after analysis." />
             </div>
           </div>
           <p className="mt-6 text-[11px] sm:text-xs text-muted-foreground">
-            Examples such as a16z, YC, Benchmark, or individual investors/operators refer to public content categories only. Founder Mode Advice is independent and does not provide private access, endorsement, or investment advice from those people or firms.
+            Founder Mode Advice analyzes public content only. It is independent and does not provide private access, endorsement, or investment advice from any person or firm referenced in a video.
           </p>
         </div>
       </section>
@@ -133,7 +147,7 @@ export const PublicLanding = () => {
               <p className="text-sm sm:text-lg text-muted-foreground max-w-2xl mx-auto">
                 MasterClass, Augment, and Delphi cost a lot more and only give you the people on
                 their roster — and even then, you get the generic takes those people chose to share.
-                One clip of Bill Gates, the same advice for thousands of different viewers.
+                One clip, the same advice for thousands of different viewers.
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
@@ -153,7 +167,7 @@ export const PublicLanding = () => {
                 </h3>
                 <ul className="space-y-2 text-sm">
                   <ComparisonItem positive>Learn from anyone with a video online</ComparisonItem>
-                  <ComparisonItem positive>Every video tailored to your situation and startup</ComparisonItem>
+                  <ComparisonItem positive>Every video tailored to your business and industry</ComparisonItem>
                   <ComparisonItem positive>One app, any source — at a fraction of the cost</ComparisonItem>
                 </ul>
               </div>
@@ -162,14 +176,23 @@ export const PublicLanding = () => {
         </div>
       </section>
 
-      {/* Pull quote */}
-      <section className="py-12 sm:py-16 md:py-24">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
-            <p className="text-sm sm:text-lg text-muted-foreground px-4">
-              "Most founders do not have elite investors on speed dial. But they can still extract useful patterns from the public conversations those experts have already shared."
+      {/* Pricing */}
+      <section id="pricing" className="container mx-auto px-4 py-12 sm:py-16 md:py-24 scroll-mt-20">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center space-y-3 mb-8 sm:mb-12">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">Simple, honest pricing</h2>
+            <p className="text-sm sm:text-lg text-muted-foreground max-w-2xl mx-auto">
+              Start free. Upgrade when you're ready. Cancel anytime.
             </p>
           </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+            {(Object.keys(TIER_PRICING) as SubscriptionTier[]).map((key) => (
+              <PricingCard key={key} tier={key} onSelect={goToAuth} />
+            ))}
+          </div>
+          <p className="mt-6 text-center text-xs text-muted-foreground">
+            Prices in USD. Web subscriptions are billed via Stripe; in-app subscriptions via the App Store.
+          </p>
         </div>
       </section>
 
@@ -177,24 +200,19 @@ export const PublicLanding = () => {
       <section className="container mx-auto px-4 py-12 sm:py-16 md:py-24">
         <div className="max-w-2xl mx-auto text-center space-y-4 sm:space-y-6">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">
-            Ready to turn interviews into strategy?
+            Ready to build your boardroom?
           </h2>
           <p className="text-sm sm:text-lg text-muted-foreground">
-            Paste a public expert video, get tailored startup insights, and ask grounded follow-up questions against the transcript.
+            Create your free account, paste a video, and get advice tailored to your business in minutes.
           </p>
-          <Button size="lg" className="text-base sm:text-lg px-6 sm:px-8" onClick={() => navigate("/auth")}>
+          <Button size="lg" className="text-base sm:text-lg px-6 sm:px-8" onClick={goToAuth}>
             Analyze Your First Video
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border py-6 sm:py-8" style={{ paddingBottom: 'calc(1.5rem + var(--safe-area-bottom))' }}>
-        <div className="container mx-auto px-4 text-center text-xs sm:text-sm text-muted-foreground">
-          © {new Date().getFullYear()} Founder Mode Advice. Built for founders, by founders.
-        </div>
-      </footer>
+      <Footer />
       </div>
     </div>
   );
@@ -224,6 +242,44 @@ const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode; titl
       </div>
       <h3 className="font-semibold text-base sm:text-lg mb-1 sm:mb-2">{title}</h3>
       <p className="text-xs sm:text-sm text-muted-foreground">{description}</p>
+    </div>
+  );
+};
+
+const PricingCard = ({ tier, onSelect }: { tier: SubscriptionTier; onSelect: () => void }) => {
+  const plan = TIER_PRICING[tier];
+  const isFree = tier === "free";
+  return (
+    <div
+      className={`relative glass rounded-2xl p-5 sm:p-6 flex flex-col ${
+        plan.recommended ? "border-2 border-primary shadow-lg" : "border border-border"
+      }`}
+    >
+      {plan.recommended && (
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-xs font-medium text-primary-foreground">
+          Most Popular
+        </span>
+      )}
+      <h3 className="text-lg font-bold">{plan.displayName}</h3>
+      <div className="mt-2 mb-4">
+        <span className="text-3xl font-bold">{isFree ? "Free" : `$${plan.price}`}</span>
+        {!isFree && <span className="text-sm text-muted-foreground">/month</span>}
+      </div>
+      <ul className="space-y-2 flex-1">
+        {plan.features.map((feature, i) => (
+          <li key={i} className="flex items-start gap-2 text-sm">
+            <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+            <span>{feature}</span>
+          </li>
+        ))}
+      </ul>
+      <Button
+        className="w-full mt-6"
+        variant={plan.recommended ? "default" : "outline"}
+        onClick={onSelect}
+      >
+        {isFree ? "Start free" : `Choose ${plan.displayName}`}
+      </Button>
     </div>
   );
 };

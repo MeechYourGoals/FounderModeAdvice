@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Bot, Loader2, MessageSquare, RefreshCw, Send, ShieldCheck, User } from "lucide-react";
+import { Bot, Loader2, Lock, MessageSquare, RefreshCw, Send, ShieldCheck, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -13,6 +13,9 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { useSubscription } from "@/contexts/SubscriptionContext";
+import { hasVideoChat } from "@/types/subscription";
+import { UpgradePrompt } from "@/components/subscription";
 
 interface VideoChatMessage {
   id?: string;
@@ -57,6 +60,9 @@ export const VideoChatSheet = ({ videoId, videoTitle }: VideoChatSheetProps) => 
   const [hasTranscript, setHasTranscript] = useState<boolean | null>(null);
   const lastQuestionRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const { subscription } = useSubscription();
+  // Ask-the-video AI chat is a Boardroom-only feature (enforced again server-side).
+  const canChat = subscription ? hasVideoChat(subscription.tier) : false;
 
   const scrollToBottom = () => {
     window.requestAnimationFrame(() => {
@@ -65,10 +71,10 @@ export const VideoChatSheet = ({ videoId, videoTitle }: VideoChatSheetProps) => 
   };
 
   useEffect(() => {
-    if (open) {
+    if (open && canChat) {
       void loadHistory();
     }
-  }, [open, videoId]);
+  }, [open, videoId, canChat]);
 
   useEffect(() => {
     scrollToBottom();
@@ -142,7 +148,7 @@ export const VideoChatSheet = ({ videoId, videoTitle }: VideoChatSheetProps) => 
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button variant="secondary" size="sm" className="sm:size-default flex-1 sm:flex-initial">
-          <MessageSquare className="w-4 h-4 mr-2" />
+          {canChat ? <MessageSquare className="w-4 h-4 mr-2" /> : <Lock className="w-4 h-4 mr-2" />}
           Ask this video
         </Button>
       </SheetTrigger>
@@ -157,6 +163,27 @@ export const VideoChatSheet = ({ videoId, videoTitle }: VideoChatSheetProps) => 
           </SheetDescription>
         </SheetHeader>
 
+        {!canChat ? (
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-4 bg-muted/20">
+            <Card className="p-4 border-primary/15 bg-primary/5">
+              <div className="flex gap-3">
+                <Lock className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-medium text-sm">Ask-the-video chat is a Boardroom feature</p>
+                  <p className="text-sm text-muted-foreground">
+                    Upgrade to The Boardroom to ask unlimited follow-up questions grounded in each video's
+                    transcript and your business context.
+                  </p>
+                </div>
+              </div>
+            </Card>
+            <UpgradePrompt
+              message="Unlock unlimited transcript-grounded Q&A with The Boardroom plan."
+              feature="videoChat"
+            />
+          </div>
+        ) : (
+        <>
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4 bg-muted/20">
           {loadingHistory ? (
             <Card className="p-4 flex items-center gap-3 text-sm text-muted-foreground">
@@ -281,6 +308,8 @@ export const VideoChatSheet = ({ videoId, videoTitle }: VideoChatSheetProps) => 
             Answers are generated from the selected transcript and app insights. They are not personal advice from the speaker.
           </p>
         </form>
+        </>
+        )}
       </SheetContent>
     </Sheet>
   );

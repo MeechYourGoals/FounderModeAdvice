@@ -35,6 +35,8 @@ import { useNavigate, Navigate } from "react-router-dom";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 import { shouldShowAppAuthFirst } from "@/lib/appMode";
+import { OnboardingDialog } from "@/components/onboarding/OnboardingDialog";
+import { useOnboarding } from "@/hooks/useOnboarding";
 
 const Index = () => {
   const [selectedEpisodeId, setSelectedEpisodeId] = useState<string | null>(null);
@@ -43,6 +45,7 @@ const Index = () => {
 
   const { user, loading, signOut } = useAuth();
   const { subscription } = useSubscription();
+  const { loading: onboardingLoading, completed: onboardingCompleted, complete: completeOnboarding } = useOnboarding();
   const navigate = useNavigate();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const isMobile = useMediaQuery("(max-width: 767px)");
@@ -73,6 +76,11 @@ const Index = () => {
 
   return (
     <div className="h-screen flex flex-col bg-gradient-to-b from-background to-muted/20">
+      {/* First-run product tour — shows once per user until manually restarted */}
+      {user && !onboardingLoading && onboardingCompleted === false && (
+        <OnboardingDialog open onClose={completeOnboarding} />
+      )}
+
       {/* Mobile & Tablet nav - relative top bar with safe area (Despia pattern) */}
       {!isDesktop ? (
         <div className="glass-nav relative z-50 border-b border-border" style={{ paddingTop: 'var(--safe-area-top)' }}>

@@ -1,10 +1,9 @@
-import { useState } from 'react';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Check, Zap, Crown, Star } from 'lucide-react';
-import { TIER_PRICING, type SubscriptionTier, type BillingPeriod, type TierPricing } from '@/types/subscription';
+import { TIER_PRICING, type SubscriptionTier, type TierPricing } from '@/types/subscription';
 import { cn } from '@/lib/utils';
 
 interface PricingPlansProps {
@@ -12,36 +11,8 @@ interface PricingPlansProps {
   showCurrentPlan?: boolean;
 }
 
-function getPriceForPeriod(tier: TierPricing, period: BillingPeriod): { price: string; suffix: string } {
-  switch (period) {
-    case 'yearly':
-      return tier.yearlyPrice
-        ? { price: `$${tier.yearlyPrice}`, suffix: '/year' }
-        : { price: `$${tier.price}`, suffix: '/month' };
-    case 'lifetime':
-      return tier.lifetimePrice
-        ? { price: `$${tier.lifetimePrice}`, suffix: ' once' }
-        : { price: `$${tier.price}`, suffix: '/month' };
-    default:
-      return { price: `$${tier.price}`, suffix: '/month' };
-  }
-}
-
-function getSavingsLabel(tier: TierPricing, period: BillingPeriod): string | null {
-  if (period === 'yearly' && tier.yearlyPrice && tier.price > 0) {
-    const monthlyAnnual = tier.price * 12;
-    const saved = Math.round(((monthlyAnnual - tier.yearlyPrice) / monthlyAnnual) * 100);
-    return saved > 0 ? `Save ${saved}%` : null;
-  }
-  if (period === 'lifetime' && tier.lifetimePrice && tier.price > 0) {
-    return 'Best value';
-  }
-  return null;
-}
-
 export function PricingPlans({ onSelect, showCurrentPlan = true }: PricingPlansProps) {
-  const { subscription, upgradeTo, loading, isNative } = useSubscription();
-  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('monthly');
+  const { subscription, upgradeTo, loading } = useSubscription();
 
   const tiers = Object.entries(TIER_PRICING) as [SubscriptionTier, TierPricing][];
 
@@ -66,29 +37,6 @@ export function PricingPlans({ onSelect, showCurrentPlan = true }: PricingPlansP
 
   return (
     <div className="space-y-4">
-      {/* Billing period toggle */}
-      <div className="flex justify-center">
-        <div className="glass inline-flex items-center rounded-xl p-1">
-          {(['monthly', 'yearly', 'lifetime'] as BillingPeriod[]).map((period) => (
-            <button
-              key={period}
-              onClick={() => setBillingPeriod(period)}
-              className={cn(
-                'px-3 py-1.5 text-xs font-medium rounded-lg transition-all capitalize',
-                billingPeriod === period
-                  ? 'bg-card text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              {period}
-              {period === 'yearly' && (
-                <span className="ml-1 text-[10px] text-primary font-semibold">Save</span>
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
-
       <div className="grid gap-4 md:grid-cols-3">
         {tiers.map(([tierKey, tier]) => {
           const isCurrentPlan = subscription?.tier === tierKey;
@@ -96,8 +44,7 @@ export function PricingPlans({ onSelect, showCurrentPlan = true }: PricingPlansP
             (subscription?.tier === 'seed' && tierKey === 'series_z');
           const { price, suffix } = tierKey === 'free'
             ? { price: 'Free', suffix: '' }
-            : getPriceForPeriod(tier, billingPeriod);
-          const savings = tierKey !== 'free' ? getSavingsLabel(tier, billingPeriod) : null;
+            : { price: `$${tier.price}`, suffix: '/month' };
 
           return (
             <Card
@@ -110,7 +57,7 @@ export function PricingPlans({ onSelect, showCurrentPlan = true }: PricingPlansP
             >
               {tier.recommended && (
                 <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  Recommended
+                  Most Popular
                 </Badge>
               )}
 
@@ -132,11 +79,6 @@ export function PricingPlans({ onSelect, showCurrentPlan = true }: PricingPlansP
                   </span>
                   {suffix && (
                     <span className="text-sm text-muted-foreground">{suffix}</span>
-                  )}
-                  {savings && (
-                    <Badge variant="secondary" className="ml-2 text-[10px]">
-                      {savings}
-                    </Badge>
                   )}
                 </CardDescription>
               </CardHeader>
