@@ -511,6 +511,16 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                   {episode.companies.current_stage}
                 </Badge>
               )}
+              {getEpisodeTags(episode).slice(0, 4).map(tagName => (
+                <Badge
+                  key={tagName}
+                  variant={selectedTags.has(tagName) ? "default" : "outline"}
+                  className="cursor-pointer text-[10px] px-1.5 py-0 flex items-center gap-0.5"
+                  onClick={(e) => { e.stopPropagation(); toggleTag(tagName); }}
+                >
+                  <Tag className="w-2.5 h-2.5" />{tagName}
+                </Badge>
+              ))}
               {episodeFolders.map(f => (
                 <span key={f!.id} className="text-[10px] px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: f!.color }}>
                   {f!.name}
@@ -667,18 +677,54 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
           )}
         </div>
 
+        {/* View mode toggle */}
+        <div className="px-4 sm:px-6 py-2 border-b bg-muted/5 flex items-center gap-2 overflow-x-auto scroll-touch">
+          <span className="text-xs text-muted-foreground whitespace-nowrap">View:</span>
+          <Badge variant={viewMode === "chronological" ? "default" : "outline"} className="cursor-pointer whitespace-nowrap text-[10px] flex items-center gap-1" onClick={() => changeViewMode("chronological")}>
+            <LayoutList className="w-3 h-3" />Chronological
+          </Badge>
+          <Badge variant={viewMode === "tag" ? "default" : "outline"} className="cursor-pointer whitespace-nowrap text-[10px] flex items-center gap-1" onClick={() => changeViewMode("tag")}>
+            <Tag className="w-3 h-3" />By Tag
+          </Badge>
+          <Badge variant={viewMode === "folder" ? "default" : "outline"} className="cursor-pointer whitespace-nowrap text-[10px] flex items-center gap-1" onClick={() => changeViewMode("folder")}>
+            <Folder className="w-3 h-3" />By Folder
+          </Badge>
+        </div>
+
+        {/* Tag filter chip bar */}
+        {uniqueTags.length > 0 && (
+          <div className="px-4 sm:px-6 py-2 border-b bg-muted/10 flex items-center gap-2 overflow-x-auto scroll-touch">
+            <Tag className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            {uniqueTags.slice(0, 24).map(([name, count]) => (
+              <Badge
+                key={name}
+                variant={selectedTags.has(name) ? "default" : "outline"}
+                className="cursor-pointer whitespace-nowrap text-[10px]"
+                onClick={() => toggleTag(name)}
+              >
+                {name}<span className="ml-1 opacity-60">{count}</span>
+              </Badge>
+            ))}
+            {selectedTags.size > 0 && (
+              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => { setSelectedTags(new Set()); setSearchParams(p => { p.delete("tags"); return p; }); }}>
+                Clear tags
+              </Button>
+            )}
+          </div>
+        )}
+
         {/* Sort controls for mobile */}
         {isMobile && (
           <div className="px-4 py-2 border-b bg-muted/10 flex items-center gap-2 overflow-x-auto scroll-touch">
             <span className="text-xs text-muted-foreground whitespace-nowrap">Sort:</span>
-            {(["title", "company", "founder", "created_at"] as SortColumn[]).map(col => (
+            {(["created_at", "release_date", "title", "company", "founder", "tag_count"] as SortColumn[]).map(col => (
               <Badge
                 key={col}
                 variant={sortColumn === col ? "default" : "outline"}
                 className="cursor-pointer whitespace-nowrap text-[10px]"
                 onClick={() => handleSort(col)}
               >
-                {col === "created_at" ? "Date" : col.charAt(0).toUpperCase() + col.slice(1)}
+                {col === "created_at" ? "Added" : col === "release_date" ? "Date" : col === "tag_count" ? "Tags" : col.charAt(0).toUpperCase() + col.slice(1)}
                 {sortColumn === col && (sortDirection === "asc" ? " ↑" : " ↓")}
               </Badge>
             ))}
@@ -729,8 +775,54 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
           </div>
         )}
 
-        {/* Mobile: Card list / Desktop: Table */}
-        {isMobile ? (
+        {/* Mobile: Card list / Desktop: Table / Grouped views */}
+        {viewMode === "tag" ? (
+          <div>
+            {(selectedTags.size > 0
+              ? uniqueTags.filter(([n]) => selectedTags.has(n))
+              : uniqueTags
+            ).map(([tagName]) => {
+              const eps = filteredEpisodes.filter(ep => getEpisodeTags(ep).some(t => t.toLowerCase() === tagName.toLowerCase()));
+              if (eps.length === 0) return null;
+              return (
+                <div key={tagName}>
+                  <div className="px-4 sm:px-6 py-2 bg-muted/30 border-b flex items-center gap-2">
+                    <Tag className="w-4 h-4 text-primary" />
+                    <span className="font-semibold text-sm">{tagName}</span>
+                    <Badge variant="outline" className="text-[10px]">{eps.length}</Badge>
+                  </div>
+                  {eps.map(ep => <MobileEpisodeCard key={ep.id} episode={ep} />)}
+                </div>
+              );
+            })}
+            {uniqueTags.length === 0 && (
+              <div className="p-8 text-center text-sm text-muted-foreground">No tags yet. Analyze an episode to start tagging.</div>
+            )}
+          </div>
+        ) : viewMode === "folder" ? (
+          <div>
+            {[
+              ...folders.map(f => ({ id: f.id as string | null, name: f.name, color: f.color as string | undefined })),
+              { id: null as string | null, name: "Unfiled", color: undefined as string | undefined },
+            ].map(folder => {
+              const eps = filteredEpisodes.filter(ep => {
+                const assigned = folderAssignments[ep.id] || [];
+                return folder.id ? assigned.includes(folder.id) : assigned.length === 0;
+              });
+              if (eps.length === 0) return null;
+              return (
+                <div key={folder.id || "unfiled"}>
+                  <div className="px-4 sm:px-6 py-2 bg-muted/30 border-b flex items-center gap-2">
+                    <Folder className="w-4 h-4" style={folder.color ? { color: folder.color } : undefined} />
+                    <span className="font-semibold text-sm">{folder.name}</span>
+                    <Badge variant="outline" className="text-[10px]">{eps.length}</Badge>
+                  </div>
+                  {eps.map(ep => <MobileEpisodeCard key={ep.id} episode={ep} />)}
+                </div>
+              );
+            })}
+          </div>
+        ) : isMobile ? (
           <div>
             {paginatedEpisodes.map((episode) => (
               <MobileEpisodeCard key={episode.id} episode={episode} />
@@ -777,15 +869,23 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                       <TableCell className="font-medium max-w-md">
                         <div className="space-y-1">
                           <div className="line-clamp-2">{episode.title}</div>
-                          {episodeFolders.length > 0 && (
-                            <div className="flex gap-1 flex-wrap">
-                              {episodeFolders.map(f => (
-                                <span key={f!.id} className="text-[10px] px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: f!.color }}>
-                                  {f!.name}
-                                </span>
-                              ))}
-                            </div>
-                          )}
+                          <div className="flex gap-1 flex-wrap">
+                            {getEpisodeTags(episode).slice(0, 5).map(tagName => (
+                              <Badge
+                                key={tagName}
+                                variant={selectedTags.has(tagName) ? "default" : "outline"}
+                                className="cursor-pointer text-[10px] px-1.5 py-0 flex items-center gap-0.5"
+                                onClick={(e) => { e.stopPropagation(); toggleTag(tagName); }}
+                              >
+                                <Tag className="w-2.5 h-2.5" />{tagName}
+                              </Badge>
+                            ))}
+                            {episodeFolders.map(f => (
+                              <span key={f!.id} className="text-[10px] px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: f!.color }}>
+                                {f!.name}
+                              </span>
+                            ))}
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>{episode.companies?.name || "-"}</TableCell>
@@ -875,7 +975,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
         )}
 
         {/* Pagination */}
-        {sortedEpisodes.length > PAGE_SIZE && (
+        {viewMode === "chronological" && sortedEpisodes.length > PAGE_SIZE && (
           <div className="px-4 sm:px-6 py-3 sm:py-4 border-t flex items-center justify-between">
             <p className="text-xs sm:text-sm text-muted-foreground">
               {startIdx}–{endIdx} of {sortedEpisodes.length}
