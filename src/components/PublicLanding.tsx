@@ -2,6 +2,7 @@ import { Brain, TrendingUp, Target, Sparkles, ArrowRight, MessageSquare, ShieldC
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Footer } from "@/components/Footer";
 import heroBg from "@/assets/hero-bg.jpg";
 
 export const PublicLanding = () => {
@@ -78,17 +79,17 @@ export const PublicLanding = () => {
             Turn expert content into private strategic guidance
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-            <FeatureCard 
+            <FeatureCard
               icon={<Brain className="w-6 h-6 sm:w-8 sm:h-8" />}
               title="Beyond passive watching"
               description="Convert public interviews and podcasts into structured lessons, risks, and strategic takeaways for founders"
             />
-            <FeatureCard 
+            <FeatureCard
               icon={<TrendingUp className="w-6 h-6 sm:w-8 sm:h-8" />}
               title="Tailored startup insight"
               description="Map the expert's public thinking to your stage, market, company context, and next decision"
             />
-            <FeatureCard 
+            <FeatureCard
               icon={<Target className="w-6 h-6 sm:w-8 sm:h-8" />}
               title="Ask any video"
               description="Open a transcript-grounded chat after analysis and query the source behind each recommendation"
@@ -124,6 +125,46 @@ export const PublicLanding = () => {
 
       {/* Social Proof */}
       <section className="bg-muted/30 py-12 sm:py-16 md:py-24">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto space-y-8">
+            <div className="text-center space-y-3">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">
+                Not Another Locked-In Subscription
+              </h2>
+              <p className="text-sm sm:text-lg text-muted-foreground max-w-2xl mx-auto">
+                MasterClass, Augment, and Delphi cost a lot more and only give you the people on
+                their roster — and even then, you get the generic takes those people chose to share.
+                One clip of Bill Gates, the same advice for thousands of different viewers.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              <div className="glass rounded-2xl p-5 sm:p-6 space-y-3">
+                <h3 className="font-semibold text-base sm:text-lg text-muted-foreground">
+                  MasterClass · Augment · Delphi
+                </h3>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <ComparisonItem positive={false}>Locked to who they have on the platform</ComparisonItem>
+                  <ComparisonItem positive={false}>One-size-fits-all insights for every viewer</ComparisonItem>
+                  <ComparisonItem positive={false}>Premium price for a fixed library</ComparisonItem>
+                </ul>
+              </div>
+              <div className="glass rounded-2xl p-5 sm:p-6 space-y-3 border border-primary/30">
+                <h3 className="font-semibold text-base sm:text-lg text-primary">
+                  Founder Mode Advice
+                </h3>
+                <ul className="space-y-2 text-sm">
+                  <ComparisonItem positive>Learn from anyone with a video online</ComparisonItem>
+                  <ComparisonItem positive>Every video tailored to your situation and startup</ComparisonItem>
+                  <ComparisonItem positive>One app, any source — at a fraction of the cost</ComparisonItem>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Social Proof */}
+      <section className="py-12 sm:py-16 md:py-24">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center space-y-6">
             <p className="text-sm sm:text-lg text-muted-foreground px-4">
@@ -192,12 +233,22 @@ const MiniFeature = ({ icon, title, description }: { icon: React.ReactNode; titl
 
 const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) => {
   return (
-    <div className="group glass elevate-hover p-4 sm:p-6 rounded-2xl hover:border-primary/30">
-      <div className="text-primary mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
+    <div className="glass elevate-hover p-4 sm:p-6 rounded-2xl hover:border-primary/30">
+      <div className="text-primary mb-3 sm:mb-4">
         {icon}
       </div>
       <h3 className="font-semibold text-base sm:text-lg mb-1 sm:mb-2">{title}</h3>
       <p className="text-xs sm:text-sm text-muted-foreground">{description}</p>
     </div>
+  );
+};
+
+const ComparisonItem = ({ positive, children }: { positive: boolean; children: React.ReactNode }) => {
+  const Icon = positive ? Check : X;
+  return (
+    <li className="flex items-start gap-2">
+      <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${positive ? "text-primary" : "text-muted-foreground"}`} />
+      <span>{children}</span>
+    </li>
   );
 };

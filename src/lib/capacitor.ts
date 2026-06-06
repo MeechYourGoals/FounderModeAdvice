@@ -1,4 +1,5 @@
 import { Capacitor } from '@capacitor/core';
+import { supabase } from '@/integrations/supabase/client';
 
 // Platform detection
 export const isNative = Capacitor.isNativePlatform();
@@ -39,9 +40,19 @@ export async function initializeNativePlugins() {
       console.log('App state changed:', isActive ? 'active' : 'background');
     });
 
-    App.addListener('appUrlOpen', ({ url }) => {
+    App.addListener('appUrlOpen', async ({ url }) => {
       console.log('App opened with URL:', url);
-      // Handle deep links here if needed
+      // Complete OAuth: the provider redirects to com.foundermodeadvice.app://auth/callback
+      // with a PKCE code; exchange it for a session, then route into the app.
+      if (url.includes('auth/callback')) {
+        try {
+          await supabase.auth.exchangeCodeForSession(url);
+        } catch (error) {
+          console.error('Error completing OAuth sign in:', error);
+        } finally {
+          window.location.href = '/';
+        }
+      }
     });
 
     // Hide splash screen after app is ready
