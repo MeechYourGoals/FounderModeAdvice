@@ -174,7 +174,7 @@ export const ExportModal = ({ episodeId, open, onOpenChange }: ExportModalProps)
     try {
       const data = episodeId ? [await fetchEpisodeData(episodeId)] : await fetchAllData();
       
-      let markdown = '# Founder Lessons\n\n';
+      let markdown = '# Founder Mode Advice\n\n';
       
       data?.forEach((episode: any) => {
         markdown += `## ${episode.title}\n\n`;
@@ -215,7 +215,7 @@ export const ExportModal = ({ episodeId, open, onOpenChange }: ExportModalProps)
       });
 
       const blob = new Blob([markdown], { type: 'text/markdown' });
-      const filename = `founder-lessons-${episodeId ? 'episode' : 'all'}-${new Date().toISOString().split('T')[0]}.md`;
+      const filename = `founder-mode-advice-${episodeId ? 'episode' : 'all'}-${new Date().toISOString().split('T')[0]}.md`;
       
       await handleExport(blob, filename, 'text/markdown');
     } catch (error) {
@@ -235,7 +235,7 @@ export const ExportModal = ({ episodeId, open, onOpenChange }: ExportModalProps)
       // Title
       doc.setFontSize(22);
       doc.setTextColor(33, 33, 33);
-      doc.text("Executive Summary: Founder Lessons", 14, y);
+      doc.text("Executive Summary: Founder Mode Advice", 14, y);
       y += 10;
       doc.setFontSize(10);
       doc.setTextColor(100);
