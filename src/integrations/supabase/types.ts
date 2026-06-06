@@ -759,6 +759,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_tier_limits: {
+        Args: { p_user_id: string }
+        Returns: {
+          analyses_count: number
+          max_analyses: number
+          tier: string
+        }[]
+      }
+      get_or_create_monthly_usage: {
+        Args: { p_user_id: string }
+        Returns: {
+          analyses_count: number
+          month_year: string
+        }[]
+      }
+      get_or_create_subscription: {
+        Args: { p_user_id: string }
+        Returns: {
+          status: string
+          tier: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -766,6 +788,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_analysis_count: { Args: { p_user_id: string }; Returns: number }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
