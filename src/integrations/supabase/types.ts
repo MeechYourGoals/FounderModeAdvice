@@ -265,6 +265,44 @@ export type Database = {
         }
         Relationships: []
       }
+      episode_transcripts: {
+        Row: {
+          created_at: string | null
+          episode_id: string
+          fetched_at: string | null
+          id: string
+          language: string | null
+          source: string | null
+          transcript_text: string
+        }
+        Insert: {
+          created_at?: string | null
+          episode_id: string
+          fetched_at?: string | null
+          id?: string
+          language?: string | null
+          source?: string | null
+          transcript_text: string
+        }
+        Update: {
+          created_at?: string | null
+          episode_id?: string
+          fetched_at?: string | null
+          id?: string
+          language?: string | null
+          source?: string | null
+          transcript_text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "episode_transcripts_episode_id_fkey"
+            columns: ["episode_id"]
+            isOneToOne: true
+            referencedRelation: "episodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       episodes: {
         Row: {
           analysis_status: string | null
@@ -633,11 +671,116 @@ export type Database = {
         }
         Relationships: []
       }
+      video_chat_messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          role: string
+          session_id: string
+          user_id: string
+          video_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          role: string
+          session_id: string
+          user_id: string
+          video_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          role?: string
+          session_id?: string
+          user_id?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_chat_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "video_chat_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_chat_messages_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "episodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_chat_sessions: {
+        Row: {
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          updated_at: string | null
+          user_id: string
+          video_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          updated_at?: string | null
+          user_id: string
+          video_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          updated_at?: string | null
+          user_id?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_chat_sessions_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "episodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      check_tier_limits: {
+        Args: { p_user_id: string }
+        Returns: {
+          analyses_count: number
+          max_analyses: number
+          tier: string
+        }[]
+      }
+      get_or_create_monthly_usage: {
+        Args: { p_user_id: string }
+        Returns: {
+          analyses_count: number
+          month_year: string
+        }[]
+      }
+      get_or_create_subscription: {
+        Args: { p_user_id: string }
+        Returns: {
+          status: string
+          tier: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -645,6 +788,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_analysis_count: { Args: { p_user_id: string }; Returns: number }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

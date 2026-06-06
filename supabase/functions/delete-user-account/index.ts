@@ -38,6 +38,8 @@ serve(async (req) => {
       'user_startup_profiles',
       'user_monthly_usage',
       'user_roles',
+      'video_chat_messages',
+      'video_chat_sessions',
       'bookmarked_lessons',
       'bookmarked_episodes',
       'episode_folder_assignments',

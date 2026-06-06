@@ -6,43 +6,50 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const jsonError = (message: string, status: number) =>
+  new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { priceId, userId } = await req.json();
-
-    if (!priceId || !userId) {
-      throw new Error('priceId and userId are required');
-    }
-
-    const stripeApiKey = Deno.env.get('STRIPE_SECRET_KEY');
-    if (!stripeApiKey) {
-      throw new Error('STRIPE_SECRET_KEY not configured');
-    }
-
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get user email
-    const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(userId);
-    if (userError || !user) {
-      throw new Error('User not found');
+    // ---- Require valid JWT ----
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) return jsonError('Authentication required', 401);
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) return jsonError('Unauthorized', 401);
+
+    const { priceId } = await req.json().catch(() => ({}));
+    if (!priceId || typeof priceId !== 'string' || priceId.length > 200) {
+      return jsonError('priceId is required', 400);
     }
 
-    // Check for existing Stripe customer
+    const stripeApiKey = Deno.env.get('STRIPE_SECRET_KEY');
+    if (!stripeApiKey) {
+      console.error('create-checkout-session: STRIPE_SECRET_KEY missing');
+      return jsonError('Service temporarily unavailable', 503);
+    }
+
+    const userId = user.id;
+
     const { data: subscription } = await supabase
       .from('user_subscriptions')
       .select('stripe_customer_id')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
     let customerId = subscription?.stripe_customer_id;
 
-    // Create or retrieve Stripe customer
     if (!customerId) {
       const customerResponse = await fetch('https://api.stripe.com/v1/customers', {
         method: 'POST',
@@ -58,27 +65,17 @@ serve(async (req) => {
 
       const customer = await customerResponse.json();
       if (customer.error) {
-        throw new Error(customer.error.message);
+        console.error('Stripe customer create error:', customer.error);
+        return jsonError('Could not start checkout. Please try again.', 502);
       }
-
       customerId = customer.id;
 
-      // Store customer ID
       await supabase
         .from('user_subscriptions')
-        .upsert({
-          user_id: userId,
-          stripe_customer_id: customerId,
-          tier: 'free',
-        }, {
-          onConflict: 'user_id',
-        });
+        .upsert({ user_id: userId, stripe_customer_id: customerId, tier: 'free' }, { onConflict: 'user_id' });
     }
 
-    // Get app URL for redirects
-    const appUrl = Deno.env.get('APP_URL') || 'https://foundermodeadvice.com';
-
-    // Create checkout session
+    const appUrl = Deno.env.get('APP_URL') || 'https://podvisor.app';
     const sessionResponse = await fetch('https://api.stripe.com/v1/checkout/sessions', {
       method: 'POST',
       headers: {
@@ -100,21 +97,15 @@ serve(async (req) => {
 
     const session = await sessionResponse.json();
     if (session.error) {
-      throw new Error(session.error.message);
+      console.error('Stripe checkout session error:', session.error);
+      return jsonError('Could not start checkout. Please try again.', 502);
     }
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
-
   } catch (error) {
     console.error('Checkout session error:', error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
-      {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+    return jsonError('Could not start checkout. Please try again.', 500);
   }
 });

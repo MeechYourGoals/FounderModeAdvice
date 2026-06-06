@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import {
   ExternalLink, TrendingUp, MoreVertical, Eye, Bookmark, Download, Copy,
   Youtube, Headphones, Trash2, X, ArrowUpDown, ArrowUp, ArrowDown,
-  FolderPlus, Folder, ChevronLeft, ChevronRight, Filter, Search
+  FolderPlus, Folder, ChevronLeft, ChevronRight, Filter, Search,
+  Tag, LayoutList
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -65,8 +66,9 @@ interface EpisodesTableProps {
   onSelectEpisode: (id: string) => void;
 }
 
-type SortColumn = "title" | "company" | "founder" | "stage" | "industry" | "created_at";
+type SortColumn = "title" | "company" | "founder" | "stage" | "industry" | "created_at" | "release_date" | "tag_count";
 type SortDirection = "asc" | "desc";
+type ViewMode = "chronological" | "tag" | "folder";
 
 const PAGE_SIZE = 15;
 
@@ -100,18 +102,36 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
   const [manageFoldersOpen, setManageFoldersOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
 
-  // Initialize founder filter from URL
+  // Tags & view mode
+  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<ViewMode>("chronological");
+
+
+  // Initialize filters & view from URL
   useEffect(() => {
     const founder = searchParams.get("founder");
-    if (founder) {
-        setFounderFilter(founder);
-        setShowFilters(true);
+    if (founder) { setFounderFilter(founder); setShowFilters(true); }
+    const tagsParam = searchParams.get("tags");
+    if (tagsParam) setSelectedTags(new Set(tagsParam.split(",").filter(Boolean)));
+    const viewParam = searchParams.get("view");
+    if (viewParam === "tag" || viewParam === "folder" || viewParam === "chronological") {
+      setViewMode(viewParam);
     }
-  }, [searchParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const parseIndustries = (industryString: string | null | undefined): string[] => {
     if (!industryString) return [];
     return [...new Set(industryString.split(/[,\/]/).map(i => i.trim()).filter(Boolean))];
+  };
+
+  const getEpisodeTags = (ep: Episode): string[] => {
+    const names = new Set<string>();
+    ep.lessons?.forEach(l => l.lesson_tags?.forEach(lt => {
+      const n = lt.tags?.name?.trim();
+      if (n) names.add(n);
+    }));
+    return Array.from(names);
   };
 
   const toggleIndustryFilter = (industry: string) => {
@@ -123,6 +143,31 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
       return newSet;
     });
     setCurrentPage(1);
+  };
+
+  const toggleTag = (name: string) => {
+    triggerHapticFeedback('light');
+    setSelectedTags(prev => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name); else next.add(name);
+      setSearchParams(p => {
+        if (next.size === 0) p.delete("tags");
+        else p.set("tags", Array.from(next).join(","));
+        return p;
+      });
+      return next;
+    });
+    setCurrentPage(1);
+  };
+
+  const changeViewMode = (mode: ViewMode) => {
+    triggerHapticFeedback('light');
+    setViewMode(mode);
+    setSearchParams(p => {
+      if (mode === "chronological") p.delete("view");
+      else p.set("view", mode);
+      return p;
+    });
   };
 
   // Derive unique options
@@ -142,6 +187,15 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     const s = new Set<string>();
     allEpisodes.forEach(ep => ep.release_date && s.add(ep.release_date.slice(0, 4)));
     return Array.from(s).sort().reverse();
+  }, [allEpisodes]);
+
+  // Unique tags with counts, sorted by frequency desc
+  const uniqueTags = useMemo(() => {
+    const counts = new Map<string, number>();
+    allEpisodes.forEach(ep => {
+      getEpisodeTags(ep).forEach(t => counts.set(t, (counts.get(t) || 0) + 1));
+    });
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   }, [allEpisodes]);
 
   // Filter → Sort → Paginate
@@ -164,6 +218,12 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
       result = result.filter(ep => episodeIdsInFolder.includes(ep.id));
     }
 
+    // Tag Filter (OR semantics, case-insensitive)
+    if (selectedTags.size > 0) {
+      const lower = new Set(Array.from(selectedTags).map(t => t.toLowerCase()));
+      result = result.filter(ep => getEpisodeTags(ep).some(t => lower.has(t.toLowerCase())));
+    }
+
     // New Filters
     if (founderFilter && founderFilter !== "all") {
         result = result.filter(ep => ep.founder_names?.includes(founderFilter));
@@ -176,11 +236,16 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     }
 
     return result;
-  }, [allEpisodes, selectedIndustries, selectedFolderId, folderAssignments, founderFilter, companyFilter, yearFilter]);
+  }, [allEpisodes, selectedIndustries, selectedTags, selectedFolderId, folderAssignments, founderFilter, companyFilter, yearFilter]);
 
   const sortedEpisodes = useMemo(() => {
     const sorted = [...filteredEpisodes];
     sorted.sort((a, b) => {
+      if (sortColumn === "tag_count") {
+        const av = getEpisodeTags(a).length;
+        const bv = getEpisodeTags(b).length;
+        return sortDirection === "asc" ? av - bv : bv - av;
+      }
       let aVal = "";
       let bVal = "";
       switch (sortColumn) {
@@ -189,6 +254,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
         case "founder": aVal = a.founder_names || ""; bVal = b.founder_names || ""; break;
         case "stage": aVal = a.companies?.current_stage || ""; bVal = b.companies?.current_stage || ""; break;
         case "industry": aVal = a.companies?.industry || ""; bVal = b.companies?.industry || ""; break;
+        case "release_date": aVal = a.release_date || a.created_at || ""; bVal = b.release_date || b.created_at || ""; break;
         case "created_at": aVal = a.created_at || ""; bVal = b.created_at || ""; break;
       }
       const cmp = aVal.localeCompare(bVal);
@@ -364,11 +430,27 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     fetchEpisodes();
     fetchFolders();
     const handleEpisodeAnalyzed = () => { fetchEpisodes(); };
+    const handleHomeReset = () => {
+      setSelectedTags(new Set());
+      setSelectedIndustries(new Set());
+      setSelectedFolderId(null);
+      setFounderFilter("all");
+      setCompanyFilter("all");
+      setYearFilter("all");
+      setViewMode("chronological");
+      setCurrentPage(1);
+      setSearchParams({});
+    };
     window.addEventListener("episodeAnalyzed", handleEpisodeAnalyzed);
-    return () => window.removeEventListener("episodeAnalyzed", handleEpisodeAnalyzed);
+    window.addEventListener("homeReset", handleHomeReset);
+    return () => {
+      window.removeEventListener("episodeAnalyzed", handleEpisodeAnalyzed);
+      window.removeEventListener("homeReset", handleHomeReset);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => { setCurrentPage(1); }, [selectedFolderId, founderFilter, companyFilter, yearFilter]);
+  useEffect(() => { setCurrentPage(1); }, [selectedFolderId, founderFilter, companyFilter, yearFilter, selectedTags, viewMode]);
 
   if (loading) {
     return <Card className="p-6 sm:p-8"><div className="text-center text-muted-foreground">Loading episodes...</div></Card>;
@@ -429,6 +511,16 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                   {episode.companies.current_stage}
                 </Badge>
               )}
+              {getEpisodeTags(episode).slice(0, 4).map(tagName => (
+                <Badge
+                  key={tagName}
+                  variant={selectedTags.has(tagName) ? "default" : "outline"}
+                  className="cursor-pointer text-[10px] px-1.5 py-0 flex items-center gap-0.5"
+                  onClick={(e) => { e.stopPropagation(); toggleTag(tagName); }}
+                >
+                  <Tag className="w-2.5 h-2.5" />{tagName}
+                </Badge>
+              ))}
               {episodeFolders.map(f => (
                 <span key={f!.id} className="text-[10px] px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: f!.color }}>
                   {f!.name}
@@ -503,6 +595,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
       setCompanyFilter("all");
       setYearFilter("all");
       setSelectedIndustries(new Set());
+      setSelectedTags(new Set());
       setSearchParams({});
   };
 
@@ -584,18 +677,54 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
           )}
         </div>
 
+        {/* View mode toggle */}
+        <div className="px-4 sm:px-6 py-2 border-b bg-muted/5 flex items-center gap-2 overflow-x-auto scroll-touch">
+          <span className="text-xs text-muted-foreground whitespace-nowrap">View:</span>
+          <Badge variant={viewMode === "chronological" ? "default" : "outline"} className="cursor-pointer whitespace-nowrap text-[10px] flex items-center gap-1" onClick={() => changeViewMode("chronological")}>
+            <LayoutList className="w-3 h-3" />Chronological
+          </Badge>
+          <Badge variant={viewMode === "tag" ? "default" : "outline"} className="cursor-pointer whitespace-nowrap text-[10px] flex items-center gap-1" onClick={() => changeViewMode("tag")}>
+            <Tag className="w-3 h-3" />By Tag
+          </Badge>
+          <Badge variant={viewMode === "folder" ? "default" : "outline"} className="cursor-pointer whitespace-nowrap text-[10px] flex items-center gap-1" onClick={() => changeViewMode("folder")}>
+            <Folder className="w-3 h-3" />By Folder
+          </Badge>
+        </div>
+
+        {/* Tag filter chip bar */}
+        {uniqueTags.length > 0 && (
+          <div className="px-4 sm:px-6 py-2 border-b bg-muted/10 flex items-center gap-2 overflow-x-auto scroll-touch">
+            <Tag className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            {uniqueTags.slice(0, 24).map(([name, count]) => (
+              <Badge
+                key={name}
+                variant={selectedTags.has(name) ? "default" : "outline"}
+                className="cursor-pointer whitespace-nowrap text-[10px]"
+                onClick={() => toggleTag(name)}
+              >
+                {name}<span className="ml-1 opacity-60">{count}</span>
+              </Badge>
+            ))}
+            {selectedTags.size > 0 && (
+              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => { setSelectedTags(new Set()); setSearchParams(p => { p.delete("tags"); return p; }); }}>
+                Clear tags
+              </Button>
+            )}
+          </div>
+        )}
+
         {/* Sort controls for mobile */}
         {isMobile && (
           <div className="px-4 py-2 border-b bg-muted/10 flex items-center gap-2 overflow-x-auto scroll-touch">
             <span className="text-xs text-muted-foreground whitespace-nowrap">Sort:</span>
-            {(["title", "company", "founder", "created_at"] as SortColumn[]).map(col => (
+            {(["created_at", "release_date", "title", "company", "founder", "tag_count"] as SortColumn[]).map(col => (
               <Badge
                 key={col}
                 variant={sortColumn === col ? "default" : "outline"}
                 className="cursor-pointer whitespace-nowrap text-[10px]"
                 onClick={() => handleSort(col)}
               >
-                {col === "created_at" ? "Date" : col.charAt(0).toUpperCase() + col.slice(1)}
+                {col === "created_at" ? "Added" : col === "release_date" ? "Date" : col === "tag_count" ? "Tags" : col.charAt(0).toUpperCase() + col.slice(1)}
                 {sortColumn === col && (sortDirection === "asc" ? " ↑" : " ↓")}
               </Badge>
             ))}
@@ -646,8 +775,54 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
           </div>
         )}
 
-        {/* Mobile: Card list / Desktop: Table */}
-        {isMobile ? (
+        {/* Mobile: Card list / Desktop: Table / Grouped views */}
+        {viewMode === "tag" ? (
+          <div>
+            {(selectedTags.size > 0
+              ? uniqueTags.filter(([n]) => selectedTags.has(n))
+              : uniqueTags
+            ).map(([tagName]) => {
+              const eps = filteredEpisodes.filter(ep => getEpisodeTags(ep).some(t => t.toLowerCase() === tagName.toLowerCase()));
+              if (eps.length === 0) return null;
+              return (
+                <div key={tagName}>
+                  <div className="px-4 sm:px-6 py-2 bg-muted/30 border-b flex items-center gap-2">
+                    <Tag className="w-4 h-4 text-primary" />
+                    <span className="font-semibold text-sm">{tagName}</span>
+                    <Badge variant="outline" className="text-[10px]">{eps.length}</Badge>
+                  </div>
+                  {eps.map(ep => <MobileEpisodeCard key={ep.id} episode={ep} />)}
+                </div>
+              );
+            })}
+            {uniqueTags.length === 0 && (
+              <div className="p-8 text-center text-sm text-muted-foreground">No tags yet. Analyze an episode to start tagging.</div>
+            )}
+          </div>
+        ) : viewMode === "folder" ? (
+          <div>
+            {[
+              ...folders.map(f => ({ id: f.id as string | null, name: f.name, color: f.color as string | undefined })),
+              { id: null as string | null, name: "Unfiled", color: undefined as string | undefined },
+            ].map(folder => {
+              const eps = filteredEpisodes.filter(ep => {
+                const assigned = folderAssignments[ep.id] || [];
+                return folder.id ? assigned.includes(folder.id) : assigned.length === 0;
+              });
+              if (eps.length === 0) return null;
+              return (
+                <div key={folder.id || "unfiled"}>
+                  <div className="px-4 sm:px-6 py-2 bg-muted/30 border-b flex items-center gap-2">
+                    <Folder className="w-4 h-4" style={folder.color ? { color: folder.color } : undefined} />
+                    <span className="font-semibold text-sm">{folder.name}</span>
+                    <Badge variant="outline" className="text-[10px]">{eps.length}</Badge>
+                  </div>
+                  {eps.map(ep => <MobileEpisodeCard key={ep.id} episode={ep} />)}
+                </div>
+              );
+            })}
+          </div>
+        ) : isMobile ? (
           <div>
             {paginatedEpisodes.map((episode) => (
               <MobileEpisodeCard key={episode.id} episode={episode} />
@@ -694,15 +869,23 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                       <TableCell className="font-medium max-w-md">
                         <div className="space-y-1">
                           <div className="line-clamp-2">{episode.title}</div>
-                          {episodeFolders.length > 0 && (
-                            <div className="flex gap-1 flex-wrap">
-                              {episodeFolders.map(f => (
-                                <span key={f!.id} className="text-[10px] px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: f!.color }}>
-                                  {f!.name}
-                                </span>
-                              ))}
-                            </div>
-                          )}
+                          <div className="flex gap-1 flex-wrap">
+                            {getEpisodeTags(episode).slice(0, 5).map(tagName => (
+                              <Badge
+                                key={tagName}
+                                variant={selectedTags.has(tagName) ? "default" : "outline"}
+                                className="cursor-pointer text-[10px] px-1.5 py-0 flex items-center gap-0.5"
+                                onClick={(e) => { e.stopPropagation(); toggleTag(tagName); }}
+                              >
+                                <Tag className="w-2.5 h-2.5" />{tagName}
+                              </Badge>
+                            ))}
+                            {episodeFolders.map(f => (
+                              <span key={f!.id} className="text-[10px] px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: f!.color }}>
+                                {f!.name}
+                              </span>
+                            ))}
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>{episode.companies?.name || "-"}</TableCell>
@@ -792,7 +975,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
         )}
 
         {/* Pagination */}
-        {sortedEpisodes.length > PAGE_SIZE && (
+        {viewMode === "chronological" && sortedEpisodes.length > PAGE_SIZE && (
           <div className="px-4 sm:px-6 py-3 sm:py-4 border-t flex items-center justify-between">
             <p className="text-xs sm:text-sm text-muted-foreground">
               {startIdx}–{endIdx} of {sortedEpisodes.length}

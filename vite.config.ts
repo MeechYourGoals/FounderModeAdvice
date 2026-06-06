@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => ({
       manifest: {
         name: "Founder Mode Advice",
         short_name: "Founder Mode",
-        description: "Turn any video on the web into tactical advice tailored to you, your situation, and your startup.",
+        description: "AI-powered platform to extract tactical founder lessons from podcast episodes.",
         theme_color: "#16a34a",
         background_color: "#000000",
         display: "standalone",

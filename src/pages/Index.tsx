@@ -77,7 +77,7 @@ const Index = () => {
       {!isDesktop ? (
         <div className="glass-nav relative z-50 border-b border-border" style={{ paddingTop: 'var(--safe-area-top)' }}>
           <div className="flex items-center justify-between px-4 py-2">
-            <span className="font-bold text-sm text-primary">Founder Mode Advice</span>
+            <button onClick={() => { triggerHapticFeedback('light'); setSelectedEpisodeId(null); window.dispatchEvent(new Event("homeReset")); }} className="font-bold text-sm text-primary hover:opacity-80 transition-opacity">Founder Mode Advice</button>
             <div className="flex items-center gap-1">
               <ThemeToggle />
               <DropdownMenu>

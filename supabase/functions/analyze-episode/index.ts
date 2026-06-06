@@ -7,6 +7,75 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const decodeHtml = (value: string) =>
+  value
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+
+const extractYouTubeTranscript = async (videoId: string) => {
+  if (!videoId) return null;
+
+  try {
+    const watchResponse = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+      headers: { 'Accept-Language': 'en-US,en;q=0.9' },
+    });
+
+    if (!watchResponse.ok) return null;
+
+    const watchHtml = await watchResponse.text();
+    const playerMatch = watchHtml.match(/ytInitialPlayerResponse\s*=\s*(\{.+?\});/s);
+    if (!playerMatch?.[1]) return null;
+
+    const playerResponse = JSON.parse(playerMatch[1]);
+    const tracks = playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
+    if (!Array.isArray(tracks) || tracks.length === 0) return null;
+
+    const preferredTrack =
+      tracks.find((track: any) => track.languageCode?.toLowerCase().startsWith('en')) || tracks[0];
+
+    const transcriptUrl = preferredTrack.baseUrl;
+    if (!transcriptUrl) return null;
+
+    const transcriptResponse = await fetch(`${transcriptUrl}&fmt=json3`);
+    if (!transcriptResponse.ok) return null;
+
+    const rawTranscript = await transcriptResponse.text();
+    let transcriptText = '';
+
+    try {
+      const json = JSON.parse(rawTranscript);
+      transcriptText = (json.events || [])
+        .flatMap((event: any) => event.segs || [])
+        .map((segment: any) => segment.utf8 || '')
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    } catch {
+      transcriptText = rawTranscript
+        .replace(/<text[^>]*>/g, ' ')
+        .replace(/<\/text>/g, ' ')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      transcriptText = decodeHtml(transcriptText);
+    }
+
+    if (!transcriptText || transcriptText.length < 200) return null;
+
+    return {
+      transcriptText,
+      language: preferredTrack.languageCode || null,
+      source: preferredTrack.kind === 'asr' ? 'youtube_auto_captions' : 'youtube_captions',
+    };
+  } catch (error) {
+    console.warn('Could not extract YouTube transcript:', error);
+    return null;
+  }
+};
+
 // Tier limits configuration
 const TIER_LIMITS = {
   free: { analyses: 4 },
@@ -23,16 +92,45 @@ serve(async (req) => {
   }
 
   try {
-    const { episodeUrl, podcastName, startupProfile, userId } = await req.json();
-    console.log('Analyzing episode:', { episodeUrl, podcastName, hasProfile: !!startupProfile, userId });
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // ---- AuthN required ----
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Authentication required' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user: authUserFromToken }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !authUserFromToken) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const authenticatedUserId: string = authUserFromToken.id;
+
+    const { episodeUrl, podcastName, startupProfile } = await req.json();
+    console.log('Analyzing episode:', { episodeUrl, podcastName, hasProfile: !!startupProfile, userId: authenticatedUserId });
 
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
     if (!lovableApiKey) {
-      throw new Error('LOVABLE_API_KEY not configured');
+      console.error('LOVABLE_API_KEY not configured');
+      return new Response(JSON.stringify({ error: 'Service temporarily unavailable' }), {
+        status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    if (!episodeUrl) {
+    if (!episodeUrl || typeof episodeUrl !== 'string') {
       throw new Error('Episode URL is required');
+    }
+    if (episodeUrl.length > 2048) {
+      throw new Error('Episode URL too long');
+    }
+    if (podcastName && (typeof podcastName !== 'string' || podcastName.length > 200)) {
+      throw new Error('Invalid podcast name');
     }
 
     // Validate URL format and allowed domains
@@ -41,6 +139,9 @@ serve(async (req) => {
       parsedUrl = new URL(episodeUrl);
     } catch {
       throw new Error('Invalid URL format. Please provide a valid YouTube or Spotify link.');
+    }
+    if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+      throw new Error('Invalid URL protocol');
     }
 
     const allowedHosts = [
@@ -52,20 +153,6 @@ serve(async (req) => {
     const isAllowed = allowedHosts.some(host => parsedUrl.hostname === host || parsedUrl.hostname.endsWith('.' + host));
     if (!isAllowed) {
       throw new Error('Unsupported URL. Please provide a YouTube, Spotify, or Apple Podcasts link.');
-    }
-
-    // Create Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Get user from auth header if userId not provided
-    let authenticatedUserId = userId;
-    const authHeader = req.headers.get('Authorization');
-    if (authHeader && !authenticatedUserId) {
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user } } = await supabase.auth.getUser(token);
-      authenticatedUserId = user?.id;
     }
 
     // Check subscription limits if we have a user (skip for Founder/Super Admin)
@@ -134,6 +221,8 @@ serve(async (req) => {
       }
     }
 
+    const transcript = isYouTube ? await extractYouTubeTranscript(videoId) : null;
+
     // Step 2: Use AI to analyze the episode with tool calling
     const systemPrompt = `You are an expert at extracting founder lessons from podcast episodes. 
 Your task is to deeply analyze podcast content and extract comprehensive, actionable insights.
@@ -152,6 +241,8 @@ CRITICAL REQUIREMENTS:
 URL: ${episodeUrl}
 ${videoTitle ? `Title: ${videoTitle}` : ''}
 ${podcastName ? `Podcast Series: ${podcastName}` : 'Podcast Series: Please extract from the episode'}
+${transcript?.transcriptText ? `Transcript excerpt for grounding:
+${transcript.transcriptText.slice(0, 30000)}` : 'Transcript excerpt: Not available; analyze only if the model can access the public episode content.'}
 
 INSTRUCTIONS:
 1. Watch/listen to the episode and extract real insights from the actual content
@@ -354,6 +445,22 @@ INSTRUCTIONS:
     if (episodeError) {
       console.error('Error creating episode:', episodeError);
       throw new Error(`Failed to create episode: ${episodeError.message} (${episodeError.code})`);
+    }
+
+    if (transcript?.transcriptText) {
+      const { error: transcriptError } = await supabase
+        .from('episode_transcripts')
+        .upsert({
+          episode_id: episode.id,
+          transcript_text: transcript.transcriptText,
+          language: transcript.language,
+          source: transcript.source,
+          fetched_at: new Date().toISOString(),
+        }, { onConflict: 'episode_id' });
+
+      if (transcriptError) {
+        console.warn('Could not save transcript for episode:', transcriptError);
+      }
     }
 
     // Increment user's monthly analysis count
@@ -579,19 +686,24 @@ Make it tactical and specific to their company stage, industry, and challenges.`
 
   } catch (error) {
     console.error('Error in analyze-episode:', error);
-    
-    // Provide detailed error messages
-    let errorMessage = 'Unknown error occurred';
+
+    // Pass through a small allowlist of user-actionable messages; otherwise return a generic error.
+    let clientMessage = 'Failed to analyze episode. Please try again.';
+    let statusCode = 500;
     if (error instanceof Error) {
-      errorMessage = error.message;
-    } else if (typeof error === 'object' && error !== null) {
-      errorMessage = JSON.stringify(error);
+      const msg = error.message;
+      const safePrefixes = [
+        'Episode URL', 'Invalid URL', 'Invalid podcast', 'Unsupported URL',
+        'Episode URL too long', 'Invalid URL protocol',
+      ];
+      if (safePrefixes.some((p) => msg.startsWith(p))) {
+        clientMessage = msg;
+        statusCode = 400;
+      }
     }
-    
-    return new Response(JSON.stringify({ 
-      error: errorMessage
-    }), {
-      status: 500,
+
+    return new Response(JSON.stringify({ error: clientMessage }), {
+      status: statusCode,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

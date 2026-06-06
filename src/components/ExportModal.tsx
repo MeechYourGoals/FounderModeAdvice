@@ -215,7 +215,7 @@ export const ExportModal = ({ episodeId, open, onOpenChange }: ExportModalProps)
       });
 
       const blob = new Blob([markdown], { type: 'text/markdown' });
-      const filename = `founder-lessons-${episodeId ? 'episode' : 'all'}-${new Date().toISOString().split('T')[0]}.md`;
+      const filename = `founder-mode-advice-${episodeId ? 'episode' : 'all'}-${new Date().toISOString().split('T')[0]}.md`;
       
       await handleExport(blob, filename, 'text/markdown');
     } catch (error) {
