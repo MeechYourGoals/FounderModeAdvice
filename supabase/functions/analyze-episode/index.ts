@@ -92,16 +92,45 @@ serve(async (req) => {
   }
 
   try {
-    const { episodeUrl, podcastName, startupProfile, userId } = await req.json();
-    console.log('Analyzing episode:', { episodeUrl, podcastName, hasProfile: !!startupProfile, userId });
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // ---- AuthN required ----
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Authentication required' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user: authUserFromToken }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !authUserFromToken) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const authenticatedUserId: string = authUserFromToken.id;
+
+    const { episodeUrl, podcastName, startupProfile } = await req.json();
+    console.log('Analyzing episode:', { episodeUrl, podcastName, hasProfile: !!startupProfile, userId: authenticatedUserId });
 
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
     if (!lovableApiKey) {
-      throw new Error('LOVABLE_API_KEY not configured');
+      console.error('LOVABLE_API_KEY not configured');
+      return new Response(JSON.stringify({ error: 'Service temporarily unavailable' }), {
+        status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    if (!episodeUrl) {
+    if (!episodeUrl || typeof episodeUrl !== 'string') {
       throw new Error('Episode URL is required');
+    }
+    if (episodeUrl.length > 2048) {
+      throw new Error('Episode URL too long');
+    }
+    if (podcastName && (typeof podcastName !== 'string' || podcastName.length > 200)) {
+      throw new Error('Invalid podcast name');
     }
 
     // Validate URL format and allowed domains
@@ -110,6 +139,9 @@ serve(async (req) => {
       parsedUrl = new URL(episodeUrl);
     } catch {
       throw new Error('Invalid URL format. Please provide a valid YouTube or Spotify link.');
+    }
+    if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+      throw new Error('Invalid URL protocol');
     }
 
     const allowedHosts = [
@@ -121,23 +153,6 @@ serve(async (req) => {
     const isAllowed = allowedHosts.some(host => parsedUrl.hostname === host || parsedUrl.hostname.endsWith('.' + host));
     if (!isAllowed) {
       throw new Error('Unsupported URL. Please provide a YouTube, Spotify, or Apple Podcasts link.');
-    }
-
-    // Create Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Prefer the authenticated user from the bearer token. Do not trust a client-supplied userId
-    // unless no auth header exists for legacy callers.
-    let authenticatedUserId: string | undefined;
-    const authHeader = req.headers.get('Authorization');
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user } } = await supabase.auth.getUser(token);
-      authenticatedUserId = user?.id;
-    } else {
-      authenticatedUserId = userId;
     }
 
     // Check subscription limits if we have a user (skip for Founder/Super Admin)
