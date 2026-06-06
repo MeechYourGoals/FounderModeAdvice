@@ -500,7 +500,7 @@ export async function getStripeCheckoutUrl(priceId: string): Promise<string | nu
     if (!user) return null;
 
     const { data, error } = await supabase.functions.invoke('create-checkout-session', {
-      body: { priceId, userId: user.id },
+      body: { priceId },
     });
 
     if (error) {
@@ -522,7 +522,7 @@ export async function getStripePortalUrl(): Promise<string | null> {
     if (!user) return null;
 
     const { data, error } = await supabase.functions.invoke('create-portal-session', {
-      body: { userId: user.id },
+      body: {},
     });
 
     if (error) {
