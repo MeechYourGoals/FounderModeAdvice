@@ -14,7 +14,7 @@ export const PublicLanding = () => {
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-            <span className="font-bold text-sm sm:text-lg">Founder Lessons</span>
+            <button onClick={() => navigate("/")} className="font-bold text-sm sm:text-lg hover:text-primary transition-colors">Founder Mode Advice</button>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <ThemeToggle />
@@ -166,7 +166,7 @@ export const PublicLanding = () => {
       {/* Footer */}
       <footer className="border-t border-border py-6 sm:py-8" style={{ paddingBottom: 'calc(1.5rem + var(--safe-area-bottom))' }}>
         <div className="container mx-auto px-4 text-center text-xs sm:text-sm text-muted-foreground">
-          © {new Date().getFullYear()} Founder Lessons Database. Built for founders, by founders.
+          © {new Date().getFullYear()} Founder Mode Advice. Built for founders, by founders.
         </div>
       </footer>
       </div>

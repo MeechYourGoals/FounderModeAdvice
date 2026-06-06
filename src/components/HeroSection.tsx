@@ -23,7 +23,7 @@ export const HeroSection = () => {
       <div className="container relative mx-auto px-4 py-12 sm:py-24">
         <div className="max-w-4xl mx-auto text-center space-y-4 sm:space-y-6">
           <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent animate-slide-up">
-            Founder Lessons Database
+            Founder Mode Advice
           </h1>
           <p className="text-base sm:text-xl text-muted-foreground max-w-2xl mx-auto animate-slide-up">
             Extract tactical insights from top founder podcasts. Learn from their crucible moments before making the same mistakes.
