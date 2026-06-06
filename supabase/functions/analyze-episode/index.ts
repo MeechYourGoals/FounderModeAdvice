@@ -686,19 +686,24 @@ Make it tactical and specific to their company stage, industry, and challenges.`
 
   } catch (error) {
     console.error('Error in analyze-episode:', error);
-    
-    // Provide detailed error messages
-    let errorMessage = 'Unknown error occurred';
+
+    // Pass through a small allowlist of user-actionable messages; otherwise return a generic error.
+    let clientMessage = 'Failed to analyze episode. Please try again.';
+    let statusCode = 500;
     if (error instanceof Error) {
-      errorMessage = error.message;
-    } else if (typeof error === 'object' && error !== null) {
-      errorMessage = JSON.stringify(error);
+      const msg = error.message;
+      const safePrefixes = [
+        'Episode URL', 'Invalid URL', 'Invalid podcast', 'Unsupported URL',
+        'Episode URL too long', 'Invalid URL protocol',
+      ];
+      if (safePrefixes.some((p) => msg.startsWith(p))) {
+        clientMessage = msg;
+        statusCode = 400;
+      }
     }
-    
-    return new Response(JSON.stringify({ 
-      error: errorMessage
-    }), {
-      status: 500,
+
+    return new Response(JSON.stringify({ error: clientMessage }), {
+      status: statusCode,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
