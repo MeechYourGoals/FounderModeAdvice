@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Loader2, Sparkles, ArrowLeft, Zap, FastForward } from "lucide-react";
+import { Loader2, ArrowLeft, Zap, FastForward } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useSubscription } from "@/contexts/SubscriptionContext";
@@ -11,14 +11,14 @@ import { StartupProfileForm } from "./StartupProfileForm";
 import { UpgradePrompt } from "./subscription";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 
-const POPULAR_PODCASTS = [
-  "Crucible Moments",
-  "Founders",
+const POPULAR_SOURCES = [
+  "TED",
   "Y Combinator",
   "a16z",
   "How I Built This",
   "Acquired",
   "20VC",
+  "Lenny's Podcast",
 ];
 
 interface SavedProfile {
@@ -265,45 +265,44 @@ export const AnalysisForm = () => {
 
       <form onSubmit={handleEpisodeSubmit} className="space-y-6">
         <div className="space-y-2 text-center">
-          <h2 className="text-2xl font-bold flex items-center justify-center gap-2">
-            <Sparkles className="w-6 h-6 text-primary" />
-            Analyze New Episode
+          <h2 className="text-2xl font-bold text-center">
+            Analyze New Video
           </h2>
           <p className="text-muted-foreground">
-            Paste a podcast episode URL and let AI extract the founder lessons
+            Paste any video URL and let AI extract advice tailored to you
           </p>
         </div>
 
         <Tabs value={inputMode} onValueChange={(v) => setInputMode(v as "series" | "url")} className="w-full">
           <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto h-11 sm:h-10">
-            <TabsTrigger value="series" className="text-xs sm:text-sm min-h-[44px] sm:min-h-0">By Podcast Series</TabsTrigger>
+            <TabsTrigger value="series" className="text-xs sm:text-sm min-h-[44px] sm:min-h-0">By Source</TabsTrigger>
             <TabsTrigger value="url" className="text-xs sm:text-sm min-h-[44px] sm:min-h-0">Direct URL</TabsTrigger>
           </TabsList>
           
           <TabsContent value="series" className="space-y-4 mt-6">
             <div className="space-y-2 max-w-xl mx-auto">
               <label htmlFor="podcastNameSeries" className="text-sm font-medium">
-                Podcast Series Name
+                Source / Creator
               </label>
               <Input
                 id="podcastNameSeries"
-                placeholder="e.g., Crucible Moments, How I Built This"
+                placeholder="e.g., a show, channel, or speaker's name"
                 value={podcastName}
                 onChange={(e) => setPodcastName(e.target.value)}
                 disabled={isAnalyzing}
-                list="popular-podcasts"
+                list="popular-sources"
                 className="text-center"
               />
-              <datalist id="popular-podcasts">
-                {POPULAR_PODCASTS.map((podcast) => (
-                  <option key={podcast} value={podcast} />
+              <datalist id="popular-sources">
+                {POPULAR_SOURCES.map((source) => (
+                  <option key={source} value={source} />
                 ))}
               </datalist>
             </div>
-            
+
             <div className="space-y-2 max-w-xl mx-auto">
               <label htmlFor="episodeUrlSeries" className="text-sm font-medium">
-                Episode URL
+                Video URL
               </label>
               <Input
                 id="episodeUrlSeries"
@@ -320,19 +319,19 @@ export const AnalysisForm = () => {
           <TabsContent value="url" className="space-y-4 mt-6">
             <div className="space-y-2 max-w-xl mx-auto">
               <label htmlFor="episodeUrlDirect" className="text-sm font-medium text-center block">
-                Episode URL
+                Video URL
               </label>
               <Input
                 id="episodeUrlDirect"
                 type="url"
-                placeholder="https://youtube.com/watch?v=... or Spotify link"
+                placeholder="https://youtube.com/watch?v=... or any video link"
                 value={episodeUrl}
                 onChange={(e) => setEpisodeUrl(e.target.value)}
                 disabled={isAnalyzing}
                 className="text-center text-base sm:text-lg py-5 sm:py-6 min-h-[48px]"
               />
               <p className="text-xs text-muted-foreground text-center">
-                Podcast series will be auto-detected
+                Source will be auto-detected
               </p>
             </div>
           </TabsContent>
@@ -357,7 +356,7 @@ export const AnalysisForm = () => {
               </>
             ) : (
               <>
-                <Sparkles className="mr-2 h-4 w-4" />
+                <Zap className="mr-2 h-4 w-4" />
                 Analyze (Personalized)
               </>
             )}

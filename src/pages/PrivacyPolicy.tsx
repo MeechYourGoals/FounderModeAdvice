@@ -25,7 +25,7 @@ const PrivacyPolicy = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">1. Introduction</h2>
             <p>
-              Welcome to Podvisor. We respect your privacy and are committed to protecting your personal data.
+              Welcome to Founder Mode Advice. We respect your privacy and are committed to protecting your personal data.
               This privacy policy will inform you about how we look after your personal data when you use our
               application and tell you about your privacy rights and how the law protects you.
             </p>
@@ -38,10 +38,30 @@ const PrivacyPolicy = () => {
               grouped together as follows:
             </p>
             <ul className="list-disc pl-6 space-y-2">
-              <li><strong>Identity Data</strong> includes email address.</li>
-              <li><strong>Technical Data</strong> includes internet protocol (IP) address, your login data, browser type and version, time zone setting and location, browser plug-in types and versions, operating system and platform, and other technology on the devices you use to access this app.</li>
+              <li><strong>Account Data</strong> includes your email address and, if you sign in with a third-party provider, the basic profile information that provider shares (such as name and email).</li>
+              <li><strong>Technical Data</strong> includes internet protocol (IP) address, your login data, browser type and version, time zone setting and location, operating system and platform, and other technology on the devices you use to access this app.</li>
               <li><strong>Usage Data</strong> includes information about how you use our app.</li>
+              <li><strong>Advisory Content</strong> includes the video links you submit, your startup profiles, and the AI-generated advice and notes you save within the app.</li>
             </ul>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-semibold mb-4">2a. Sign-In Providers</h2>
+            <p>
+              We offer sign-in through third-party OAuth providers (such as Google). When you choose to sign in
+              this way, the provider authenticates you and shares a limited set of profile information (such as
+              your email) with us so we can create and secure your account. We do not receive your password.
+              Your use of the provider is also governed by that provider's own privacy policy.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-semibold mb-4">2b. Cookies &amp; Local Storage</h2>
+            <p>
+              We use browser local storage and similar technologies to keep you signed in and to remember basic
+              preferences. These are essential to the core functionality of the app. For more detail, see our{" "}
+              <a href="/cookies" className="underline hover:text-primary">Cookie Policy</a>.
+            </p>
           </section>
 
           <section>
@@ -85,7 +105,17 @@ const PrivacyPolicy = () => {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">6. Your Legal Rights</h2>
+            <h2 className="text-2xl font-semibold mb-4">6. AI &amp; Advisory Interactions</h2>
+            <p>
+              Founder Mode Advice uses AI to analyze the videos and context you provide and to generate advice
+              tailored to your situation. The video links, startup profiles, and generated advice you save are
+              stored to provide the service to you. AI-generated advice is informational only and is not
+              professional, legal, financial, or investment advice.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-semibold mb-4">7. Your Legal Rights</h2>
             <p>
               Under certain circumstances, you have rights under data protection laws in relation to your
               personal data, including the right to request access, correction, erasure, restriction,
@@ -93,15 +123,16 @@ const PrivacyPolicy = () => {
             </p>
             <p>
               You can delete your account and all associated data at any time through the Account settings
-              within the app.
+              within the app, or by following the steps on our{" "}
+              <a href="/account-deletion" className="underline hover:text-primary">Account Deletion</a> page.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">7. Contact Us</h2>
+            <h2 className="text-2xl font-semibold mb-4">8. Contact Us</h2>
             <p>
               If you have any questions about this privacy policy or our privacy practices, please contact
-              us at support@podvisor.app.
+              us at <a href="mailto:CA@saintmarlolabs.com" className="underline hover:text-primary">CA@saintmarlolabs.com</a>.
             </p>
           </section>
         </div>

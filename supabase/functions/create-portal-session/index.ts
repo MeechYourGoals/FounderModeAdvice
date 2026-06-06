@@ -38,7 +38,7 @@ serve(async (req) => {
       throw new Error('No Stripe customer found for this user');
     }
 
-    const appUrl = Deno.env.get('APP_URL') || 'https://podvisor.app';
+    const appUrl = Deno.env.get('APP_URL') || 'https://foundermodeadvice.com';
 
     // Create customer portal session
     const portalResponse = await fetch('https://api.stripe.com/v1/billing_portal/sessions', {

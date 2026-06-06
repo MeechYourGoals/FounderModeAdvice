@@ -25,7 +25,7 @@ const TermsOfService = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">1. Agreement to Terms</h2>
             <p>
-              By accessing or using Podvisor, you agree to be bound by these Terms of Service.
+              By accessing or using Founder Mode Advice, you agree to be bound by these Terms of Service.
               If you disagree with any part of the terms, then you may not access the service.
             </p>
           </section>
@@ -38,15 +38,21 @@ const TermsOfService = () => {
             </p>
             <p>
               At the end of each Billing Cycle, your Subscription will automatically renew under the exact same
-              conditions unless you cancel it or Podvisor cancels it.
+              conditions unless you cancel it or Founder Mode Advice cancels it.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">3. Content</h2>
+            <h2 className="text-2xl font-semibold mb-4">3. Content &amp; AI-Generated Advice</h2>
             <p>
-              Our Service allows you to extract insights and bookmark lessons from podcasts. You are responsible
-              for how you use these insights. The content provided is for informational purposes only.
+              Our Service allows you to submit videos from across the web and uses AI to generate advice and
+              insights tailored to the context you provide. You are responsible for ensuring you have the right
+              to submit any link or content, and for how you use the output.
+            </p>
+            <p>
+              AI-generated advice is provided for informational purposes only. It may be inaccurate, incomplete,
+              or not applicable to your specific circumstances, and it does not constitute professional, legal,
+              financial, or investment advice. You are solely responsible for any decisions you make based on it.
             </p>
           </section>
 
@@ -63,14 +69,14 @@ const TermsOfService = () => {
             <h2 className="text-2xl font-semibold mb-4">5. Intellectual Property</h2>
             <p>
               The Service and its original content, features, and functionality are and will remain the
-              exclusive property of Podvisor and its licensors.
+              exclusive property of Founder Mode Advice and its licensors.
             </p>
           </section>
 
           <section>
             <h2 className="text-2xl font-semibold mb-4">6. Limitation of Liability</h2>
             <p>
-              In no event shall Podvisor, nor its directors, employees, partners, agents, suppliers, or
+              In no event shall Founder Mode Advice, nor its directors, employees, partners, agents, suppliers, or
               affiliates, be liable for any indirect, incidental, special, consequential or punitive damages,
               including without limitation, loss of profits, data, use, goodwill, or other intangible losses.
             </p>
@@ -95,7 +101,8 @@ const TermsOfService = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">9. Contact Us</h2>
             <p>
-              If you have any questions about these Terms, please contact us at support@podvisor.app.
+              If you have any questions about these Terms, please contact us at{" "}
+              <a href="mailto:CA@saintmarlolabs.com" className="underline hover:text-primary">CA@saintmarlolabs.com</a>.
             </p>
           </section>
         </div>

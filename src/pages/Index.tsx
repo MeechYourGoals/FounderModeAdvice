@@ -31,9 +31,10 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { Card } from "@/components/ui/card";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { triggerHapticFeedback } from "@/lib/capacitor";
+import { shouldShowAppAuthFirst } from "@/lib/appMode";
 
 const Index = () => {
   const [selectedEpisodeId, setSelectedEpisodeId] = useState<string | null>(null);
@@ -46,9 +47,10 @@ const Index = () => {
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const isMobile = useMediaQuery("(max-width: 767px)");
 
-  // Show public landing page for non-authenticated users
+  // Unauthenticated: installed app/PWA/native users go straight to the auth screen,
+  // while regular browser visitors still see the marketing homepage.
   if (!loading && !user) {
-    return <PublicLanding />;
+    return shouldShowAppAuthFirst() ? <Navigate to="/auth" replace /> : <PublicLanding />;
   }
 
   if (loading) {
@@ -75,7 +77,7 @@ const Index = () => {
       {!isDesktop ? (
         <div className="glass-nav relative z-50 border-b border-border" style={{ paddingTop: 'var(--safe-area-top)' }}>
           <div className="flex items-center justify-between px-4 py-2">
-            <span className="font-bold text-sm text-primary">Founder Lessons</span>
+            <span className="font-bold text-sm text-primary">Founder Mode Advice</span>
             <div className="flex items-center gap-1">
               <ThemeToggle />
               <DropdownMenu>

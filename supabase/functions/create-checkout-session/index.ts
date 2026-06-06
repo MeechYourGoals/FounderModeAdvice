@@ -76,7 +76,7 @@ serve(async (req) => {
     }
 
     // Get app URL for redirects
-    const appUrl = Deno.env.get('APP_URL') || 'https://podvisor.app';
+    const appUrl = Deno.env.get('APP_URL') || 'https://foundermodeadvice.com';
 
     // Create checkout session
     const sessionResponse = await fetch('https://api.stripe.com/v1/checkout/sessions', {

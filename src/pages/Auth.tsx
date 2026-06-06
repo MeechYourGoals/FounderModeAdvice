@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,43 +7,31 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, X } from "lucide-react";
 import { lovable } from "@/integrations/lovable/index";
 import { triggerHapticFeedback } from "@/lib/capacitor";
+import { isLovablePreview, getOAuthRedirectUrl, shouldShowAppAuthFirst } from "@/lib/appMode";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [appleLoading, setAppleLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Browser visitors get a close control back to the marketing homepage. In an installed
+  // app/PWA, "/" would just redirect back here, so we hide it to avoid a loop.
+  const showClose = !shouldShowAppAuthFirst();
 
   const handleGoogleSignIn = async () => {
     triggerHapticFeedback('light');
     setGoogleLoading(true);
     try {
-      // Check if we're on the published domain (not a preview URL) or in a native app
-      const isPublishedDomain = window.location.hostname === 'startup-podvisor.lovable.app';
-      const isNative = Capacitor.isNativePlatform();
-
-      if (isPublishedDomain || isNative) {
-        // On published domain or native app, bypass auth-bridge and use Supabase directly
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: "google",
-          options: {
-            redirectTo: isNative ? "com.podvisor.app://auth/callback" : window.location.origin,
-            skipBrowserRedirect: true,
-          },
-        });
-        if (error) throw error;
-        if (data?.url) {
-          window.location.href = data.url;
-        }
-      } else {
-        // On preview domains, use Lovable managed auth
+      if (isLovablePreview()) {
+        // Lovable sandbox/preview hosts can't be added to the OAuth allow-list,
+        // so go through the Lovable managed auth bridge.
         const { error } = await lovable.auth.signInWithOAuth("google", {
           redirect_uri: window.location.origin,
         });
@@ -54,6 +41,19 @@ const Auth = () => {
             description: error.message,
             variant: "destructive",
           });
+        }
+      } else {
+        // Published domain, custom domain, native, and localhost use Supabase directly.
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: getOAuthRedirectUrl(),
+            skipBrowserRedirect: true,
+          },
+        });
+        if (error) throw error;
+        if (data?.url) {
+          window.location.href = data.url;
         }
       }
     } catch (error: any) {
@@ -67,47 +67,8 @@ const Auth = () => {
     }
   };
 
-  const handleAppleSignIn = async () => {
-    triggerHapticFeedback('light');
-    setAppleLoading(true);
-    try {
-      const isPublishedDomain = window.location.hostname === 'startup-podvisor.lovable.app';
-      const isNative = Capacitor.isNativePlatform();
-
-      if (isPublishedDomain || isNative) {
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: "apple",
-          options: {
-            redirectTo: isNative ? "com.podvisor.app://auth/callback" : window.location.origin,
-            skipBrowserRedirect: true,
-          },
-        });
-        if (error) throw error;
-        if (data?.url) {
-          window.location.href = data.url;
-        }
-      } else {
-        const { error } = await lovable.auth.signInWithOAuth("apple", {
-          redirect_uri: window.location.origin,
-        });
-        if (error) {
-          toast({
-            title: "Apple sign-in failed",
-            description: error.message,
-            variant: "destructive",
-          });
-        }
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error?.message || "An unexpected error occurred",
-        variant: "destructive",
-      });
-    } finally {
-      setAppleLoading(false);
-    }
-  };
+  // Apple sign-in is hidden until Apple Developer + Supabase are configured.
+  // Restore the button + a handleAppleSignIn handler (mirroring handleGoogleSignIn) when ready.
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -226,6 +187,18 @@ const Auth = () => {
     <div className="relative h-screen flex items-center justify-center p-4" style={{ background: 'var(--gradient-hero)', paddingTop: 'calc(1rem + var(--safe-area-top))', paddingBottom: 'calc(1rem + var(--safe-area-bottom))' }}>
       <div className="pointer-events-none absolute inset-0" style={{ background: 'var(--gradient-mesh)' }} />
       <Card className="glass-strong relative w-full max-w-md max-h-[calc(100vh-2rem-var(--safe-area-top)-var(--safe-area-bottom))] overflow-y-auto rounded-2xl shadow-glass">
+        {showClose && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Close sign in"
+            className="absolute right-2 top-2 h-8 w-8 rounded-full text-muted-foreground hover:text-foreground"
+            onClick={() => navigate("/")}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Welcome</CardTitle>
           <CardDescription className="text-center">
@@ -348,22 +321,6 @@ const Auth = () => {
                   )}
                   Continue with Google
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  disabled={appleLoading}
-                  onClick={handleAppleSignIn}
-                >
-                  {appleLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
-                    </svg>
-                  )}
-                  Continue with Apple
-                </Button>
               </form>
             </TabsContent>
             
@@ -428,22 +385,6 @@ const Auth = () => {
                     </svg>
                   )}
                   Continue with Google
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  disabled={appleLoading}
-                  onClick={handleAppleSignIn}
-                >
-                  {appleLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
-                    </svg>
-                  )}
-                  Continue with Apple
                 </Button>
               </form>
             </TabsContent>

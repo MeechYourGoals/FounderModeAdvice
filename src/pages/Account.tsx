@@ -279,7 +279,7 @@ const Account = () => {
                 </div>
               </Link>
 
-              <a href="mailto:support@podvisor.app" onClick={() => triggerHapticFeedback('light')}>
+              <a href="mailto:CA@saintmarlolabs.com" onClick={() => triggerHapticFeedback('light')}>
                 <div className="flex items-center justify-between p-2 rounded-lg hover:bg-muted transition-colors">
                   <div className="flex items-center gap-3">
                     <LifeBuoy className="h-5 w-5 text-muted-foreground" />

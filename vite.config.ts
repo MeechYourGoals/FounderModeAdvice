@@ -17,9 +17,9 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "apple-touch-icon.png", "pwa-192x192.png"],
       manifest: {
-        name: "Founder Lessons Database",
-        short_name: "Founder Lessons",
-        description: "AI-powered platform to extract tactical founder lessons from podcast episodes.",
+        name: "Founder Mode Advice",
+        short_name: "Founder Mode",
+        description: "Turn any video on the web into tactical advice tailored to you, your situation, and your startup.",
         theme_color: "#16a34a",
         background_color: "#000000",
         display: "standalone",

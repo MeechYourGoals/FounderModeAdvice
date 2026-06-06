@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.podvisor.app',
-  appName: 'Podvisor',
+  appId: 'com.foundermodeadvice.app',
+  appName: 'Founder Mode Advice',
   webDir: 'dist',
   server: {
     androidScheme: 'https',
