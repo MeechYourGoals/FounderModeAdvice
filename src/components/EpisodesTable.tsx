@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import {
   ExternalLink, TrendingUp, MoreVertical, Eye, Bookmark, Download, Copy,
   Youtube, Headphones, Trash2, X, ArrowUpDown, ArrowUp, ArrowDown,
-  FolderPlus, Folder, ChevronLeft, ChevronRight, Filter, Search
+  FolderPlus, Folder, ChevronLeft, ChevronRight, Filter, Search,
+  Tag, LayoutList, CalendarDays
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -65,8 +66,9 @@ interface EpisodesTableProps {
   onSelectEpisode: (id: string) => void;
 }
 
-type SortColumn = "title" | "company" | "founder" | "stage" | "industry" | "created_at";
+type SortColumn = "title" | "company" | "founder" | "stage" | "industry" | "created_at" | "release_date" | "tag_count";
 type SortDirection = "asc" | "desc";
+type ViewMode = "chronological" | "tag" | "folder";
 
 const PAGE_SIZE = 15;
 
@@ -100,18 +102,36 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
   const [manageFoldersOpen, setManageFoldersOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
 
-  // Initialize founder filter from URL
+  // Tags & view mode
+  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<ViewMode>("chronological");
+
+
+  // Initialize filters & view from URL
   useEffect(() => {
     const founder = searchParams.get("founder");
-    if (founder) {
-        setFounderFilter(founder);
-        setShowFilters(true);
+    if (founder) { setFounderFilter(founder); setShowFilters(true); }
+    const tagsParam = searchParams.get("tags");
+    if (tagsParam) setSelectedTags(new Set(tagsParam.split(",").filter(Boolean)));
+    const viewParam = searchParams.get("view");
+    if (viewParam === "tag" || viewParam === "folder" || viewParam === "chronological") {
+      setViewMode(viewParam);
     }
-  }, [searchParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const parseIndustries = (industryString: string | null | undefined): string[] => {
     if (!industryString) return [];
     return [...new Set(industryString.split(/[,\/]/).map(i => i.trim()).filter(Boolean))];
+  };
+
+  const getEpisodeTags = (ep: Episode): string[] => {
+    const names = new Set<string>();
+    ep.lessons?.forEach(l => l.lesson_tags?.forEach(lt => {
+      const n = lt.tags?.name?.trim();
+      if (n) names.add(n);
+    }));
+    return Array.from(names);
   };
 
   const toggleIndustryFilter = (industry: string) => {
@@ -123,6 +143,31 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
       return newSet;
     });
     setCurrentPage(1);
+  };
+
+  const toggleTag = (name: string) => {
+    triggerHapticFeedback('light');
+    setSelectedTags(prev => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name); else next.add(name);
+      setSearchParams(p => {
+        if (next.size === 0) p.delete("tags");
+        else p.set("tags", Array.from(next).join(","));
+        return p;
+      });
+      return next;
+    });
+    setCurrentPage(1);
+  };
+
+  const changeViewMode = (mode: ViewMode) => {
+    triggerHapticFeedback('light');
+    setViewMode(mode);
+    setSearchParams(p => {
+      if (mode === "chronological") p.delete("view");
+      else p.set("view", mode);
+      return p;
+    });
   };
 
   // Derive unique options
@@ -142,6 +187,15 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     const s = new Set<string>();
     allEpisodes.forEach(ep => ep.release_date && s.add(ep.release_date.slice(0, 4)));
     return Array.from(s).sort().reverse();
+  }, [allEpisodes]);
+
+  // Unique tags with counts, sorted by frequency desc
+  const uniqueTags = useMemo(() => {
+    const counts = new Map<string, number>();
+    allEpisodes.forEach(ep => {
+      getEpisodeTags(ep).forEach(t => counts.set(t, (counts.get(t) || 0) + 1));
+    });
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   }, [allEpisodes]);
 
   // Filter → Sort → Paginate
@@ -164,6 +218,12 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
       result = result.filter(ep => episodeIdsInFolder.includes(ep.id));
     }
 
+    // Tag Filter (OR semantics, case-insensitive)
+    if (selectedTags.size > 0) {
+      const lower = new Set(Array.from(selectedTags).map(t => t.toLowerCase()));
+      result = result.filter(ep => getEpisodeTags(ep).some(t => lower.has(t.toLowerCase())));
+    }
+
     // New Filters
     if (founderFilter && founderFilter !== "all") {
         result = result.filter(ep => ep.founder_names?.includes(founderFilter));
@@ -176,11 +236,16 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     }
 
     return result;
-  }, [allEpisodes, selectedIndustries, selectedFolderId, folderAssignments, founderFilter, companyFilter, yearFilter]);
+  }, [allEpisodes, selectedIndustries, selectedTags, selectedFolderId, folderAssignments, founderFilter, companyFilter, yearFilter]);
 
   const sortedEpisodes = useMemo(() => {
     const sorted = [...filteredEpisodes];
     sorted.sort((a, b) => {
+      if (sortColumn === "tag_count") {
+        const av = getEpisodeTags(a).length;
+        const bv = getEpisodeTags(b).length;
+        return sortDirection === "asc" ? av - bv : bv - av;
+      }
       let aVal = "";
       let bVal = "";
       switch (sortColumn) {
@@ -189,6 +254,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
         case "founder": aVal = a.founder_names || ""; bVal = b.founder_names || ""; break;
         case "stage": aVal = a.companies?.current_stage || ""; bVal = b.companies?.current_stage || ""; break;
         case "industry": aVal = a.companies?.industry || ""; bVal = b.companies?.industry || ""; break;
+        case "release_date": aVal = a.release_date || a.created_at || ""; bVal = b.release_date || b.created_at || ""; break;
         case "created_at": aVal = a.created_at || ""; bVal = b.created_at || ""; break;
       }
       const cmp = aVal.localeCompare(bVal);
@@ -364,11 +430,27 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     fetchEpisodes();
     fetchFolders();
     const handleEpisodeAnalyzed = () => { fetchEpisodes(); };
+    const handleHomeReset = () => {
+      setSelectedTags(new Set());
+      setSelectedIndustries(new Set());
+      setSelectedFolderId(null);
+      setFounderFilter("all");
+      setCompanyFilter("all");
+      setYearFilter("all");
+      setViewMode("chronological");
+      setCurrentPage(1);
+      setSearchParams({});
+    };
     window.addEventListener("episodeAnalyzed", handleEpisodeAnalyzed);
-    return () => window.removeEventListener("episodeAnalyzed", handleEpisodeAnalyzed);
+    window.addEventListener("homeReset", handleHomeReset);
+    return () => {
+      window.removeEventListener("episodeAnalyzed", handleEpisodeAnalyzed);
+      window.removeEventListener("homeReset", handleHomeReset);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => { setCurrentPage(1); }, [selectedFolderId, founderFilter, companyFilter, yearFilter]);
+  useEffect(() => { setCurrentPage(1); }, [selectedFolderId, founderFilter, companyFilter, yearFilter, selectedTags, viewMode]);
 
   if (loading) {
     return <Card className="p-6 sm:p-8"><div className="text-center text-muted-foreground">Loading episodes...</div></Card>;
@@ -503,6 +585,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
       setCompanyFilter("all");
       setYearFilter("all");
       setSelectedIndustries(new Set());
+      setSelectedTags(new Set());
       setSearchParams({});
   };
 
