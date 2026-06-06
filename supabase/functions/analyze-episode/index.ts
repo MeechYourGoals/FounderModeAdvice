@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { extractYouTubeTranscript, extractYouTubeVideoId, isYouTubeUrl } from "../_shared/youtubeTranscript.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -59,13 +60,16 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get user from auth header if userId not provided
-    let authenticatedUserId = userId;
+    // Prefer the authenticated user from the bearer token. Do not trust a client-supplied userId
+    // unless no auth header exists for legacy callers.
+    let authenticatedUserId: string | undefined;
     const authHeader = req.headers.get('Authorization');
-    if (authHeader && !authenticatedUserId) {
+    if (authHeader) {
       const token = authHeader.replace('Bearer ', '');
       const { data: { user } } = await supabase.auth.getUser(token);
       authenticatedUserId = user?.id;
+    } else {
+      authenticatedUserId = userId;
     }
 
     // Check subscription limits if we have a user (skip for Founder/Super Admin)
@@ -113,15 +117,9 @@ serve(async (req) => {
     // Extract video ID for YouTube URLs
     let videoId = '';
     let videoTitle = '';
-    const isYouTube = parsedUrl.hostname.includes('youtube.com') || parsedUrl.hostname === 'youtu.be';
+    const isYouTube = isYouTubeUrl(episodeUrl);
     if (isYouTube) {
-      if (parsedUrl.hostname === 'youtu.be') {
-        videoId = parsedUrl.pathname.slice(1).split('/')[0];
-      } else if (parsedUrl.pathname.startsWith('/shorts/')) {
-        videoId = parsedUrl.pathname.split('/shorts/')[1]?.split('/')[0] || '';
-      } else {
-        videoId = parsedUrl.searchParams.get('v') || '';
-      }
+      videoId = extractYouTubeVideoId(episodeUrl);
 
       try {
         const ytResponse = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(episodeUrl)}&format=json`);
@@ -133,6 +131,8 @@ serve(async (req) => {
         console.log('Could not fetch YouTube metadata:', e);
       }
     }
+
+    const transcript = isYouTube ? await extractYouTubeTranscript(videoId) : null;
 
     // Step 2: Use AI to analyze the episode with tool calling
     const systemPrompt = `You are an expert at extracting founder lessons from podcast episodes. 
@@ -152,6 +152,8 @@ CRITICAL REQUIREMENTS:
 URL: ${episodeUrl}
 ${videoTitle ? `Title: ${videoTitle}` : ''}
 ${podcastName ? `Podcast Series: ${podcastName}` : 'Podcast Series: Please extract from the episode'}
+${transcript?.transcriptText ? `Transcript excerpt for grounding:
+${transcript.transcriptText.slice(0, 30000)}` : 'Transcript excerpt: Not available; analyze only if the model can access the public episode content.'}
 
 INSTRUCTIONS:
 1. Watch/listen to the episode and extract real insights from the actual content
@@ -354,6 +356,22 @@ INSTRUCTIONS:
     if (episodeError) {
       console.error('Error creating episode:', episodeError);
       throw new Error(`Failed to create episode: ${episodeError.message} (${episodeError.code})`);
+    }
+
+    if (transcript?.transcriptText) {
+      const { error: transcriptError } = await supabase
+        .from('episode_transcripts')
+        .upsert({
+          episode_id: episode.id,
+          transcript_text: transcript.transcriptText,
+          language: transcript.language,
+          source: transcript.source,
+          fetched_at: new Date().toISOString(),
+        }, { onConflict: 'episode_id' });
+
+      if (transcriptError) {
+        console.warn('Could not save transcript for episode:', transcriptError);
+      }
     }
 
     // Increment user's monthly analysis count
