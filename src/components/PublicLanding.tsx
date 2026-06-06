@@ -1,4 +1,4 @@
-import { Brain, TrendingUp, Target, Sparkles, ArrowRight, MessageSquare, ShieldCheck } from "lucide-react";
+import { Brain, TrendingUp, Target, Sparkles, ArrowRight, MessageSquare, ShieldCheck, Check, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
