@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { HeroSection } from "@/components/HeroSection";
 import { AnalysisForm } from "@/components/AnalysisForm";
 import { EpisodesTable } from "@/components/EpisodesTable";
@@ -8,7 +8,7 @@ import { ProfileSettings } from "@/components/ProfileSettings";
 import { PublicLanding } from "@/components/PublicLanding";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/contexts/SubscriptionContext";
-import { Loader2, Bookmark, LogOut, Briefcase, Menu, User } from "lucide-react";
+import { Loader2, Bookmark, LogOut, Briefcase, Menu, User, Users, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -31,12 +31,13 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { Card } from "@/components/ui/card";
-import { useNavigate, Navigate } from "react-router-dom";
+import { useNavigate, Navigate, useLocation } from "react-router-dom";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 import { shouldShowAppAuthFirst } from "@/lib/appMode";
 import { OnboardingDialog } from "@/components/onboarding/OnboardingDialog";
 import { useOnboarding } from "@/hooks/useOnboarding";
+import { ProfileSwitcher } from "@/components/ProfileSwitcher";
 
 const Index = () => {
   const [selectedEpisodeId, setSelectedEpisodeId] = useState<string | null>(null);
@@ -47,8 +48,49 @@ const Index = () => {
   const { subscription } = useSubscription();
   const { loading: onboardingLoading, completed: onboardingCompleted, complete: completeOnboarding } = useOnboarding();
   const navigate = useNavigate();
+  const location = useLocation();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const isMobile = useMediaQuery("(max-width: 767px)");
+  const analyzeRef = useRef<HTMLDivElement>(null);
+
+  const scrollToAnalyze = () => {
+    analyzeRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const openPanel = (tab: "profiles" | "bookmarks") => {
+    setActiveTab(tab);
+    setProfileOpen(true);
+  };
+
+  // Respond to the bottom-nav tray (router state) — open a panel or jump to Analyze.
+  useEffect(() => {
+    const state = location.state as { panel?: string; action?: string } | null;
+    if (!state) return;
+    if (state.panel === "profiles" || state.panel === "bookmarks") {
+      openPanel(state.panel);
+    } else if (state.action === "analyze") {
+      setProfileOpen(false);
+      setSelectedEpisodeId(null);
+      requestAnimationFrame(scrollToAnalyze);
+    }
+    // Clear the state so the same tap can re-trigger later.
+    navigate(".", { replace: true, state: null });
+  }, [location.state, navigate]);
+
+  // Respond to same-page triggers (ProfileSwitcher "manage", empty-state CTAs).
+  useEffect(() => {
+    const openProfiles = () => openPanel("profiles");
+    const openBookmarks = () => openPanel("bookmarks");
+    const openAnalyze = () => { setSelectedEpisodeId(null); requestAnimationFrame(scrollToAnalyze); };
+    window.addEventListener("openProfiles", openProfiles);
+    window.addEventListener("openBookmarks", openBookmarks);
+    window.addEventListener("openAnalyze", openAnalyze);
+    return () => {
+      window.removeEventListener("openProfiles", openProfiles);
+      window.removeEventListener("openBookmarks", openBookmarks);
+      window.removeEventListener("openAnalyze", openAnalyze);
+    };
+  }, []);
 
   // Unauthenticated: installed app/PWA/native users go straight to the auth screen,
   // while regular browser visitors still see the marketing homepage.
@@ -85,8 +127,9 @@ const Index = () => {
       {!isDesktop ? (
         <div className="glass-nav relative z-50 border-b border-border" style={{ paddingTop: 'var(--safe-area-top)' }}>
           <div className="flex items-center justify-between px-4 py-2">
-            <button onClick={() => { triggerHapticFeedback('light'); setSelectedEpisodeId(null); window.dispatchEvent(new Event("homeReset")); }} className="font-bold text-sm text-primary hover:opacity-80 transition-opacity">Founder Mode Advice</button>
+            <button onClick={() => { triggerHapticFeedback('light'); setSelectedEpisodeId(null); window.dispatchEvent(new Event("homeReset")); }} className="font-bold text-sm text-primary hover:opacity-80 transition-opacity shrink-0">Founder Mode Advice</button>
             <div className="flex items-center gap-1">
+              <ProfileSwitcher compact />
               <ThemeToggle />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -97,15 +140,23 @@ const Index = () => {
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem onClick={() => { triggerHapticFeedback('light'); handleToggle("profiles"); }}>
                     <Briefcase className="h-4 w-4 mr-2" />
-                    Startup Profiles
+                    Business Profiles
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => { triggerHapticFeedback('light'); handleToggle("bookmarks"); }}>
                     <Bookmark className="h-4 w-4 mr-2" />
                     Bookmarks
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { triggerHapticFeedback('light'); setProfileOpen(false); navigate("/founders"); }}>
+                    <Users className="h-4 w-4 mr-2" />
+                    Founders Directory
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => { triggerHapticFeedback('light'); setProfileOpen(false); navigate("/account"); }}>
                     <User className="h-4 w-4 mr-2" />
                     Account
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { triggerHapticFeedback('light'); setProfileOpen(false); navigate("/settings"); }}>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Settings
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => { triggerHapticFeedback('light'); signOut(); }}>
                     <LogOut className="h-4 w-4 mr-2" />
@@ -118,10 +169,16 @@ const Index = () => {
         </div>
       ) : (
         /* Desktop nav */
-        <div className="fixed top-4 right-4 z-50 flex gap-2">
+        <div className="fixed top-4 right-4 z-50 flex gap-2 items-center">
+          <ProfileSwitcher />
+
           <Button variant="outline" size="sm" onClick={() => signOut()}>
             <LogOut className="h-4 w-4 mr-2" />
             Sign Out
+          </Button>
+
+          <Button variant="outline" size="sm" onClick={() => navigate("/settings")} aria-label="Settings">
+            <Settings className="h-4 w-4" />
           </Button>
 
           <Popover>
@@ -135,7 +192,7 @@ const Index = () => {
                 }}
               >
                 <Briefcase className="h-4 w-4 mr-2" />
-                Startup Profiles
+                Business Profiles
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-[350px] mr-4 p-0" align="end" sideOffset={8}>
@@ -184,14 +241,15 @@ const Index = () => {
         </div>
       )}
 
-      {/* Mobile/Tablet Sheet */}
-      {!isDesktop && (
+      {/* Slide-over panel for Profiles/Bookmarks (used by the bottom-nav tray,
+          profile switcher, and empty-state CTAs across all viewports). */}
+      {(
         <Sheet open={profileOpen} onOpenChange={setProfileOpen}>
           <SheetContent side="right" className="w-full max-w-[100vw] sm:w-[400px] safe-top safe-bottom">
             <SheetHeader>
-              <SheetTitle>My Bookmarks & Settings</SheetTitle>
+              <SheetTitle>Profiles & Bookmarks</SheetTitle>
               <SheetDescription>
-                Manage your bookmarks and startup profiles
+                Manage your business profiles and bookmark folders
               </SheetDescription>
             </SheetHeader>
             <ScrollArea className="h-[calc(100vh-120px)] pr-4 mt-4">
@@ -213,7 +271,9 @@ const Index = () => {
       <div className="despia-scroll">
         <HeroSection />
         <div className="container mx-auto px-4 py-8 sm:py-12 space-y-8 sm:space-y-12 max-w-6xl pb-24 md:pb-8" style={{ paddingBottom: isMobile ? 'calc(5rem + var(--safe-area-bottom))' : undefined }}>
-          <AnalysisForm />
+          <div ref={analyzeRef} className="scroll-mt-20">
+            <AnalysisForm />
+          </div>
           {selectedEpisodeId ? (
             <EpisodeDetail
               episodeId={selectedEpisodeId}

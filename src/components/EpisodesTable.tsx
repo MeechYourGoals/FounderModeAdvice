@@ -30,6 +30,8 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { triggerHapticFeedback } from "@/lib/capacitor";
+import { LibraryEmptyState } from "@/components/LibraryEmptyState";
+import { getLibraryPrefs, setLibraryPrefs } from "@/lib/libraryPrefs";
 
 interface Episode {
   id: string;
@@ -82,9 +84,12 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
   const { toast } = useToast();
   const isMobile = useMediaQuery("(max-width: 767px)");
 
-  // Sorting
-  const [sortColumn, setSortColumn] = useState<SortColumn>("created_at");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  // Sorting (defaults come from persisted Library preferences)
+  const [sortColumn, setSortColumn] = useState<SortColumn>(() => getLibraryPrefs().sortColumn);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(() => getLibraryPrefs().sortDirection);
+
+  // Free-text search across title / founder / company
+  const [search, setSearch] = useState("");
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -104,7 +109,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
 
   // Tags & view mode
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
-  const [viewMode, setViewMode] = useState<ViewMode>("chronological");
+  const [viewMode, setViewMode] = useState<ViewMode>(() => getLibraryPrefs().viewMode);
 
 
   // Initialize filters & view from URL
@@ -235,8 +240,18 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
         result = result.filter(ep => ep.release_date?.startsWith(yearFilter));
     }
 
+    // Free-text search across title, founder(s), and company
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      result = result.filter(ep =>
+        ep.title?.toLowerCase().includes(q) ||
+        ep.founder_names?.toLowerCase().includes(q) ||
+        ep.companies?.name?.toLowerCase().includes(q)
+      );
+    }
+
     return result;
-  }, [allEpisodes, selectedIndustries, selectedTags, selectedFolderId, folderAssignments, founderFilter, companyFilter, yearFilter]);
+  }, [allEpisodes, selectedIndustries, selectedTags, selectedFolderId, folderAssignments, founderFilter, companyFilter, yearFilter, search]);
 
   const sortedEpisodes = useMemo(() => {
     const sorted = [...filteredEpisodes];
@@ -450,7 +465,12 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => { setCurrentPage(1); }, [selectedFolderId, founderFilter, companyFilter, yearFilter, selectedTags, viewMode]);
+  useEffect(() => { setCurrentPage(1); }, [selectedFolderId, founderFilter, companyFilter, yearFilter, selectedTags, viewMode, search]);
+
+  // Remember the user's sort + view choices as their default next time.
+  useEffect(() => {
+    setLibraryPrefs({ sortColumn, sortDirection, viewMode });
+  }, [sortColumn, sortDirection, viewMode]);
 
   if (loading) {
     return <Card className="p-6 sm:p-8"><div className="text-center text-muted-foreground">Loading episodes...</div></Card>;
@@ -473,12 +493,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
   };
 
   if (allEpisodes.length === 0) {
-    return (
-      <Card className="p-8 sm:p-12 text-center">
-        <h3 className="text-lg sm:text-xl font-semibold mb-2">No episodes analyzed yet</h3>
-        <p className="text-muted-foreground text-sm sm:text-base">Start by analyzing your first podcast episode above</p>
-      </Card>
-    );
+    return <LibraryEmptyState />;
   }
 
   const startIdx = (currentPage - 1) * PAGE_SIZE + 1;
@@ -629,6 +644,26 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                 <span className="hidden sm:inline">Export All</span>
               </Button>
             </div>
+          </div>
+
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by title, founder, or company..."
+              className="pl-9 pr-9 h-9"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
 
           {/* Expanded Filters */}
@@ -971,6 +1006,16 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                 })}
               </TableBody>
             </Table>
+          </div>
+        )}
+
+        {/* No results (filters/search exclude everything) */}
+        {filteredEpisodes.length === 0 && (
+          <div className="p-8 text-center text-sm text-muted-foreground">
+            No videos match your search or filters.
+            <Button variant="link" size="sm" onClick={() => { setSearch(""); clearFilters(); }}>
+              Clear
+            </Button>
           </div>
         )}
 
