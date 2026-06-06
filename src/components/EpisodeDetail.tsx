@@ -3,10 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, ExternalLink, TrendingUp, Target, Lightbulb, RefreshCw, Loader2, Plus, X, Zap } from "lucide-react";
+import { ArrowLeft, ExternalLink, TrendingUp, Target, Lightbulb, RefreshCw, Loader2, Plus, X } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useSubscription } from "@/contexts/SubscriptionContext";
+import { VideoChatSheet } from "@/components/VideoChatSheet";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -67,6 +68,7 @@ interface Episode {
   release_date: string | null;
   url: string;
   founder_names: string | null;
+  analyzed_by: string | null;
   companies?: {
     name: string;
     founding_year: number | null;
@@ -183,15 +185,19 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
   const [personalizedInsights, setPersonalizedInsights] = useState<PersonalizedInsight[]>([]);
   const [loading, setLoading] = useState(true);
   const [reanalyzing, setReanalyzing] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { toast } = useToast();
   const { canAnalyzeVideo, refreshSubscription } = useSubscription();
 
   const fetchEpisodeDetails = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id || null);
+
       const { data: episodeData, error: episodeError } = await supabase
         .from('episodes')
         .select(`
-          id, title, release_date, url, founder_names,
+          id, title, release_date, url, founder_names, analyzed_by,
           companies (name, founding_year, current_stage, funding_raised, valuation, employee_count, industry, status)
         `)
         .eq('id', episodeId)
@@ -379,15 +385,20 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
                 </p>
               )}
             </div>
-            <div className="flex gap-2 w-full sm:w-auto">
-              <Button asChild size="sm" className="sm:size-default flex-1 sm:flex-initial">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <div className="flex gap-2 w-full sm:w-auto">
+                {episode.analyzed_by === currentUserId && (
+                  <VideoChatSheet videoId={episode.id} videoTitle={episode.title} />
+                )}
+                <Button asChild size="sm" className="sm:size-default flex-1 sm:flex-initial">
                 <a href={episode.url} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="w-4 h-4 mr-2" />
                   {episode.url.includes('youtube.com') || episode.url.includes('youtu.be') 
                     ? 'Watch Episode' 
                     : 'Listen Now'}
                 </a>
-              </Button>
+                </Button>
+              </div>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="outline" size="sm" className="sm:size-default" disabled={reanalyzing}>

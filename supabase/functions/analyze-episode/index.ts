@@ -7,6 +7,75 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const decodeHtml = (value: string) =>
+  value
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+
+const extractYouTubeTranscript = async (videoId: string) => {
+  if (!videoId) return null;
+
+  try {
+    const watchResponse = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+      headers: { 'Accept-Language': 'en-US,en;q=0.9' },
+    });
+
+    if (!watchResponse.ok) return null;
+
+    const watchHtml = await watchResponse.text();
+    const playerMatch = watchHtml.match(/ytInitialPlayerResponse\s*=\s*(\{.+?\});/s);
+    if (!playerMatch?.[1]) return null;
+
+    const playerResponse = JSON.parse(playerMatch[1]);
+    const tracks = playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
+    if (!Array.isArray(tracks) || tracks.length === 0) return null;
+
+    const preferredTrack =
+      tracks.find((track: any) => track.languageCode?.toLowerCase().startsWith('en')) || tracks[0];
+
+    const transcriptUrl = preferredTrack.baseUrl;
+    if (!transcriptUrl) return null;
+
+    const transcriptResponse = await fetch(`${transcriptUrl}&fmt=json3`);
+    if (!transcriptResponse.ok) return null;
+
+    const rawTranscript = await transcriptResponse.text();
+    let transcriptText = '';
+
+    try {
+      const json = JSON.parse(rawTranscript);
+      transcriptText = (json.events || [])
+        .flatMap((event: any) => event.segs || [])
+        .map((segment: any) => segment.utf8 || '')
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    } catch {
+      transcriptText = rawTranscript
+        .replace(/<text[^>]*>/g, ' ')
+        .replace(/<\/text>/g, ' ')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      transcriptText = decodeHtml(transcriptText);
+    }
+
+    if (!transcriptText || transcriptText.length < 200) return null;
+
+    return {
+      transcriptText,
+      language: preferredTrack.languageCode || null,
+      source: preferredTrack.kind === 'asr' ? 'youtube_auto_captions' : 'youtube_captions',
+    };
+  } catch (error) {
+    console.warn('Could not extract YouTube transcript:', error);
+    return null;
+  }
+};
+
 // Tier limits configuration
 const TIER_LIMITS = {
   free: { analyses: 4 },
@@ -59,13 +128,16 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get user from auth header if userId not provided
-    let authenticatedUserId = userId;
+    // Prefer the authenticated user from the bearer token. Do not trust a client-supplied userId
+    // unless no auth header exists for legacy callers.
+    let authenticatedUserId: string | undefined;
     const authHeader = req.headers.get('Authorization');
-    if (authHeader && !authenticatedUserId) {
+    if (authHeader) {
       const token = authHeader.replace('Bearer ', '');
       const { data: { user } } = await supabase.auth.getUser(token);
       authenticatedUserId = user?.id;
+    } else {
+      authenticatedUserId = userId;
     }
 
     // Check subscription limits if we have a user (skip for Founder/Super Admin)
@@ -134,6 +206,8 @@ serve(async (req) => {
       }
     }
 
+    const transcript = isYouTube ? await extractYouTubeTranscript(videoId) : null;
+
     // Step 2: Use AI to analyze the episode with tool calling
     const systemPrompt = `You are an expert at extracting founder lessons from podcast episodes. 
 Your task is to deeply analyze podcast content and extract comprehensive, actionable insights.
@@ -152,6 +226,8 @@ CRITICAL REQUIREMENTS:
 URL: ${episodeUrl}
 ${videoTitle ? `Title: ${videoTitle}` : ''}
 ${podcastName ? `Podcast Series: ${podcastName}` : 'Podcast Series: Please extract from the episode'}
+${transcript?.transcriptText ? `Transcript excerpt for grounding:
+${transcript.transcriptText.slice(0, 30000)}` : 'Transcript excerpt: Not available; analyze only if the model can access the public episode content.'}
 
 INSTRUCTIONS:
 1. Watch/listen to the episode and extract real insights from the actual content
@@ -354,6 +430,22 @@ INSTRUCTIONS:
     if (episodeError) {
       console.error('Error creating episode:', episodeError);
       throw new Error(`Failed to create episode: ${episodeError.message} (${episodeError.code})`);
+    }
+
+    if (transcript?.transcriptText) {
+      const { error: transcriptError } = await supabase
+        .from('episode_transcripts')
+        .upsert({
+          episode_id: episode.id,
+          transcript_text: transcript.transcriptText,
+          language: transcript.language,
+          source: transcript.source,
+          fetched_at: new Date().toISOString(),
+        }, { onConflict: 'episode_id' });
+
+      if (transcriptError) {
+        console.warn('Could not save transcript for episode:', transcriptError);
+      }
     }
 
     // Increment user's monthly analysis count
