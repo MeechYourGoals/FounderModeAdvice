@@ -1,4 +1,4 @@
-import { Brain, TrendingUp, Target, Sparkles, ArrowRight, MessageSquare, ShieldCheck, Check, X } from "lucide-react";
+import { Brain, TrendingUp, Target, ArrowRight, MessageSquare, ShieldCheck, Check, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -14,7 +14,6 @@ export const PublicLanding = () => {
       <nav className="glass-nav relative z-50 border-b border-border" style={{ paddingTop: 'var(--safe-area-top)' }}>
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             <button onClick={() => navigate("/")} className="font-bold text-sm sm:text-lg hover:text-primary transition-colors">Founder Mode Advice</button>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
@@ -53,7 +52,7 @@ export const PublicLanding = () => {
         />
         <div className="container relative mx-auto px-4 py-16 sm:py-24 md:py-32">
           <div className="max-w-4xl mx-auto text-center space-y-6 sm:space-y-8">
-            <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold tracking-tight bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent animate-slide-up">
+            <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold tracking-tight text-foreground animate-slide-up">
               VC-grade insight without VC access
             </h1>
             <p className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto animate-slide-up">
@@ -108,7 +107,7 @@ export const PublicLanding = () => {
                 You do not need a top-tier investor on your cap table to learn from their public thinking.
               </h2>
               <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-                The best investors and operators have shared thousands of hours of pattern recognition in public interviews, podcasts, and talks. Founder Lessons turns that public content into structured, startup-specific guidance without implying affiliation, endorsement, or replacing real advisors.
+                The best investors and operators have shared thousands of hours of pattern recognition in public interviews, podcasts, and talks. Founder Mode Advice turns that public content into structured, startup-specific guidance without implying affiliation, endorsement, or replacing real advisors.
               </p>
             </div>
             <div className="space-y-3">
@@ -118,7 +117,7 @@ export const PublicLanding = () => {
             </div>
           </div>
           <p className="mt-6 text-[11px] sm:text-xs text-muted-foreground">
-            Examples such as a16z, YC, Benchmark, or individual investors/operators refer to public content categories only. Founder Lessons is independent and does not provide private access, endorsement, or investment advice from those people or firms.
+            Examples such as a16z, YC, Benchmark, or individual investors/operators refer to public content categories only. Founder Mode Advice is independent and does not provide private access, endorsement, or investment advice from those people or firms.
           </p>
         </div>
       </section>
@@ -163,27 +162,13 @@ export const PublicLanding = () => {
         </div>
       </section>
 
-      {/* Social Proof */}
+      {/* Pull quote */}
       <section className="py-12 sm:py-16 md:py-24">
         <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center space-y-6">
+          <div className="max-w-3xl mx-auto text-center">
             <p className="text-sm sm:text-lg text-muted-foreground px-4">
               "Most founders do not have elite investors on speed dial. But they can still extract useful patterns from the public conversations those experts have already shared."
             </p>
-            <div className="flex justify-center gap-6 sm:gap-8 pt-4">
-              <div className="text-center">
-                <div className="text-2xl sm:text-3xl font-bold text-primary">500+</div>
-                <div className="text-xs sm:text-sm text-muted-foreground">Expert videos</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl sm:text-3xl font-bold text-primary">2,000+</div>
-                <div className="text-xs sm:text-sm text-muted-foreground">Transcript-grounded lessons</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl sm:text-3xl font-bold text-primary">100+</div>
-                <div className="text-xs sm:text-sm text-muted-foreground">Public experts</div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
