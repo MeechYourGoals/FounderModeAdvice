@@ -22,7 +22,7 @@ export const HeroSection = () => {
       />
       <div className="container relative mx-auto px-4 py-12 sm:py-24">
         <div className="max-w-4xl mx-auto text-center space-y-4 sm:space-y-6">
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent animate-slide-up">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-foreground animate-slide-up">
             Founder Mode Advice
           </h1>
           <p className="text-base sm:text-xl text-muted-foreground max-w-2xl mx-auto animate-slide-up">
@@ -31,8 +31,8 @@ export const HeroSection = () => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 pt-4 sm:pt-8 animate-slide-up">
             <FeatureCard
               icon={<Brain className="w-6 h-6 sm:w-8 sm:h-8" />}
-              title="AI-Powered Analysis"
-              description="Extract the lessons that matter from any video"
+              title="Structured Extraction"
+              description="Pull the lessons that matter from any video"
             />
             <FeatureCard
               icon={<TrendingUp className="w-6 h-6 sm:w-8 sm:h-8" />}
