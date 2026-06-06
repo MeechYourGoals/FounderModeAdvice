@@ -21,8 +21,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Browser visitors get a close control back to the marketing homepage. In an installed
-  // app/PWA, "/" would just redirect back here, so we hide it to avoid a loop.
+  // Always show close button in browser; hide only in installed app/PWA to avoid loop.
   const showClose = !shouldShowAppAuthFirst();
 
   const handleGoogleSignIn = async () => {
@@ -193,10 +192,10 @@ const Auth = () => {
             variant="ghost"
             size="icon"
             aria-label="Close sign in"
-            className="absolute right-2 top-2 h-8 w-8 rounded-full text-muted-foreground hover:text-foreground"
+            className="absolute right-3 top-3 z-50 h-9 w-9 rounded-full bg-background/80 text-foreground hover:bg-background hover:text-foreground shadow-sm"
             onClick={() => navigate("/")}
           >
-            <X className="h-4 w-4" />
+            <X className="h-5 w-5" />
           </Button>
         )}
         <CardHeader className="space-y-1">
