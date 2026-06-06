@@ -153,11 +153,19 @@ export const AnalysisForm = () => {
 
     try {
       setProgress("Checking for duplicates...");
-      const { data: existing } = await supabase
-        .from('episodes')
-        .select('id, title, url')
-        .eq('url', episodeUrl.trim())
-        .limit(1);
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: existing } = user?.id
+        ? await supabase
+            .from('episodes')
+            .select('id, title, url')
+            .eq('url', episodeUrl.trim())
+            .eq('analyzed_by', user.id)
+            .limit(1)
+        : await supabase
+            .from('episodes')
+            .select('id, title, url')
+            .eq('url', episodeUrl.trim())
+            .limit(1);
 
       if (existing && existing.length > 0) {
         toast({
