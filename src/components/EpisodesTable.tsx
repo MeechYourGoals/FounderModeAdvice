@@ -9,7 +9,7 @@ import {
   ExternalLink, TrendingUp, MoreVertical, Eye, Bookmark, Download, Copy,
   Youtube, Headphones, Trash2, X, ArrowUpDown, ArrowUp, ArrowDown,
   FolderPlus, Folder, ChevronLeft, ChevronRight, Filter, Search,
-  Tag, LayoutList, CalendarDays
+  Tag, LayoutList
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
