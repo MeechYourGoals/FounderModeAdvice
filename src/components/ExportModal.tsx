@@ -1,13 +1,16 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Download, FileJson, FileText, FileSpreadsheet, FileDown } from "lucide-react";
+import { FileJson, FileText, FileSpreadsheet, FileDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import despia from 'despia-native';
 import { useDespia } from "@/hooks/use-despia";
+import { useSubscription } from "@/contexts/SubscriptionContext";
+import { hasExport } from "@/types/subscription";
+import { saveOrShareBlob } from "@/lib/downloadFile";
+import { UpgradePrompt } from "@/components/subscription";
 
 interface ExportModalProps {
   episodeId?: string;
@@ -18,7 +21,9 @@ interface ExportModalProps {
 export const ExportModal = ({ episodeId, open, onOpenChange }: ExportModalProps) => {
   const [exporting, setExporting] = useState(false);
   const { toast } = useToast();
-  const isDespia = useDespia();
+  const { isDespia } = useDespia();
+  const { subscription } = useSubscription();
+  const canExport = subscription ? hasExport(subscription.tier) : false;
 
   const fetchEpisodeData = async (id: string) => {
     const { data: episode } = await supabase
@@ -62,52 +67,17 @@ export const ExportModal = ({ episodeId, open, onOpenChange }: ExportModalProps)
   };
 
   const handleExport = async (blob: Blob, filename: string, mimeType: string) => {
-    if (isDespia) {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error("User not authenticated");
-
-        const path = `${user.id}/${Date.now()}-${filename}`;
-
-        // Upload to Supabase 'exports' bucket
-        const { error: uploadError } = await supabase.storage
-          .from('exports')
-          .upload(path, blob, {
-            contentType: mimeType,
-            upsert: true
-          });
-
-        if (uploadError) throw uploadError;
-
-        // Get signed URL
-        const { data: { signedUrl } } = await supabase.storage
-          .from('exports')
-          .createSignedUrl(path, 3600, {
-            download: filename
-          }); // 1 hour expiry
-
-        if (!signedUrl) throw new Error("Failed to generate signed URL");
-
-        // Trigger native share
-        despia(signedUrl);
-
+    try {
+      const result = await saveOrShareBlob(blob, filename, mimeType, isDespia());
+      if (result === "shared") {
         toast({ title: "Sharing initiated", description: "Opening share dialog..." });
-        onOpenChange(false);
-      } catch (error: any) {
-        console.error("Despia export error:", error);
-        toast({ title: "Export failed", description: error.message || "Could not share file", variant: "destructive" });
+      } else {
+        toast({ title: "Export complete", description: `${filename.split('.').pop()?.toUpperCase()} file downloaded` });
       }
-    } else {
-      // Standard web download
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
-      
-      toast({ title: "Export complete", description: `${filename.split('.').pop()?.toUpperCase()} file downloaded` });
       onOpenChange(false);
+    } catch (error: any) {
+      console.error("Export error:", error);
+      toast({ title: "Export failed", description: error.message || "Could not export file", variant: "destructive" });
     }
   };
 
@@ -323,28 +293,37 @@ export const ExportModal = ({ episodeId, open, onOpenChange }: ExportModalProps)
         <DialogHeader>
           <DialogTitle>Export Executive Summary</DialogTitle>
         </DialogHeader>
-        <div className="space-y-3 pt-4">
-          <Button onClick={exportPDF} disabled={exporting} variant="default" className="w-full justify-start">
-            <FileDown className="w-4 h-4 mr-2" />
-            Download Executive Summary (PDF)
-          </Button>
-          <div className="relative py-2">
-             <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-             <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">Or export raw data</span></div>
+        {canExport ? (
+          <div className="space-y-3 pt-4">
+            <Button onClick={exportPDF} disabled={exporting} variant="default" className="w-full justify-start">
+              <FileDown className="w-4 h-4 mr-2" />
+              Download Executive Summary (PDF)
+            </Button>
+            <div className="relative py-2">
+               <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+               <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">Or export raw data</span></div>
+            </div>
+            <Button onClick={exportCSV} disabled={exporting} variant="outline" className="w-full justify-start">
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              Export as CSV
+            </Button>
+            <Button onClick={exportJSON} disabled={exporting} variant="outline" className="w-full justify-start">
+              <FileJson className="w-4 h-4 mr-2" />
+              Export as JSON
+            </Button>
+            <Button onClick={exportMarkdown} disabled={exporting} variant="outline" className="w-full justify-start">
+              <FileText className="w-4 h-4 mr-2" />
+              Export as Markdown
+            </Button>
           </div>
-          <Button onClick={exportCSV} disabled={exporting} variant="outline" className="w-full justify-start">
-            <FileSpreadsheet className="w-4 h-4 mr-2" />
-            Export as CSV
-          </Button>
-          <Button onClick={exportJSON} disabled={exporting} variant="outline" className="w-full justify-start">
-            <FileJson className="w-4 h-4 mr-2" />
-            Export as JSON
-          </Button>
-          <Button onClick={exportMarkdown} disabled={exporting} variant="outline" className="w-full justify-start">
-            <FileText className="w-4 h-4 mr-2" />
-            Export as Markdown
-          </Button>
-        </div>
+        ) : (
+          <div className="pt-4">
+            <UpgradePrompt
+              feature="export"
+              message="Exporting analyses (PDF, CSV, JSON, Markdown) is part of The Boardroom plan."
+            />
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

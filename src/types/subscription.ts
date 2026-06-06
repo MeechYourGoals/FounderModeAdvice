@@ -55,6 +55,11 @@ export function hasVideoChat(tier: SubscriptionTier): boolean {
   return TIER_LIMITS[tier].videoChat;
 }
 
+/** Tiers that can export analyses and chat summaries (PDF / CSV / JSON / Markdown). */
+export function hasExport(tier: SubscriptionTier): boolean {
+  return TIER_LIMITS[tier].exports;
+}
+
 export const TIER_LIMITS: Record<SubscriptionTier, Omit<TierLimits, 'profiles' | 'bookmarks' | 'analyses'> & {
   profiles: { max: number };
   bookmarks: { max: number };
@@ -62,6 +67,8 @@ export const TIER_LIMITS: Record<SubscriptionTier, Omit<TierLimits, 'profiles' |
   analyses: { max: number };
   /** Whether the plan unlocks the "Ask this video" AI chat. */
   videoChat: boolean;
+  /** Whether the plan unlocks exporting analyses and chat summaries. */
+  exports: boolean;
 }> = {
   free: {
     profiles: { max: 1 },
@@ -69,6 +76,7 @@ export const TIER_LIMITS: Record<SubscriptionTier, Omit<TierLimits, 'profiles' |
     bookmarksPerProfile: 5,
     analyses: { max: 3 },
     videoChat: false,
+    exports: false,
   },
   // "The C-Suite" — entry paid plan.
   seed: {
@@ -77,14 +85,16 @@ export const TIER_LIMITS: Record<SubscriptionTier, Omit<TierLimits, 'profiles' |
     bookmarksPerProfile: 10,
     analyses: { max: 20 },
     videoChat: false,
+    exports: false,
   },
-  // "The Boardroom" — power plan. Everything unlimited + Ask-the-video AI chat.
+  // "The Boardroom" — power plan. Everything unlimited + Ask-the-video AI chat + export.
   series_z: {
     profiles: { max: UNLIMITED },
     bookmarks: { max: UNLIMITED },
     bookmarksPerProfile: UNLIMITED,
     analyses: { max: UNLIMITED },
     videoChat: true,
+    exports: true,
   },
 };
 
