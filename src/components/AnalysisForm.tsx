@@ -6,6 +6,7 @@ import { Loader2, ArrowLeft, Zap, FastForward } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useSubscription } from "@/contexts/SubscriptionContext";
+import { useActiveProfile } from "@/contexts/ActiveProfileContext";
 import { isUnlimited } from "@/types/subscription";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { StartupProfileForm } from "./StartupProfileForm";
@@ -47,6 +48,7 @@ export const AnalysisForm = () => {
   const [startupContext, setStartupContext] = useState<any>(null);
   const { toast } = useToast();
   const { subscription, canAnalyzeVideo, refreshSubscription } = useSubscription();
+  const { activeProfile, refreshProfiles } = useActiveProfile();
   const profileLimit = subscription?.limits.profiles.max || 1;
 
   useEffect(() => {
@@ -70,15 +72,39 @@ export const AnalysisForm = () => {
 
   const handleEpisodeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    validateAndProceed("profile");
+    // With an active business profile, analyze directly with that context;
+    // otherwise drop into the manual context step.
+    validateAndProceed(activeProfile ? "active" : "profile");
   };
+
+  // Starter videos from the empty state dispatch this with a URL to one-tap analyze.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const url = (e as CustomEvent<{ url: string }>).detail?.url;
+      if (!url) return;
+      setEpisodeUrl(url);
+      const analysisCheck = canAnalyzeVideo();
+      if (!analysisCheck.allowed) {
+        toast({
+          title: "Analysis Limit Reached",
+          description: analysisCheck.message || "Upgrade to analyze more videos.",
+          variant: "destructive",
+        });
+        return;
+      }
+      analyzeWithContext(activeProfile, url);
+    };
+    window.addEventListener("analyzeUrl", handler as EventListener);
+    return () => window.removeEventListener("analyzeUrl", handler as EventListener);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeProfile]);
 
   const handleQuickImport = (e: React.MouseEvent) => {
     e.preventDefault();
     validateAndProceed("quick");
   };
 
-  const validateAndProceed = (mode: "profile" | "quick") => {
+  const validateAndProceed = (mode: "profile" | "quick" | "active") => {
     if (!episodeUrl.trim()) {
       triggerHapticFeedback('medium');
       toast({
@@ -104,6 +130,8 @@ export const AnalysisForm = () => {
     triggerHapticFeedback('light');
     if (mode === "quick") {
       analyzeWithContext(null);
+    } else if (mode === "active") {
+      analyzeWithContext(activeProfile);
     } else {
       setStep("profile");
     }
@@ -121,6 +149,8 @@ export const AnalysisForm = () => {
           user_id: user?.id
         }]);
         fetchSavedProfiles();
+        refreshProfiles();
+        window.dispatchEvent(new Event("profilesChanged"));
       } catch (error) {
         console.error("Error saving profile:", error);
       }
@@ -148,9 +178,11 @@ export const AnalysisForm = () => {
     }
   };
 
-  const analyzeWithContext = async (profile: any) => {
+  const analyzeWithContext = async (profile: any, urlArg?: string) => {
+    const url = (urlArg ?? episodeUrl).trim();
+    if (!url) return;
     setIsAnalyzing(true);
-    setProgress(profile ? "Analyzing episode with your startup context..." : "Analyzing episode...");
+    setProgress(profile ? "Analyzing with your business context..." : "Analyzing episode...");
 
     try {
       setProgress("Checking for duplicates...");
@@ -159,13 +191,13 @@ export const AnalysisForm = () => {
         ? await supabase
             .from('episodes')
             .select('id, title, url')
-            .eq('url', episodeUrl.trim())
+            .eq('url', url)
             .eq('analyzed_by', user.id)
             .limit(1)
         : await supabase
             .from('episodes')
             .select('id, title, url')
-            .eq('url', episodeUrl.trim())
+            .eq('url', url)
             .limit(1);
 
       if (existing && existing.length > 0) {
@@ -181,8 +213,8 @@ export const AnalysisForm = () => {
 
       setProgress("Fetching episode data...");
       const { data, error } = await supabase.functions.invoke('analyze-episode', {
-        body: { 
-          episodeUrl, 
+        body: {
+          episodeUrl: url,
           podcastName: podcastName.trim() || undefined,
           startupProfile: profile,
           deckSummary: profile?.deck_summary || undefined
@@ -264,7 +296,7 @@ export const AnalysisForm = () => {
       )}
 
       {analysisCheck.allowed && subscription && (
-        <div className="mb-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+        <div className="mb-2 flex items-center justify-center gap-2 text-sm text-muted-foreground">
           <Zap className="h-4 w-4" />
           <span>
             {isUnlimited(subscription.limits.analyses.max)
@@ -272,6 +304,24 @@ export const AnalysisForm = () => {
               : `${subscription.limits.analyses.used}/${subscription.limits.analyses.max} analyses used this month`}
           </span>
         </div>
+      )}
+
+      {analysisCheck.allowed && (
+        <p className="mb-4 text-center text-xs text-muted-foreground">
+          {activeProfile ? (
+            <>Personalizing for <span className="font-medium text-foreground">{activeProfile.company_name}</span></>
+          ) : (
+            <>Universal mode (no business profile)</>
+          )}{" "}
+          ·{" "}
+          <button
+            type="button"
+            className="underline hover:text-primary"
+            onClick={() => window.dispatchEvent(new Event("openProfiles"))}
+          >
+            Change
+          </button>
+        </p>
       )}
 
       <form onSubmit={handleEpisodeSubmit} className="space-y-6">
@@ -364,6 +414,11 @@ export const AnalysisForm = () => {
               <>
                 <Zap className="mr-2 h-4 w-4" />
                 Upgrade to Continue
+              </>
+            ) : activeProfile ? (
+              <>
+                <Zap className="mr-2 h-4 w-4" />
+                Analyze for {activeProfile.company_name}
               </>
             ) : (
               <>

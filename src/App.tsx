@@ -6,11 +6,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useSearchParams } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
+import { ActiveProfileProvider } from "@/contexts/ActiveProfileContext";
 import { useToast } from "@/hooks/use-toast";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
 import Account from "./pages/Account";
+import Settings from "./pages/Settings";
 import Founders from "./pages/Founders";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
@@ -53,6 +55,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
       <SubscriptionProvider>
+        <ActiveProfileProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
@@ -63,6 +66,7 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/account" element={<Account />} />
+              <Route path="/settings" element={<Settings />} />
               <Route path="/founders" element={<Founders />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/terms-of-service" element={<TermsOfService />} />
@@ -75,6 +79,7 @@ const App = () => (
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
+        </ActiveProfileProvider>
       </SubscriptionProvider>
     </ThemeProvider>
   </QueryClientProvider>

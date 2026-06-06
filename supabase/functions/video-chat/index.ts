@@ -253,6 +253,57 @@ serve(async (req) => {
       return jsonResponse({ error: "AI provider is not configured." }, 500);
     }
 
+    if (action === "summary") {
+      const messages = await fetchMessages(supabase, sessionId);
+      if (!messages.length) {
+        return jsonResponse({ error: "There's no conversation to summarize yet." }, 409);
+      }
+
+      const conversation = messages
+        .map((msg) => `${msg.role === "user" ? "Question" : "Answer"}: ${msg.content}`)
+        .join("\n\n");
+
+      const summarySystemPrompt = `You summarize a Q&A conversation about a video into a concise brief for a business builder.
+Stay grounded ONLY in the conversation provided — do not invent facts, names, or metrics that aren't present.
+Output plain text in exactly these sections:
+Overview: a 2-4 sentence recap of what was discussed.
+Key takeaways: 3-6 short bullet points (prefix each with "- ").
+Action items: 3-6 concrete next steps for the user's business (prefix each with "- ").`;
+
+      const summaryUserPrompt = `Video: ${context.episode.title}
+
+Conversation:
+${conversation}`;
+
+      const summaryResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${lovableApiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: summarySystemPrompt },
+            { role: "user", content: summaryUserPrompt },
+          ],
+          temperature: 0.3,
+        }),
+      });
+
+      if (!summaryResponse.ok) {
+        const errorText = await summaryResponse.text();
+        console.error("video-chat summary AI error", summaryResponse.status, errorText);
+        const status = summaryResponse.status === 429 ? 429 : 502;
+        return jsonResponse({ error: "Could not generate a summary right now. Please retry." }, status);
+      }
+
+      const summaryData = await summaryResponse.json();
+      const summary = summaryData.choices?.[0]?.message?.content?.trim();
+      if (!summary) {
+        return jsonResponse({ error: "The AI service returned an empty summary. Please retry." }, 502);
+      }
+
+      return jsonResponse({ summary, title: context.episode.title, messages });
+    }
+
     if (!message || typeof message !== "string" || !message.trim()) {
       return jsonResponse({ error: "A question is required." }, 400);
     }

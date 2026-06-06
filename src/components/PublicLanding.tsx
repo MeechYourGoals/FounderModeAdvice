@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
+import { SampleDemo } from "@/components/marketing/SampleDemo";
 import { TIER_PRICING, type SubscriptionTier } from "@/types/subscription";
 import heroBg from "@/assets/hero-bg.jpg";
 
@@ -10,8 +11,8 @@ export const PublicLanding = () => {
   const navigate = useNavigate();
 
   const goToAuth = () => navigate("/auth");
-  const scrollToPricing = () => {
-    document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" });
+  const scrollTo = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
@@ -23,7 +24,10 @@ export const PublicLanding = () => {
             <button onClick={() => navigate("/")} className="font-bold text-sm sm:text-lg hover:text-primary transition-colors">Founder Mode Advice</button>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
-            <Button variant="ghost" size="sm" className="hidden sm:flex" onClick={scrollToPricing}>
+            <Button variant="ghost" size="sm" className="hidden sm:flex" onClick={() => scrollTo("demo")}>
+              Demo
+            </Button>
+            <Button variant="ghost" size="sm" className="hidden sm:flex" onClick={() => scrollTo("pricing")}>
               Pricing
             </Button>
             <ThemeToggle />
@@ -110,6 +114,9 @@ export const PublicLanding = () => {
           </div>
         </div>
       </section>
+
+      {/* Interactive sample demo */}
+      <SampleDemo />
 
       {/* Positioning */}
       <section className="container mx-auto px-4 pb-12 sm:pb-16 md:pb-24">

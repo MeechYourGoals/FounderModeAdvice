@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Bot, Loader2, Lock, MessageSquare, RefreshCw, Send, ShieldCheck, User } from "lucide-react";
+import { Bot, Download, Loader2, Lock, MessageSquare, RefreshCw, Send, ShieldCheck, User } from "lucide-react";
+import jsPDF from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -16,6 +17,9 @@ import { cn } from "@/lib/utils";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { hasVideoChat } from "@/types/subscription";
 import { UpgradePrompt } from "@/components/subscription";
+import { useDespia } from "@/hooks/use-despia";
+import { useToast } from "@/hooks/use-toast";
+import { saveOrShareBlob } from "@/lib/downloadFile";
 
 interface VideoChatMessage {
   id?: string;
@@ -35,6 +39,61 @@ const SUGGESTED_QUESTIONS = [
   "What assumptions does this video challenge?",
   "What should I do next based on this video?",
 ];
+
+/** Build a PDF of the chat: AI summary on top, full Q&A transcript below. */
+const buildChatPdf = (
+  title: string,
+  summary: string,
+  messages: VideoChatMessage[],
+): { blob: Blob; filename: string } => {
+  const doc = new jsPDF();
+  const marginX = 14;
+  const maxWidth = 180;
+  const pageHeight = doc.internal.pageSize.getHeight();
+  let y = 20;
+
+  const ensureSpace = (needed: number) => {
+    if (y + needed > pageHeight - 15) {
+      doc.addPage();
+      y = 20;
+    }
+  };
+
+  const writeBlock = (text: string, fontSize: number, bold = false, color = 33) => {
+    doc.setFontSize(fontSize);
+    doc.setFont("helvetica", bold ? "bold" : "normal");
+    doc.setTextColor(color);
+    const lines = doc.splitTextToSize(text, maxWidth);
+    for (const line of lines) {
+      ensureSpace(fontSize * 0.5 + 2);
+      doc.text(line, marginX, y);
+      y += fontSize * 0.5 + 2;
+    }
+  };
+
+  writeBlock("Chat Summary: Founder Mode Advice", 18, true);
+  y += 2;
+  writeBlock(title, 12, true, 80);
+  writeBlock(`Generated on ${new Date().toLocaleDateString()}`, 10, false, 120);
+  y += 6;
+
+  writeBlock("Summary", 13, true);
+  y += 1;
+  writeBlock(summary || "No summary available.", 10, false, 60);
+  y += 8;
+
+  writeBlock("Conversation", 13, true);
+  y += 2;
+  messages.forEach((msg) => {
+    const label = msg.role === "user" ? "You" : "Assistant";
+    writeBlock(label, 10, true, msg.role === "user" ? 33 : 90);
+    writeBlock(msg.content, 10, false, 60);
+    y += 4;
+  });
+
+  const filename = `chat-summary-${new Date().toISOString().split("T")[0]}.pdf`;
+  return { blob: doc.output("blob"), filename };
+};
 
 const resolveInvokeError = async (error: any, fallback: string) => {
   const response = error?.context;
@@ -58,9 +117,12 @@ export const VideoChatSheet = ({ videoId, videoTitle }: VideoChatSheetProps) => 
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasTranscript, setHasTranscript] = useState<boolean | null>(null);
+  const [exporting, setExporting] = useState(false);
   const lastQuestionRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const { subscription } = useSubscription();
+  const { isDespia } = useDespia();
+  const { toast } = useToast();
   // Ask-the-video AI chat is a Boardroom-only feature (enforced again server-side).
   const canChat = subscription ? hasVideoChat(subscription.tier) : false;
 
@@ -144,6 +206,37 @@ export const VideoChatSheet = ({ videoId, videoTitle }: VideoChatSheetProps) => 
     }
   };
 
+  const exportSummary = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const { data, error: invokeError } = await supabase.functions.invoke("video-chat", {
+        body: { action: "summary", videoId },
+      });
+      if (invokeError) {
+        throw new Error(await resolveInvokeError(invokeError, "Could not generate a chat summary."));
+      }
+      if (data?.error) throw new Error(data.error);
+
+      const summary: string = data?.summary || "";
+      const { blob, filename } = buildChatPdf(videoTitle, summary, messages);
+      const result = await saveOrShareBlob(blob, filename, "application/pdf", isDespia());
+      toast({
+        title: result === "shared" ? "Summary ready" : "Summary downloaded",
+        description: result === "shared" ? "Opening share dialog..." : "Your chat summary PDF was downloaded.",
+      });
+    } catch (exportError: any) {
+      console.error("Chat summary export error:", exportError);
+      toast({
+        title: "Export failed",
+        description: exportError.message || "Could not export the chat summary. Please retry.",
+        variant: "destructive",
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
@@ -161,6 +254,23 @@ export const VideoChatSheet = ({ videoId, videoTitle }: VideoChatSheetProps) => 
           <SheetDescription className="line-clamp-2">
             Transcript-grounded Q&amp;A for “{videoTitle}”. Answers should cite the video context, not claim private advisor access.
           </SheetDescription>
+          {canChat && messages.length > 0 && (
+            <div className="pt-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void exportSummary()}
+                disabled={exporting}
+              >
+                {exporting ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4 mr-2" />
+                )}
+                Export summary (PDF)
+              </Button>
+            </div>
+          )}
         </SheetHeader>
 
         {!canChat ? (

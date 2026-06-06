@@ -174,6 +174,7 @@ export const ProfileSettings = ({
 
       setEditingProfile(null);
       fetchProfiles();
+      window.dispatchEvent(new Event("profilesChanged"));
     } catch (error) {
       console.error("Error saving profile:", error);
       toast({
@@ -194,6 +195,7 @@ export const ProfileSettings = ({
       if (error) throw error;
       toast({ title: "Profile deleted successfully" });
       fetchProfiles();
+      window.dispatchEvent(new Event("profilesChanged"));
     } catch (error) {
       console.error("Error deleting profile:", error);
       toast({

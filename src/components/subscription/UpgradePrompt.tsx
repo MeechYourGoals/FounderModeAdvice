@@ -6,7 +6,7 @@ import { TIER_PRICING } from '@/types/subscription';
 
 interface UpgradePromptProps {
   message: string;
-  feature?: 'profile' | 'bookmark' | 'analysis' | 'videoChat';
+  feature?: 'profile' | 'bookmark' | 'analysis' | 'videoChat' | 'export';
   onUpgrade?: () => void;
   compact?: boolean;
 }
@@ -14,8 +14,9 @@ interface UpgradePromptProps {
 export function UpgradePrompt({ message, feature, onUpgrade, compact = false }: UpgradePromptProps) {
   const { upgradeTo } = useSubscription();
 
-  // Ask-the-video chat is a Boardroom-only feature; everything else upgrades to The C-Suite first.
-  const targetTier: 'seed' | 'series_z' = feature === 'videoChat' ? 'series_z' : 'seed';
+  // Ask-the-video chat and export are Boardroom-only; everything else upgrades to The C-Suite first.
+  const targetTier: 'seed' | 'series_z' =
+    feature === 'videoChat' || feature === 'export' ? 'series_z' : 'seed';
 
   const handleUpgrade = async () => {
     if (onUpgrade) {
