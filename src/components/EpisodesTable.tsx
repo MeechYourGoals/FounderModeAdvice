@@ -112,6 +112,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
   const [newFolderName, setNewFolderName] = useState("");
   const [bulkFolderNames, setBulkFolderNames] = useState<string[]>([""]);
   const [folderPendingDelete, setFolderPendingDelete] = useState<EpisodeFolder | null>(null);
+  const [deleteMoveTarget, setDeleteMoveTarget] = useState<string>("none");
 
   // Tags & view mode
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
@@ -402,8 +403,31 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     toast({ title: names.length === 1 ? "Folder created" : `Created ${names.length} folders` });
   };
 
-  const handleDeleteFolder = async (folderId: string) => {
+  const handleDeleteFolder = async (folderId: string, moveToFolderId?: string) => {
     triggerHapticFeedback('medium');
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (moveToFolderId && user) {
+      // Find episodes assigned to the folder being deleted, then assign to target
+      const affectedEpisodeIds = Object.entries(folderAssignments)
+        .filter(([, ids]) => ids.includes(folderId))
+        .map(([episodeId]) => episodeId);
+
+      const rows = affectedEpisodeIds
+        .filter((episodeId) => !(folderAssignments[episodeId] || []).includes(moveToFolderId))
+        .map((episodeId) => ({ user_id: user.id, episode_id: episodeId, folder_id: moveToFolderId }));
+
+      if (rows.length > 0) {
+        const { error: moveError } = await supabase
+          .from("episode_folder_assignments")
+          .insert(rows as any);
+        if (moveError) {
+          toast({ title: "Couldn't move episodes", description: moveError.message, variant: "destructive" });
+          return;
+        }
+      }
+    }
+
     const { error } = await supabase
       .from("episode_folders")
       .delete()
@@ -412,6 +436,8 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
       if (selectedFolderId === folderId) setSelectedFolderId(null);
       fetchFolders();
       toast({ title: "Folder deleted" });
+    } else {
+      toast({ title: "Couldn't delete folder", description: error.message, variant: "destructive" });
     }
   };
 
@@ -1151,7 +1177,14 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                       <span className="w-3 h-3 rounded-full" style={{ backgroundColor: folder.color }} />
                       <span className="text-sm">{folder.name}</span>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => setFolderPendingDelete(folder)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setDeleteMoveTarget("none");
+                        setFolderPendingDelete(folder);
+                      }}
+                    >
                       <Trash2 className="w-3 h-3" />
                     </Button>
                   </div>
@@ -1162,23 +1195,66 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!folderPendingDelete} onOpenChange={(open) => !open && setFolderPendingDelete(null)}>
+      <AlertDialog
+        open={!!folderPendingDelete}
+        onOpenChange={(open) => {
+          if (!open) {
+            setFolderPendingDelete(null);
+            setDeleteMoveTarget("none");
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this folder?</AlertDialogTitle>
+            <AlertDialogTitle>
+              Delete "{folderPendingDelete?.name}"?
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              "{folderPendingDelete?.name}" will be removed and any episodes assigned to it will no longer be grouped here. Your episodes themselves are not deleted.
+              {(() => {
+                if (!folderPendingDelete) return null;
+                const count = Object.values(folderAssignments).filter((ids) =>
+                  ids.includes(folderPendingDelete.id)
+                ).length;
+                if (count === 0) return "No episodes are assigned to this folder. Your episodes are not deleted.";
+                return `${count} ${count === 1 ? "episode is" : "episodes are"} assigned to this folder. Your episodes are not deleted — choose what happens to their folder assignment below.`;
+              })()}
             </AlertDialogDescription>
           </AlertDialogHeader>
+
+          {folderPendingDelete &&
+            Object.values(folderAssignments).some((ids) => ids.includes(folderPendingDelete.id)) && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Move episodes to</label>
+                <Select value={deleteMoveTarget} onValueChange={setDeleteMoveTarget}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Leave unassigned</SelectItem>
+                    {folders
+                      .filter((f) => f.id !== folderPendingDelete.id)
+                      .map((f) => (
+                        <SelectItem key={f.id} value={f.id}>
+                          {f.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={async () => {
-                if (folderPendingDelete) {
-                  await handleDeleteFolder(folderPendingDelete.id);
-                  setFolderPendingDelete(null);
-                }
+                if (!folderPendingDelete) return;
+                await handleDeleteFolder(
+                  folderPendingDelete.id,
+                  deleteMoveTarget === "none" ? undefined : deleteMoveTarget
+                );
+                setFolderPendingDelete(null);
+                setDeleteMoveTarget("none");
               }}
             >
               Delete folder

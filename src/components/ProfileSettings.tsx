@@ -55,13 +55,13 @@ type StageType = "pre_seed" | "seed" | "series_a" | "series_b_plus" | "growth" |
 export const ProfileSettings = ({
   onSelectEpisode,
   onCloseRequest,
-  defaultTab = "profiles",
+  view = "profiles",
   condensed
 }: {
   onSelectEpisode?: (id: string) => void;
   /** Called when the panel should close (e.g. navigating to a speaker's episodes). */
   onCloseRequest?: () => void;
-  defaultTab?: "profiles" | "bookmarks" | "subscription";
+  view?: "profiles" | "bookmarks" | "subscription";
   condensed?: boolean;
 }) => {
   const { toast } = useToast();
@@ -530,7 +530,9 @@ export const ProfileSettings = ({
     );
   }
 
-      <TabsContent value="bookmarks" className="space-y-4">
+  if (view === "bookmarks") {
+    return (
+      <div className="space-y-4">
         {/* Switch between bookmark folders and the speaker directory */}
         <div className="inline-flex w-full rounded-lg bg-muted p-1 text-sm">
           {(["folders", "speakers"] as const).map((view) => (
@@ -679,11 +681,17 @@ export const ProfileSettings = ({
         />
         </>
         )}
-      </TabsContent>
+      </div>
+    );
+  }
 
-      <TabsContent value="subscription" className="space-y-4">
+  if (view === "subscription") {
+    return (
+      <div className="space-y-4">
         <UsageDisplay showUpgrade />
-      </TabsContent>
-    </Tabs>
-  );
+      </div>
+    );
+  }
+
+  return null;
 };
