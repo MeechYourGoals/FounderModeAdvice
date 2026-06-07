@@ -10,7 +10,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { PublicLanding } from "@/components/PublicLanding";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/contexts/SubscriptionContext";
-import { Loader2, Bookmark, LogOut, Briefcase, Menu, User, Users, Settings } from "lucide-react";
+import { Loader2, Bookmark, LogOut, Briefcase, Menu, User, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -44,7 +44,8 @@ import { ProfileSwitcher } from "@/components/ProfileSwitcher";
 const Index = () => {
   const [selectedEpisodeId, setSelectedEpisodeId] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"profiles" | "bookmarks">("profiles");
+  const [activeTab, setActiveTab] = useState<"profiles" | "bookmarks" | "subscription">("profiles");
+  const [desktopPanel, setDesktopPanel] = useState<null | "profiles" | "bookmarks">(null);
 
   const { user, loading, signOut } = useAuth();
   const { subscription } = useSubscription();
@@ -151,10 +152,6 @@ const Index = () => {
                     <Bookmark className="h-4 w-4 mr-2" />
                     Bookmarks
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { triggerHapticFeedback('light'); setProfileOpen(false); navigate("/founders"); }}>
-                    <Users className="h-4 w-4 mr-2" />
-                    Founders Directory
-                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => { triggerHapticFeedback('light'); setProfileOpen(false); navigate("/account"); }}>
                     <User className="h-4 w-4 mr-2" />
                     Account
@@ -177,15 +174,15 @@ const Index = () => {
         <div className="fixed top-4 right-4 z-50 flex gap-2 items-center">
           <ProfileSwitcher />
 
-          <Popover>
+          <Popover
+            open={desktopPanel === "profiles"}
+            onOpenChange={(open) => setDesktopPanel(open ? "profiles" : null)}
+          >
             <PopoverTrigger asChild>
               <Button
-                variant={activeTab === "profiles" ? "default" : "outline"}
+                variant={desktopPanel === "profiles" ? "default" : "outline"}
                 size="sm"
-                onClick={() => {
-                  triggerHapticFeedback('light');
-                  setActiveTab("profiles");
-                }}
+                onClick={() => triggerHapticFeedback('light')}
               >
                 <Briefcase className="h-4 w-4 mr-2" />
                 Business Profiles
@@ -198,6 +195,7 @@ const Index = () => {
                     key="profiles"
                     view="profiles"
                     onSelectEpisode={setSelectedEpisodeId}
+                    onCloseRequest={() => setDesktopPanel(null)}
                     condensed={true}
                   />
                 </ScrollArea>
@@ -205,15 +203,15 @@ const Index = () => {
             </PopoverContent>
           </Popover>
 
-          <Popover>
+          <Popover
+            open={desktopPanel === "bookmarks"}
+            onOpenChange={(open) => setDesktopPanel(open ? "bookmarks" : null)}
+          >
             <PopoverTrigger asChild>
               <Button
-                variant={activeTab === "bookmarks" ? "default" : "outline"}
+                variant={desktopPanel === "bookmarks" ? "default" : "outline"}
                 size="sm"
-                onClick={() => {
-                  triggerHapticFeedback('light');
-                  setActiveTab("bookmarks");
-                }}
+                onClick={() => triggerHapticFeedback('light')}
               >
                 <Bookmark className="h-4 w-4 mr-2" />
                 Bookmarks
@@ -226,6 +224,7 @@ const Index = () => {
                     key="bookmarks"
                     view="bookmarks"
                     onSelectEpisode={setSelectedEpisodeId}
+                    onCloseRequest={() => setDesktopPanel(null)}
                     condensed={true}
                   />
                 </ScrollArea>
@@ -268,6 +267,7 @@ const Index = () => {
                     setSelectedEpisodeId(id);
                     setProfileOpen(false);
                   }}
+                  onCloseRequest={() => setProfileOpen(false)}
                 />
               )}
             </ScrollArea>

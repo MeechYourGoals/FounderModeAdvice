@@ -9,8 +9,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { BookmarkFolderDialog } from "@/components/BookmarkFolderDialog";
 import { BookmarkedEpisodeCard } from "@/components/BookmarkedEpisodeCard";
 import { StartupProfileDialog } from "@/components/StartupProfileDialog";
-import { UpgradePrompt } from "@/components/subscription";
+import { UpgradePrompt, UsageDisplay } from "@/components/subscription";
+import { SpeakerDirectory } from "@/components/SpeakerDirectory";
 import { cacheSavedItems, getCachedSavedItems } from "@/lib/offlineCache";
+import { cn } from "@/lib/utils";
 
 interface StartupProfile {
   id: string;
@@ -52,12 +54,14 @@ type StageType = "pre_seed" | "seed" | "series_a" | "series_b_plus" | "growth" |
 
 export const ProfileSettings = ({
   onSelectEpisode,
-  view = "profiles",
+  onCloseRequest,
+  defaultTab = "profiles",
   condensed
 }: {
   onSelectEpisode?: (id: string) => void;
-  /** Which focused surface to render. Plan/subscription now lives in Settings. */
-  view?: "profiles" | "bookmarks";
+  /** Called when the panel should close (e.g. navigating to a speaker's episodes). */
+  onCloseRequest?: () => void;
+  defaultTab?: "profiles" | "bookmarks" | "subscription";
   condensed?: boolean;
 }) => {
   const { toast } = useToast();
@@ -74,6 +78,7 @@ export const ProfileSettings = ({
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [showFolderDialog, setShowFolderDialog] = useState(false);
   const [editingFolder, setEditingFolder] = useState<Folder | null>(null);
+  const [bookmarkView, setBookmarkView] = useState<"folders" | "speakers">("folders");
 
   useEffect(() => {
     if (view === "bookmarks") {
@@ -525,9 +530,38 @@ export const ProfileSettings = ({
     );
   }
 
-  // view === "bookmarks"
-  return (
-    <div className="space-y-4">
+      <TabsContent value="bookmarks" className="space-y-4">
+        {/* Switch between bookmark folders and the speaker directory */}
+        <div className="inline-flex w-full rounded-lg bg-muted p-1 text-sm">
+          {(["folders", "speakers"] as const).map((view) => (
+            <button
+              key={view}
+              onClick={() => setBookmarkView(view)}
+              className={cn(
+                "flex-1 rounded-md py-1.5 font-medium capitalize transition-colors",
+                bookmarkView === view
+                  ? "bg-background shadow-sm text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {view}
+            </button>
+          ))}
+        </div>
+
+        {bookmarkView === "speakers" ? (
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Browse everyone featured in your analyzed videos. Tap a name to filter your library.
+            </p>
+            <ScrollArea className={condensed ? "h-[340px]" : "h-[460px]"}>
+              <div className="pr-2">
+                <SpeakerDirectory variant="list" onNavigate={onCloseRequest} />
+              </div>
+            </ScrollArea>
+          </div>
+        ) : (
+        <>
         <div className="flex justify-between items-center">
           <h3 className="font-medium">My Folders</h3>
           <Button
@@ -643,6 +677,13 @@ export const ProfileSettings = ({
           folder={editingFolder}
           onSave={handleSaveFolder}
         />
-    </div>
+        </>
+        )}
+      </TabsContent>
+
+      <TabsContent value="subscription" className="space-y-4">
+        <UsageDisplay showUpgrade />
+      </TabsContent>
+    </Tabs>
   );
 };
