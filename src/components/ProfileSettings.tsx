@@ -11,6 +11,7 @@ import { BookmarkFolderDialog } from "@/components/BookmarkFolderDialog";
 import { BookmarkedEpisodeCard } from "@/components/BookmarkedEpisodeCard";
 import { StartupProfileDialog } from "@/components/StartupProfileDialog";
 import { UpgradePrompt, UsageDisplay } from "@/components/subscription";
+import { cacheSavedItems, getCachedSavedItems } from "@/lib/offlineCache";
 
 interface StartupProfile {
   id: string;
