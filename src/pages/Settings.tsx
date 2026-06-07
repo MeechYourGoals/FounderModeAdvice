@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useActiveProfile } from "@/contexts/ActiveProfileContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,11 +16,12 @@ import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { NotificationSettings } from "@/components/NotificationSettings";
+import { SubscriptionSettingsCard } from "@/components/subscription";
 import { clearOfflineCache } from "@/lib/offlineCache";
 import { useToast } from "@/hooks/use-toast";
 import {
-  ArrowLeft, Loader2, RotateCcw, Shield, FileText, LifeBuoy, Mail,
-  Sparkles, Building2, Globe, CreditCard, SlidersHorizontal, User, Users, Trash2, Info,
+  ArrowLeft, Loader2, Shield, FileText, LifeBuoy, Mail,
+  Sparkles, Building2, Globe, SlidersHorizontal, User, Users, Trash2, Info,
 } from "lucide-react";
 import {
   getLibraryPrefs, setLibraryPrefs, SORT_LABELS, VIEW_LABELS,
@@ -30,7 +30,6 @@ import {
 
 const Settings = () => {
   const { user, loading: authLoading } = useAuth();
-  const { subscription, isNative, manageSubscription, restorePurchases } = useSubscription();
   const { profiles, activeProfileId, setActiveProfileId } = useActiveProfile();
   const { restart: restartOnboarding } = useOnboarding();
   const navigate = useNavigate();
@@ -216,35 +215,8 @@ const Settings = () => {
               </CardContent>
             </Card>
 
-            {/* Subscription */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5 text-primary" />
-                  Subscription
-                </CardTitle>
-                <CardDescription>
-                  {subscription?.tier === "free"
-                    ? "You're on the Free plan."
-                    : "Manage or cancel your plan anytime."}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-3">
-                {subscription?.tier === "free" ? (
-                  <Button onClick={() => navigate("/account")}>View plans</Button>
-                ) : (
-                  <Button variant="outline" onClick={() => { triggerHapticFeedback("light"); manageSubscription(); }}>
-                    Manage Subscription
-                  </Button>
-                )}
-                {isNative && (
-                  <Button variant="ghost" size="sm" onClick={() => restorePurchases()}>
-                    <RotateCcw className="h-4 w-4 mr-2" />
-                    Restore Purchases
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
+            {/* Subscription — canonical plan/billing home */}
+            <SubscriptionSettingsCard />
 
             {/* Getting started */}
             <Card>
