@@ -1151,7 +1151,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                       <span className="w-3 h-3 rounded-full" style={{ backgroundColor: folder.color }} />
                       <span className="text-sm">{folder.name}</span>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => handleDeleteFolder(folder.id)}>
+                    <Button variant="ghost" size="sm" onClick={() => setFolderPendingDelete(folder)}>
                       <Trash2 className="w-3 h-3" />
                     </Button>
                   </div>
