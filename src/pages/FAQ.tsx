@@ -17,7 +17,7 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
   },
   {
     q: "What kinds of videos can I analyze?",
-    a: "Most public YouTube, Spotify, and Apple Podcasts links work. You're responsible for ensuring you have the right to submit a given link.",
+    a: "Public YouTube links work. Spotify and Apple Podcasts are not supported because those platforms do not expose public transcripts. You're responsible for ensuring you have the right to submit a given link.",
   },
   {
     q: "How do business profiles work?",
