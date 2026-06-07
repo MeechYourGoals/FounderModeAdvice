@@ -55,13 +55,13 @@ type StageType = "pre_seed" | "seed" | "series_a" | "series_b_plus" | "growth" |
 export const ProfileSettings = ({
   onSelectEpisode,
   onCloseRequest,
-  defaultTab = "profiles",
+  view = "profiles",
   condensed
 }: {
   onSelectEpisode?: (id: string) => void;
   /** Called when the panel should close (e.g. navigating to a speaker's episodes). */
   onCloseRequest?: () => void;
-  defaultTab?: "profiles" | "bookmarks" | "subscription";
+  view?: "profiles" | "bookmarks" | "subscription";
   condensed?: boolean;
 }) => {
   const { toast } = useToast();
@@ -81,12 +81,12 @@ export const ProfileSettings = ({
   const [bookmarkView, setBookmarkView] = useState<"folders" | "speakers">("folders");
 
   useEffect(() => {
-    if (defaultTab === "bookmarks") {
+    if (view === "bookmarks") {
       fetchFolders();
     } else {
       fetchProfiles();
     }
-  }, [defaultTab]);
+  }, [view]);
 
   const fetchProfiles = async () => {
     try {
@@ -457,7 +457,7 @@ export const ProfileSettings = ({
 
   const displayProfileLimit = profileLimit >= 9999 ? "Unlimited" : profileLimit;
 
-  if (defaultTab === "profiles") {
+  if (view === "profiles") {
     return (
       <div className="space-y-4">
         {!profileCheck.allowed && (
@@ -530,7 +530,7 @@ export const ProfileSettings = ({
     );
   }
 
-  if (defaultTab === "bookmarks") {
+  if (view === "bookmarks") {
     return (
       <div className="space-y-4">
         {/* Switch between bookmark folders and the speaker directory */}
@@ -685,7 +685,7 @@ export const ProfileSettings = ({
     );
   }
 
-  if (defaultTab === "subscription") {
+  if (view === "subscription") {
     return (
       <div className="space-y-4">
         <UsageDisplay showUpgrade />
