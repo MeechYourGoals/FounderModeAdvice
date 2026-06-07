@@ -67,8 +67,45 @@ const Auth = () => {
     }
   };
 
-  // Apple sign-in is hidden until Apple Developer + Supabase are configured.
-  // Restore the button + a handleAppleSignIn handler (mirroring handleGoogleSignIn) when ready.
+  const handleAppleSignIn = async () => {
+    triggerHapticFeedback('light');
+    setAppleLoading(true);
+    try {
+      if (isLovablePreview()) {
+        const { error } = await lovable.auth.signInWithOAuth("apple", {
+          redirect_uri: window.location.origin,
+        });
+        if (error) {
+          toast({
+            title: "Apple sign-in failed",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
+      } else {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: "apple",
+          options: {
+            redirectTo: getOAuthRedirectUrl(),
+            skipBrowserRedirect: true,
+          },
+        });
+        if (error) throw error;
+        if (data?.url) {
+          window.location.href = data.url;
+        }
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setAppleLoading(false);
+    }
+  };
+
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
