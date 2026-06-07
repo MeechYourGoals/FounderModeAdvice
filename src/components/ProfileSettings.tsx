@@ -457,7 +457,7 @@ export const ProfileSettings = ({
 
   const displayProfileLimit = profileLimit >= 9999 ? "Unlimited" : profileLimit;
 
-  if (view === "profiles") {
+  if (defaultTab === "profiles") {
     return (
       <div className="space-y-4">
         {!profileCheck.allowed && (
