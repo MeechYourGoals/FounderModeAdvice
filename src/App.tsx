@@ -21,6 +21,7 @@ import FAQ from "./pages/FAQ";
 import AccountDeletion from "./pages/AccountDeletion";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
+import { OfflineBadge } from "@/components/OfflineBadge";
 
 const queryClient = new QueryClient();
 
@@ -61,6 +62,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <SubscriptionCallback />
+            <OfflineBadge />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />

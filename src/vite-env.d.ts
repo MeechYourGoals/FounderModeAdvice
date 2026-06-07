@@ -1,5 +1,3 @@
 /// <reference types="vite/client" />
 
-interface Window {
-  onRevenueCatPurchase?: () => void;
-}
+declare const __APP_VERSION__: string;

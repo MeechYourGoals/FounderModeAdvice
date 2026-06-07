@@ -11,6 +11,7 @@ import { BookmarkFolderDialog } from "@/components/BookmarkFolderDialog";
 import { BookmarkedEpisodeCard } from "@/components/BookmarkedEpisodeCard";
 import { StartupProfileDialog } from "@/components/StartupProfileDialog";
 import { UpgradePrompt, UsageDisplay } from "@/components/subscription";
+import { cacheSavedItems, getCachedSavedItems } from "@/lib/offlineCache";
 
 interface StartupProfile {
   id: string;
@@ -231,10 +232,36 @@ export const ProfileSettings = ({
   };
 
   const fetchBookmarksForFolder = async (folderId: string) => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
 
+    // If we're offline, hydrate from cache immediately.
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      const cached = await getCachedSavedItems(user.id);
+      setBookmarkedEpisodes(
+        cached
+          .filter((c) => c.folder_id === folderId)
+          .map((c) => ({
+            id: c.id,
+            user_id: c.user_id,
+            episode_id: c.episode_id,
+            folder_id: c.folder_id,
+            notes: c.notes,
+            created_at: null,
+            episodes: c.episode_title
+              ? {
+                  title: c.episode_title,
+                  founder_names: c.episode_founder_names,
+                  release_date: c.episode_release_date,
+                  platform: c.episode_platform,
+                }
+              : undefined,
+          })) as never,
+      );
+      return;
+    }
+
+    try {
       const { data, error } = await supabase
         .from('bookmarked_episodes')
         .select(`
@@ -251,9 +278,46 @@ export const ProfileSettings = ({
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setBookmarkedEpisodes(data || []);
+      const rows = data || [];
+      setBookmarkedEpisodes(rows);
+
+      // Write-through to offline cache so the Saved tab stays useful offline.
+      await cacheSavedItems(
+        user.id,
+        rows.map((r: typeof rows[number]) => ({
+          id: r.id,
+          episode_id: r.episode_id,
+          folder_id: r.folder_id,
+          notes: r.notes,
+          episode_title: r.episodes?.title ?? null,
+          episode_founder_names: r.episodes?.founder_names ?? null,
+          episode_release_date: r.episodes?.release_date ?? null,
+          episode_platform: r.episodes?.platform ?? null,
+        })),
+      );
     } catch (error) {
-      console.error("Error fetching bookmarks:", error);
+      console.error("Error fetching bookmarks, falling back to cache:", error);
+      const cached = await getCachedSavedItems(user.id);
+      setBookmarkedEpisodes(
+        cached
+          .filter((c) => c.folder_id === folderId)
+          .map((c) => ({
+            id: c.id,
+            user_id: c.user_id,
+            episode_id: c.episode_id,
+            folder_id: c.folder_id,
+            notes: c.notes,
+            created_at: null,
+            episodes: c.episode_title
+              ? {
+                  title: c.episode_title,
+                  founder_names: c.episode_founder_names,
+                  release_date: c.episode_release_date,
+                  platform: c.episode_platform,
+                }
+              : undefined,
+          })) as never,
+      );
     }
   };
 

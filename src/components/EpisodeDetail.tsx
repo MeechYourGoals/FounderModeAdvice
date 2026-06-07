@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { cacheLastAnalysis, getCachedAnalysis } from "@/lib/offlineCache";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -192,10 +193,29 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
   const { canAnalyzeVideo, refreshSubscription } = useSubscription();
 
   const fetchEpisodeDetails = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      setCurrentUserId(user?.id || null);
+    const { data: { user } } = await supabase.auth.getUser();
+    setCurrentUserId(user?.id || null);
 
+    // Offline path — serve last cached payload if the device has no network.
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      const cached = await getCachedAnalysis(episodeId);
+      if (cached?.payload) {
+        const p = cached.payload as {
+          episode?: unknown;
+          lessons?: unknown[];
+          callouts?: unknown[];
+          insights?: unknown[];
+        };
+        if (p.episode) setEpisode(p.episode as never);
+        if (p.lessons) setLessons(p.lessons as never);
+        if (p.callouts) setCallouts(p.callouts as never);
+        if (p.insights) setPersonalizedInsights(p.insights as never);
+        setLoading(false);
+        return;
+      }
+    }
+
+    try {
       const { data: episodeData, error: episodeError } = await supabase
         .from('episodes')
         .select(`
@@ -239,19 +259,43 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
         .select('*')
         .in('lesson_id', (lessonsData || []).map(l => l.id));
 
-      if (!insightsError && insightsData) {
-        setPersonalizedInsights(insightsData.map(insight => ({
-          id: insight.id,
-          lesson_id: insight.lesson_id,
-          personalized_text: insight.personalized_text,
-          relevance_score: insight.relevance_score,
-          action_items: Array.isArray(insight.action_items) 
-            ? (insight.action_items as string[])
-            : []
-        })));
+      const insights = !insightsError && insightsData
+        ? insightsData.map(insight => ({
+            id: insight.id,
+            lesson_id: insight.lesson_id,
+            personalized_text: insight.personalized_text,
+            relevance_score: insight.relevance_score,
+            action_items: Array.isArray(insight.action_items)
+              ? (insight.action_items as string[])
+              : [],
+          }))
+        : [];
+      setPersonalizedInsights(insights);
+
+      // Write-through to offline cache so this analysis stays viewable offline.
+      if (user) {
+        await cacheLastAnalysis(user.id, episodeId, {
+          episode: episodeData,
+          lessons: lessonsData || [],
+          callouts: calloutsData || [],
+          insights,
+        });
       }
     } catch (error) {
-      console.error('Error fetching episode details:', error);
+      console.error('Error fetching episode details, trying cache:', error);
+      const cached = await getCachedAnalysis(episodeId);
+      if (cached?.payload) {
+        const p = cached.payload as {
+          episode?: unknown;
+          lessons?: unknown[];
+          callouts?: unknown[];
+          insights?: unknown[];
+        };
+        if (p.episode) setEpisode(p.episode as never);
+        if (p.lessons) setLessons(p.lessons as never);
+        if (p.callouts) setCallouts(p.callouts as never);
+        if (p.insights) setPersonalizedInsights(p.insights as never);
+      }
     } finally {
       setLoading(false);
     }
