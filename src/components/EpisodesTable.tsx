@@ -106,6 +106,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [manageFoldersOpen, setManageFoldersOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
+  const [bulkFolderNames, setBulkFolderNames] = useState<string[]>([""]);
 
   // Tags & view mode
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
