@@ -259,6 +259,22 @@ const Settings = () => {
               </CardContent>
             </Card>
 
+            {/* About */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Info className="h-5 w-5 text-primary" />
+                  About
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground space-y-1">
+                <div className="flex items-center justify-between">
+                  <span>App version</span>
+                  <span className="font-mono text-xs">{__APP_VERSION__}</span>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Legal & account */}
             <Card>
               <CardHeader>
