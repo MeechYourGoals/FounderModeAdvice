@@ -1,32 +1,34 @@
-## What I found
+## Problem
 
-**Google sign-in code is intact** in `src/pages/Auth.tsx`:
-- In Lovable preview it calls `lovable.auth.signInWithOAuth("google", ...)` (managed bridge)
-- On published/custom domain/native it calls `supabase.auth.signInWithOAuth({ provider: "google" })`
+Clicking **Add** in Manage Folders does nothing because the `episode_folders` and `episode_folder_assignments` tables are missing GRANTs to `authenticated` / `service_role`. Supabase's Data API silently rejects the insert (permission denied), the toast never fires, and the list stays empty. Same issue affects assigning episodes to folders.
 
-So the most likely cause isn't the React code — it's that the managed Google provider on the Cloud backend has drifted (disabled, or BYOC credentials expired/misconfigured after the recent security pass). The same applies to Apple, which was intentionally hidden behind a comment at lines 69–70 and never restored.
+## Fix
 
-## Plan
+### 1. Database migration — add missing GRANTs
+```sql
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.episode_folders TO authenticated;
+GRANT ALL ON public.episode_folders TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.episode_folder_assignments TO authenticated;
+GRANT ALL ON public.episode_folder_assignments TO service_role;
+```
 
-### 1. Re-enable managed Google + Apple on the backend
-Use `configure_social_auth` with `providers: ["google", "apple"]`. This (re)provisions the Lovable-managed OAuth credentials for both providers so no Apple Developer / Google Cloud setup is required from you. Email/password stays enabled.
+### 2. Surface insert errors
+In `handleCreateFolder` (EpisodesTable.tsx), show an error toast when `error` is present instead of silently failing — so future permission issues are visible.
 
-### 2. Restore the Apple button + handler in `src/pages/Auth.tsx`
-- Add `appleLoading` state and a `handleAppleSignIn` that mirrors `handleGoogleSignIn` (uses `lovable.auth.signInWithOAuth("apple", ...)` in preview, `supabase.auth.signInWithOAuth({ provider: "apple" })` elsewhere).
-- Add a "Continue with Apple" outline button under the Google button in both the Sign In and Sign Up tabs, with the Apple logo SVG.
-- Remove the dead comment block at lines 69–70.
+### 3. Bulk-add UI in the Manage Folders modal
+Replace the single input + Add row with a dynamic list of inputs:
 
-### 3. Sanity-check the Google flow
-- Confirm `src/integrations/lovable/index.ts` still exists and exports `lovable.auth.signInWithOAuth` (it should after the configure step).
-- After the configure call, try Google on the published URL (`foundermodeadvice.com`). Per Lovable's known issue, sandboxed preview iframes can block third-party cookies during OAuth even when the provider is correctly configured — published is the source of truth.
+- Start with one input row.
+- A **＋** button next to each row appends another empty input below.
+- A small **✕** button on extra rows removes that row.
+- A single **Create folders** button at the bottom inserts all non-empty, trimmed, de-duplicated names in one batched `insert([...])` call.
+- Enter in any field also appends a new row (so users can rapid-fire add).
+- After success: clear rows back to one, refetch folders, toast `Created N folder(s)`.
 
-### 4. Note on Apple credentials
-This plan uses Lovable's **managed** Apple credentials (the default, zero-config option). The Apple sign-in sheet will show "Lovable" as the app name. If you later want your own app name on the Apple sheet, we can switch to BYOC and I'll walk you through the Services ID / .p8 key / Team ID setup in the Apple Developer console.
+Existing folder list below stays the same (color dot + name + delete).
+
+No other files change. The "Add" pattern in `ProfileSettings.tsx` is unrelated (different tables) and is left alone.
 
 ## Files touched
-- `src/pages/Auth.tsx` — restore Apple button + handler, drop the hidden-comment lines
-- Backend auth providers — via `configure_social_auth` (no file diff)
-
-## Out of scope
-- No changes to the email/password flow, forgot-password page, or the auth UI layout beyond adding the Apple button.
-- No Capacitor/native Apple Sign In plugin work — the existing OAuth flow handles both web and the Despia wrapper.
+- New migration (GRANTs only — no schema change)
+- `src/components/EpisodesTable.tsx` — `handleCreateFolder` → `handleCreateFolders` (bulk), modal JSX rewritten for the multi-input UI
