@@ -554,6 +554,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_notification_prefs: {
+        Row: {
+          created_at: string
+          daily_prompt: boolean
+          marketing: boolean
+          plan_reminders: boolean
+          push_token: string | null
+          timezone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          daily_prompt?: boolean
+          marketing?: boolean
+          plan_reminders?: boolean
+          push_token?: string | null
+          timezone?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          daily_prompt?: boolean
+          marketing?: boolean
+          plan_reminders?: boolean
+          push_token?: string | null
+          timezone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_onboarding: {
         Row: {
           completed: boolean
