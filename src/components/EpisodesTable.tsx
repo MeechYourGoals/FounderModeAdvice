@@ -370,21 +370,31 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     }
   };
 
-  const handleCreateFolder = async () => {
-    if (!newFolderName.trim()) return;
+  const handleCreateFolders = async () => {
+    const names = Array.from(
+      new Set(
+        bulkFolderNames
+          .map(n => n.trim())
+          .filter(n => n.length > 0)
+      )
+    );
+    if (names.length === 0) return;
     triggerHapticFeedback('medium');
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
     const { error } = await supabase
       .from("episode_folders")
-      .insert({ user_id: user.id, name: newFolderName.trim() } as any);
+      .insert(names.map(name => ({ user_id: user.id, name })) as any);
 
-    if (!error) {
-      setNewFolderName("");
-      fetchFolders();
-      toast({ title: "Folder created" });
+    if (error) {
+      toast({ title: "Could not create folders", description: error.message, variant: "destructive" });
+      return;
     }
+    setBulkFolderNames([""]);
+    setNewFolderName("");
+    fetchFolders();
+    toast({ title: names.length === 1 ? "Folder created" : `Created ${names.length} folders` });
   };
 
   const handleDeleteFolder = async (folderId: string) => {
