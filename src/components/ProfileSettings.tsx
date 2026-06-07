@@ -81,12 +81,12 @@ export const ProfileSettings = ({
   const [bookmarkView, setBookmarkView] = useState<"folders" | "speakers">("folders");
 
   useEffect(() => {
-    if (view === "bookmarks") {
+    if (defaultTab === "bookmarks") {
       fetchFolders();
     } else {
       fetchProfiles();
     }
-  }, [view]);
+  }, [defaultTab]);
 
   const fetchProfiles = async () => {
     try {
