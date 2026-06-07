@@ -1162,6 +1162,31 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
         </DialogContent>
       </Dialog>
 
+      <AlertDialog open={!!folderPendingDelete} onOpenChange={(open) => !open && setFolderPendingDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this folder?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{folderPendingDelete?.name}" will be removed and any episodes assigned to it will no longer be grouped here. Your episodes themselves are not deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (folderPendingDelete) {
+                  await handleDeleteFolder(folderPendingDelete.id);
+                  setFolderPendingDelete(null);
+                }
+              }}
+            >
+              Delete folder
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <ExportModal episodeId={selectedExportId} open={exportModalOpen} onOpenChange={setExportModalOpen} />
     </>
   );
