@@ -403,8 +403,31 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     toast({ title: names.length === 1 ? "Folder created" : `Created ${names.length} folders` });
   };
 
-  const handleDeleteFolder = async (folderId: string) => {
+  const handleDeleteFolder = async (folderId: string, moveToFolderId?: string) => {
     triggerHapticFeedback('medium');
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (moveToFolderId && user) {
+      // Find episodes assigned to the folder being deleted, then assign to target
+      const affectedEpisodeIds = Object.entries(folderAssignments)
+        .filter(([, ids]) => ids.includes(folderId))
+        .map(([episodeId]) => episodeId);
+
+      const rows = affectedEpisodeIds
+        .filter((episodeId) => !(folderAssignments[episodeId] || []).includes(moveToFolderId))
+        .map((episodeId) => ({ user_id: user.id, episode_id: episodeId, folder_id: moveToFolderId }));
+
+      if (rows.length > 0) {
+        const { error: moveError } = await supabase
+          .from("episode_folder_assignments")
+          .insert(rows as any);
+        if (moveError) {
+          toast({ title: "Couldn't move episodes", description: moveError.message, variant: "destructive" });
+          return;
+        }
+      }
+    }
+
     const { error } = await supabase
       .from("episode_folders")
       .delete()
@@ -413,6 +436,8 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
       if (selectedFolderId === folderId) setSelectedFolderId(null);
       fetchFolders();
       toast({ title: "Folder deleted" });
+    } else {
+      toast({ title: "Couldn't delete folder", description: error.message, variant: "destructive" });
     }
   };
 
