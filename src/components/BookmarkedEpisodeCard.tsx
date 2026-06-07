@@ -6,6 +6,7 @@ import { Eye, Trash2, FolderInput } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { ShareButton } from "@/components/ShareButton";
 import {
   Select,
   SelectContent,
@@ -185,11 +186,23 @@ export const BookmarkedEpisodeCard = ({
               {editingNotes ? "Cancel" : "Notes"}
             </Button>
             
-            <Button 
-              size="sm" 
-              variant="ghost" 
+            <ShareButton
+              share={{
+                title: bookmark.episodes?.title || "Founder insight",
+                text: bookmark.notes
+                  ? `"${bookmark.notes}"`
+                  : "A founder insight I saved on Founder Mode Advice.",
+                url: `https://foundermodeadvice.com/?episode=${bookmark.episode_id}`,
+              }}
+              iconOnly
+            />
+
+            <Button
+              size="sm"
+              variant="ghost"
               onClick={onRemove}
               className="ml-auto"
+              aria-label="Remove bookmark"
             >
               <Trash2 className="w-4 h-4" />
             </Button>

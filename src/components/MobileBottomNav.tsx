@@ -52,22 +52,22 @@ export const MobileBottomNav = () => {
       <div className="relative flex items-center justify-around h-14 max-h-[calc(3.5rem+var(--safe-area-bottom))]">
         <SideItem
           icon={LayoutGrid}
-          label="Library"
+          label="Home"
           active={onHome}
           onClick={() => { triggerHapticFeedback("light"); navigate("/"); }}
         />
         <SideItem
           icon={Bookmark}
-          label="Bookmarks"
+          label="Saved"
           active={false}
           onClick={() => goHomeWith({ panel: "bookmarks" })}
         />
 
-        {/* Center Analyze FAB */}
+        {/* Center Ask FAB */}
         <div className="flex-1 flex justify-center">
           <button
             onClick={() => goHomeWith({ action: "analyze" })}
-            aria-label="Analyze a video"
+            aria-label="Ask the advisor"
             className="-mt-6 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 flex items-center justify-center ring-4 ring-background transition-transform active:scale-90 touch-manipulation"
           >
             <Plus className="h-7 w-7" strokeWidth={2.5} />
@@ -82,7 +82,7 @@ export const MobileBottomNav = () => {
         />
         <SideItem
           icon={User}
-          label="Account"
+          label="Profile"
           active={location.pathname.startsWith("/account")}
           onClick={() => { triggerHapticFeedback("light"); navigate("/account"); }}
         />
