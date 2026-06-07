@@ -2,6 +2,8 @@ import { Brain, TrendingUp, CirclePlay, ArrowRight, MessageSquare, ShieldCheck, 
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { BrandLogo } from "@/components/BrandLogo";
+
 import { Footer } from "@/components/Footer";
 import { SampleDemo } from "@/components/marketing/SampleDemo";
 import { TIER_PRICING, type SubscriptionTier } from "@/types/subscription";
