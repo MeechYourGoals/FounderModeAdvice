@@ -312,29 +312,26 @@ export async function restorePurchases(): Promise<SubscriptionTier> {
   }
 }
 
-// Sync subscription status to Supabase
+// Sync subscription status to Supabase via verified server-side edge function.
+// The edge function re-verifies the user's entitlement with RevenueCat using
+// REVENUECAT_API_KEY before writing — never trust the client-supplied tier.
 export async function syncSubscriptionToSupabase(tier: SubscriptionTier): Promise<void> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { error } = await supabase
-      .from('user_subscriptions')
-      .upsert({
-        user_id: user.id,
-        tier,
-        updated_at: new Date().toISOString(),
-      }, {
-        onConflict: 'user_id',
-      });
+    const { error } = await supabase.functions.invoke('sync-revenuecat-subscription', {
+      body: { fallbackTier: tier },
+    });
 
     if (error) {
-      console.error('Failed to sync subscription to Supabase', error);
+      console.error('Failed to sync subscription to backend', error);
     }
   } catch (error) {
     console.error('Error syncing subscription', error);
   }
 }
+
 
 // Get subscription info from Supabase (direct queries, no RPC)
 export async function getSubscriptionInfo(): Promise<SubscriptionInfo | null> {
