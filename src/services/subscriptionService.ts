@@ -449,46 +449,29 @@ export function canPerformAction(
   return { allowed: true };
 }
 
-// Increment analysis count (direct upsert)
+// Increment analysis count via SECURITY DEFINER RPC (writes are not allowed
+// directly from the client — RLS only permits service_role / SECURITY DEFINER).
 export async function incrementAnalysisCount(): Promise<number> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return 0;
 
-    const monthYear = new Date().toISOString().slice(0, 7);
-
-    // Try to get existing record
-    const { data: existing } = await supabase
-      .from('user_monthly_usage' as any)
-      .select('analyses_count')
-      .eq('user_id', user.id)
-      .eq('month_year', monthYear)
-      .single();
-
-    const newCount = ((existing as any)?.analyses_count || 0) + 1;
-
-    const { error } = await supabase
-      .from('user_monthly_usage' as any)
-      .upsert({
-        user_id: user.id,
-        month_year: monthYear,
-        analyses_count: newCount,
-        updated_at: new Date().toISOString(),
-      } as any, {
-        onConflict: 'user_id,month_year',
-      });
+    const { data, error } = await supabase.rpc('increment_analysis_count', {
+      p_user_id: user.id,
+    });
 
     if (error) {
       console.error('Failed to increment analysis count', error);
       return 0;
     }
 
-    return newCount;
+    return (data as number) ?? 0;
   } catch (error) {
     console.error('Error incrementing analysis count', error);
     return 0;
   }
 }
+
 
 // Get Stripe checkout URL (for web payments)
 export async function getStripeCheckoutUrl(priceId: string): Promise<string | null> {
