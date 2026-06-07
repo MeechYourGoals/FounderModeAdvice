@@ -19,15 +19,15 @@ export const HeroSection = () => {
         className="absolute inset-0"
         style={{ background: 'var(--gradient-mesh)' }}
       />
-      <div className="container relative mx-auto px-4 py-12 sm:py-24">
-        <div className="max-w-4xl mx-auto text-center space-y-4 sm:space-y-6">
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-foreground animate-slide-up">
+      <div className="container relative mx-auto px-4 py-8 sm:py-12">
+        <div className="max-w-4xl mx-auto text-center space-y-3 sm:space-y-4">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-foreground animate-slide-up">
             Founder Mode Advice
           </h1>
-          <p className="text-base sm:text-xl text-muted-foreground max-w-2xl mx-auto animate-slide-up">
+          <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto animate-slide-up">
             Turn any video on the web into tactical advice tailored to you, your situation, and your business.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 pt-4 sm:pt-8 animate-slide-up">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pt-2 sm:pt-4 animate-slide-up">
             <FeatureCard
               title="Structured Extraction"
               description="Pull the lessons that matter from any video. Every insight is organized into a clear, scannable format you can act on."

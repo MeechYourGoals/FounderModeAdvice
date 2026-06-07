@@ -21,7 +21,7 @@ import { clearOfflineCache } from "@/lib/offlineCache";
 import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft, Loader2, RotateCcw, Shield, FileText, LifeBuoy, Mail,
-  Sparkles, Building2, Globe, CreditCard, SlidersHorizontal, User, Users, Trash2, Info,
+  Sparkles, Building2, Globe, CreditCard, SlidersHorizontal, User, Trash2, Info,
 } from "lucide-react";
 import {
   getLibraryPrefs, setLibraryPrefs, SORT_LABELS, VIEW_LABELS,
@@ -282,7 +282,6 @@ const Settings = () => {
               </CardHeader>
               <CardContent className="space-y-1">
                 <SettingsLink to="/account" icon={User} label="Account & data" />
-                <SettingsLink to="/founders" icon={Users} label="Founders directory" />
                 <SettingsLink to="/faq" icon={LifeBuoy} label="FAQ" />
                 <SettingsLink to="/privacy-policy" icon={Shield} label="Privacy Policy" />
                 <SettingsLink to="/terms-of-service" icon={FileText} label="Terms of Service" />

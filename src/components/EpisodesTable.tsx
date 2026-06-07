@@ -652,7 +652,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by title, founder, or company..."
+              placeholder="Search by title, speaker, or company..."
               className="pl-9 pr-9 h-9"
             />
             {search && (
@@ -671,10 +671,10 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 pt-2 animate-in slide-in-from-top-2">
               <Select value={founderFilter} onValueChange={(val) => {setFounderFilter(val); setSearchParams(prev => { if(val==="all") prev.delete("founder"); else prev.set("founder", val); return prev; })}}>
                 <SelectTrigger className="h-8">
-                  <SelectValue placeholder="Founder" />
+                  <SelectValue placeholder="Speaker" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Founders</SelectItem>
+                  <SelectItem value="all">All Speakers</SelectItem>
                   {uniqueFounders.map(f => (
                     <SelectItem key={f} value={f}>{f}</SelectItem>
                   ))}
@@ -759,7 +759,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                 className="cursor-pointer whitespace-nowrap text-[10px]"
                 onClick={() => handleSort(col)}
               >
-                {col === "created_at" ? "Added" : col === "release_date" ? "Date" : col === "tag_count" ? "Tags" : col.charAt(0).toUpperCase() + col.slice(1)}
+                {col === "created_at" ? "Added" : col === "release_date" ? "Date" : col === "tag_count" ? "Tags" : col === "founder" ? "Speaker" : col.charAt(0).toUpperCase() + col.slice(1)}
                 {sortColumn === col && (sortDirection === "asc" ? " ↑" : " ↓")}
               </Badge>
             ))}
@@ -875,7 +875,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                     <span className="flex items-center">Company<SortIcon col="company" /></span>
                   </TableHead>
                   <TableHead className="cursor-pointer select-none" onClick={() => handleSort("founder")}>
-                    <span className="flex items-center">Founder(s)<SortIcon col="founder" /></span>
+                    <span className="flex items-center">Speaker(s)<SortIcon col="founder" /></span>
                   </TableHead>
                   <TableHead className="cursor-pointer select-none" onClick={() => handleSort("stage")}>
                     <span className="flex items-center">Stage<SortIcon col="stage" /></span>
