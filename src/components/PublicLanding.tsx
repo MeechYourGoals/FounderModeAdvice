@@ -1,4 +1,4 @@
-import { Brain, TrendingUp, Target, ArrowRight, MessageSquare, ShieldCheck, Check, X } from "lucide-react";
+import { Brain, TrendingUp, CirclePlay, ArrowRight, MessageSquare, ShieldCheck, Check, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -90,24 +90,24 @@ export const PublicLanding = () => {
       </section>
 
       {/* Features Grid */}
-      <section className="container mx-auto px-4 py-12 sm:py-16 md:py-24">
+      <section className="container mx-auto px-4 pt-12 sm:pt-16 md:pt-24 pb-8 sm:pb-10 md:pb-12">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-8 sm:mb-12">
             Turn expert content into personalized strategy
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
             <FeatureCard
-              icon={<Brain className="w-6 h-6 sm:w-8 sm:h-8" />}
+              icon={<Brain className="h-5 w-5" />}
               title="Beyond passive watching"
               description="Convert interviews, talks, and podcasts into structured lessons, risks, and action items for your business"
             />
             <FeatureCard
-              icon={<TrendingUp className="w-6 h-6 sm:w-8 sm:h-8" />}
+              icon={<TrendingUp className="h-5 w-5" />}
               title="Tailored to your business"
               description="Map the speaker's thinking to your industry, stage, customers, and next decision"
             />
             <FeatureCard
-              icon={<Target className="w-6 h-6 sm:w-8 sm:h-8" />}
+              icon={<CirclePlay className="h-5 w-5" />}
               title="Ask any video"
               description="Open a transcript-grounded chat after analysis and dig into the advice behind each recommendation"
             />
@@ -133,7 +133,7 @@ export const PublicLanding = () => {
             </div>
             <div className="space-y-3">
               <MiniFeature icon={<ShieldCheck className="w-4 h-4" />} title="Any public video in" description="Paste a business, founder, operator, investor, strategy, or leadership video from YouTube, Spotify, or Apple Podcasts." />
-              <MiniFeature icon={<Target className="w-4 h-4" />} title="Tailored advice out" description="Insight mapped to your industry, stage, customers, and constraints — not generic venture-scale playbooks." />
+              <MiniFeature icon={<TrendingUp className="w-4 h-4" />} title="Tailored advice out" description="Insight mapped to your industry, stage, customers, and constraints — not generic venture-scale playbooks." />
               <MiniFeature icon={<MessageSquare className="w-4 h-4" />} title="Transcript-grounded Q&A" description="Ask follow-up questions directly against the video transcript and your business context after analysis." />
             </div>
           </div>
@@ -244,7 +244,7 @@ const MiniFeature = ({ icon, title, description }: { icon: React.ReactNode; titl
 const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) => {
   return (
     <div className="glass elevate-hover p-4 sm:p-6 rounded-2xl hover:border-primary/30">
-      <div className="text-primary mb-3 sm:mb-4">
+      <div className="mb-3 sm:mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
         {icon}
       </div>
       <h3 className="font-semibold text-base sm:text-lg mb-1 sm:mb-2">{title}</h3>
