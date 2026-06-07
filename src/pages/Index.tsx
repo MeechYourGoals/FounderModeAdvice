@@ -5,6 +5,8 @@ import { EpisodesTable } from "@/components/EpisodesTable";
 import { EpisodeDetail } from "@/components/EpisodeDetail";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ProfileSettings } from "@/components/ProfileSettings";
+import { BrandLogo } from "@/components/BrandLogo";
+
 import { PublicLanding } from "@/components/PublicLanding";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/contexts/SubscriptionContext";
