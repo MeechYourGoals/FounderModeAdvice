@@ -1,4 +1,4 @@
-import { Brain, TrendingUp, CirclePlay, ArrowRight, MessageSquare, ShieldCheck, Check, X } from "lucide-react";
+import { Brain, TrendingUp, CirclePlay, ArrowRight, MessageSquare, ShieldCheck, Check, X, Target } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -67,6 +67,10 @@ export const PublicLanding = () => {
           <div className="max-w-4xl mx-auto text-center space-y-6 sm:space-y-8">
             <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold tracking-tight text-foreground animate-slide-up">
               Build Your Boardroom
+              <span className="block text-lg sm:text-2xl md:text-3xl font-normal text-muted-foreground mt-3 sm:mt-4">
+                then,
+              </span>
+              <span className="block mt-2 sm:mt-3">Instill Their Insights</span>
             </h1>
             <p className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto animate-slide-up">
               Turn founder, operator, and business-building videos into personalized advice for your company, industry, and stage — whether you run a startup, an agency, a local shop, a storefront, or a side hustle.
