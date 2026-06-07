@@ -3,9 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Edit2, FolderPlus, Zap } from "lucide-react";
+import { Plus, Trash2, Edit2, FolderPlus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { BookmarkFolderDialog } from "@/components/BookmarkFolderDialog";
 import { BookmarkedEpisodeCard } from "@/components/BookmarkedEpisodeCard";
@@ -66,9 +65,8 @@ export const ProfileSettings = ({
   condensed?: boolean;
 }) => {
   const { toast } = useToast();
-  const { subscription, canCreateProfile, canCreateBookmark, refreshSubscription } = useSubscription();
+  const { subscription, canCreateProfile } = useSubscription();
   const profileLimit = subscription?.limits.profiles.max || 1;
-  const bookmarkLimit = subscription?.limits.bookmarks.max || 5;
   const [profiles, setProfiles] = useState<StartupProfile[]>([]);
   const [editingProfile, setEditingProfile] = useState<StartupProfile | null>(null);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
@@ -83,9 +81,12 @@ export const ProfileSettings = ({
   const [bookmarkView, setBookmarkView] = useState<"folders" | "speakers">("folders");
 
   useEffect(() => {
-    fetchProfiles();
-    fetchFolders();
-  }, []);
+    if (view === "bookmarks") {
+      fetchFolders();
+    } else {
+      fetchProfiles();
+    }
+  }, [view]);
 
   const fetchProfiles = async () => {
     try {
@@ -453,22 +454,12 @@ export const ProfileSettings = ({
   };
 
   const profileCheck = canCreateProfile();
-  const bookmarkCheck = canCreateBookmark();
 
   const displayProfileLimit = profileLimit >= 9999 ? "Unlimited" : profileLimit;
 
-  return (
-    <Tabs defaultValue={defaultTab} className="mt-6">
-      <TabsList className="grid w-full grid-cols-3">
-        <TabsTrigger value="profiles">Profiles</TabsTrigger>
-        <TabsTrigger value="bookmarks">Bookmarks</TabsTrigger>
-        <TabsTrigger value="subscription">
-          <Zap className="h-4 w-4 mr-1" />
-          Plan
-        </TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="profiles" className="space-y-4">
+  if (view === "profiles") {
+    return (
+      <div className="space-y-4">
         {!profileCheck.allowed && (
           <UpgradePrompt
             message={profileCheck.message || "Upgrade to add more profiles"}
@@ -535,7 +526,9 @@ export const ProfileSettings = ({
           profile={editingProfile}
           onSave={handleSaveProfile}
         />
-      </TabsContent>
+      </div>
+    );
+  }
 
       <TabsContent value="bookmarks" className="space-y-4">
         {/* Switch between bookmark folders and the speaker directory */}
