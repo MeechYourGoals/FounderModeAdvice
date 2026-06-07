@@ -530,7 +530,9 @@ export const ProfileSettings = ({
     );
   }
 
-      <TabsContent value="bookmarks" className="space-y-4">
+  if (defaultTab === "bookmarks") {
+    return (
+      <div className="space-y-4">
         {/* Switch between bookmark folders and the speaker directory */}
         <div className="inline-flex w-full rounded-lg bg-muted p-1 text-sm">
           {(["folders", "speakers"] as const).map((view) => (
