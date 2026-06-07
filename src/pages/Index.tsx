@@ -5,6 +5,8 @@ import { EpisodesTable } from "@/components/EpisodesTable";
 import { EpisodeDetail } from "@/components/EpisodeDetail";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ProfileSettings } from "@/components/ProfileSettings";
+import { BrandLogo } from "@/components/BrandLogo";
+
 import { PublicLanding } from "@/components/PublicLanding";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/contexts/SubscriptionContext";
@@ -127,7 +129,10 @@ const Index = () => {
       {!isDesktop ? (
         <div className="glass-nav relative z-50 border-b border-border" style={{ paddingTop: 'var(--safe-area-top)' }}>
           <div className="flex items-center justify-between px-4 py-2">
-            <button onClick={() => { triggerHapticFeedback('light'); setSelectedEpisodeId(null); window.dispatchEvent(new Event("homeReset")); }} className="font-bold text-sm text-primary hover:opacity-80 transition-opacity shrink-0">Founder Mode Advice</button>
+            <button onClick={() => { triggerHapticFeedback('light'); setSelectedEpisodeId(null); window.dispatchEvent(new Event("homeReset")); }} className="flex items-center hover:opacity-80 transition-opacity shrink-0" aria-label="Founder Mode Advice — home">
+              <BrandLogo className="h-8 w-auto" />
+            </button>
+
             <div className="flex items-center gap-1">
               <ProfileSwitcher compact />
               <ThemeToggle />

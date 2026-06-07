@@ -2,6 +2,8 @@ import { Brain, TrendingUp, CirclePlay, ArrowRight, MessageSquare, ShieldCheck, 
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { BrandLogo } from "@/components/BrandLogo";
+
 import { Footer } from "@/components/Footer";
 import { SampleDemo } from "@/components/marketing/SampleDemo";
 import { TIER_PRICING, type SubscriptionTier } from "@/types/subscription";
@@ -20,9 +22,10 @@ export const PublicLanding = () => {
       {/* Navigation - relative top bar with safe area (Despia pattern) */}
       <nav className="glass-nav relative z-50 border-b border-border" style={{ paddingTop: 'var(--safe-area-top)' }}>
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <button onClick={() => navigate("/")} className="font-bold text-sm sm:text-lg hover:text-primary transition-colors">Founder Mode Advice</button>
-          </div>
+          <button onClick={() => navigate("/")} className="flex items-center gap-2 hover:opacity-80 transition-opacity" aria-label="Founder Mode Advice — home">
+            <BrandLogo className="h-9 sm:h-11 w-auto" />
+          </button>
+
           <div className="flex items-center gap-2 sm:gap-3">
             <Button variant="ghost" size="sm" className="hidden sm:flex" onClick={() => scrollTo("demo")}>
               Demo
