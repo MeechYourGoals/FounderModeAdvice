@@ -9,7 +9,7 @@ import {
   getSubscriptionInfo,
   canPerformAction,
   incrementAnalysisCount,
-  getStripeCheckoutUrl,
+  startStripeCheckout,
   getStripePortalUrl,
   purchasePackage,
   restorePurchases,
@@ -185,10 +185,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         ? STRIPE_PRICE_IDS.SEED_MONTHLY
         : STRIPE_PRICE_IDS.SERIES_Z_MONTHLY;
 
-      const checkoutUrl = await getStripeCheckoutUrl(priceId);
-      if (checkoutUrl) {
-        window.location.href = checkoutUrl;
-      }
+      await startStripeCheckout(priceId);
     }
   }, [isNative, isDespiaApp, refreshSubscription]);
 

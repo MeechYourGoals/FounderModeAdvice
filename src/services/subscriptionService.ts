@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { SubscriptionTier, SubscriptionInfo, TierLimits } from '@/types/subscription';
 import { TIER_LIMITS, REVENUECAT_ENTITLEMENTS } from '@/types/subscription';
 import { isDespia, launchDespiaPaywall } from './despiaService';
+import { getStripeClient, hasStripePublishableKey } from '@/lib/stripe';
 
 /** Founder/Super Admin emails with unlimited access - no feature limits */
 const FOUNDER_EMAILS = ['ccamechi@gmail.com'];
@@ -493,22 +494,63 @@ export async function incrementAnalysisCount(): Promise<number> {
   }
 }
 
-// Get Stripe checkout URL (for web payments)
-export async function getStripeCheckoutUrl(priceId: string): Promise<string | null> {
+interface StripeCheckoutSessionResponse {
+  id?: string;
+  url?: string;
+}
+
+async function createStripeCheckoutSession(priceId: string): Promise<StripeCheckoutSessionResponse | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+    body: { priceId },
+  });
+
+  if (error) {
+    console.error('Failed to create checkout session', error);
+    return null;
+  }
+
+  return data ?? null;
+}
+
+// Start Stripe Checkout (for web payments). Prefer Stripe.js, fall back to Stripe-hosted URL.
+export async function startStripeCheckout(priceId: string): Promise<boolean> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
+    const session = await createStripeCheckoutSession(priceId);
+    if (!session) return false;
 
-    const { data, error } = await supabase.functions.invoke('create-checkout-session', {
-      body: { priceId },
-    });
-
-    if (error) {
-      console.error('Failed to create checkout session', error);
-      return null;
+    if (session.id && hasStripePublishableKey()) {
+      const stripe = await getStripeClient();
+      if (stripe) {
+        const { error } = await stripe.redirectToCheckout({ sessionId: session.id });
+        if (error) {
+          console.error('Stripe redirectToCheckout failed', error);
+          return false;
+        }
+        return true;
+      }
     }
 
-    return data?.url || null;
+    if (session.url) {
+      window.location.href = session.url;
+      return true;
+    }
+
+    console.error('Checkout session response did not include a Stripe session id or URL');
+    return false;
+  } catch (error) {
+    console.error('Error creating checkout session', error);
+    return false;
+  }
+}
+
+// Get Stripe checkout URL (legacy helper retained for callers that need the URL directly)
+export async function getStripeCheckoutUrl(priceId: string): Promise<string | null> {
+  try {
+    const session = await createStripeCheckoutSession(priceId);
+    return session?.url || null;
   } catch (error) {
     console.error('Error creating checkout session', error);
     return null;

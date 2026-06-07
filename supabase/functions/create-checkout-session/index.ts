@@ -34,6 +34,16 @@ serve(async (req) => {
       return jsonError('priceId is required', 400);
     }
 
+    const allowedPriceIds = [
+      Deno.env.get('STRIPE_SEED_PRICE_ID'),
+      Deno.env.get('STRIPE_SERIES_Z_PRICE_ID'),
+    ].filter(Boolean);
+
+    if (!allowedPriceIds.includes(priceId)) {
+      console.error('create-checkout-session: blocked unknown Stripe price ID', priceId);
+      return jsonError('Unsupported subscription plan', 400);
+    }
+
     const stripeApiKey = Deno.env.get('STRIPE_SECRET_KEY');
     if (!stripeApiKey) {
       console.error('create-checkout-session: STRIPE_SECRET_KEY missing');
@@ -101,7 +111,7 @@ serve(async (req) => {
       return jsonError('Could not start checkout. Please try again.', 502);
     }
 
-    return new Response(JSON.stringify({ url: session.url }), {
+    return new Response(JSON.stringify({ id: session.id, url: session.url }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
