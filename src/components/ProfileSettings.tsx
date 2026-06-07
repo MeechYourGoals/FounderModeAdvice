@@ -681,11 +681,17 @@ export const ProfileSettings = ({
         />
         </>
         )}
-      </TabsContent>
+      </div>
+    );
+  }
 
-      <TabsContent value="subscription" className="space-y-4">
+  if (defaultTab === "subscription") {
+    return (
+      <div className="space-y-4">
         <UsageDisplay showUpgrade />
-      </TabsContent>
-    </Tabs>
-  );
+      </div>
+    );
+  }
+
+  return null;
 };
