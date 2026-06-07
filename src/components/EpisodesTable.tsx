@@ -1177,7 +1177,14 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                       <span className="w-3 h-3 rounded-full" style={{ backgroundColor: folder.color }} />
                       <span className="text-sm">{folder.name}</span>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => handleDeleteFolder(folder.id)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setDeleteMoveTarget("none");
+                        setFolderPendingDelete(folder);
+                      }}
+                    >
                       <Trash2 className="w-3 h-3" />
                     </Button>
                   </div>
@@ -1187,6 +1194,74 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={!!folderPendingDelete}
+        onOpenChange={(open) => {
+          if (!open) {
+            setFolderPendingDelete(null);
+            setDeleteMoveTarget("none");
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete "{folderPendingDelete?.name}"?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {(() => {
+                if (!folderPendingDelete) return null;
+                const count = Object.values(folderAssignments).filter((ids) =>
+                  ids.includes(folderPendingDelete.id)
+                ).length;
+                if (count === 0) return "No episodes are assigned to this folder. Your episodes are not deleted.";
+                return `${count} ${count === 1 ? "episode is" : "episodes are"} assigned to this folder. Your episodes are not deleted — choose what happens to their folder assignment below.`;
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          {folderPendingDelete &&
+            Object.values(folderAssignments).some((ids) => ids.includes(folderPendingDelete.id)) && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Move episodes to</label>
+                <Select value={deleteMoveTarget} onValueChange={setDeleteMoveTarget}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Leave unassigned</SelectItem>
+                    {folders
+                      .filter((f) => f.id !== folderPendingDelete.id)
+                      .map((f) => (
+                        <SelectItem key={f.id} value={f.id}>
+                          {f.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (!folderPendingDelete) return;
+                await handleDeleteFolder(
+                  folderPendingDelete.id,
+                  deleteMoveTarget === "none" ? undefined : deleteMoveTarget
+                );
+                setFolderPendingDelete(null);
+                setDeleteMoveTarget("none");
+              }}
+            >
+              Delete folder
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <ExportModal episodeId={selectedExportId} open={exportModalOpen} onOpenChange={setExportModalOpen} />
     </>
