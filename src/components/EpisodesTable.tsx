@@ -9,7 +9,7 @@ import {
   ExternalLink, TrendingUp, MoreVertical, Eye, Bookmark, Download, Copy,
   Youtube, Headphones, Trash2, X, ArrowUpDown, ArrowUp, ArrowDown,
   FolderPlus, Folder, ChevronLeft, ChevronRight, Filter, Search,
-  Tag, LayoutList
+  Tag, LayoutList, Plus
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -106,6 +106,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [manageFoldersOpen, setManageFoldersOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
+  const [bulkFolderNames, setBulkFolderNames] = useState<string[]>([""]);
 
   // Tags & view mode
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
@@ -369,21 +370,31 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     }
   };
 
-  const handleCreateFolder = async () => {
-    if (!newFolderName.trim()) return;
+  const handleCreateFolders = async () => {
+    const names = Array.from(
+      new Set(
+        bulkFolderNames
+          .map(n => n.trim())
+          .filter(n => n.length > 0)
+      )
+    );
+    if (names.length === 0) return;
     triggerHapticFeedback('medium');
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
     const { error } = await supabase
       .from("episode_folders")
-      .insert({ user_id: user.id, name: newFolderName.trim() } as any);
+      .insert(names.map(name => ({ user_id: user.id, name })) as any);
 
-    if (!error) {
-      setNewFolderName("");
-      fetchFolders();
-      toast({ title: "Folder created" });
+    if (error) {
+      toast({ title: "Could not create folders", description: error.message, variant: "destructive" });
+      return;
     }
+    setBulkFolderNames([""]);
+    setNewFolderName("");
+    fetchFolders();
+    toast({ title: names.length === 1 ? "Folder created" : `Created ${names.length} folders` });
   };
 
   const handleDeleteFolder = async (folderId: string) => {
@@ -1072,15 +1083,57 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
             <DialogDescription>Create folders to organize your episodes.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="flex gap-2">
-              <Input
-                placeholder="New folder name..."
-                value={newFolderName}
-                onChange={(e) => setNewFolderName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleCreateFolder()}
-              />
-              <Button size="sm" onClick={handleCreateFolder} disabled={!newFolderName.trim()}>
-                Add
+            <div className="space-y-2">
+              {bulkFolderNames.map((name, idx) => (
+                <div key={idx} className="flex gap-2">
+                  <Input
+                    placeholder="New folder name..."
+                    value={name}
+                    autoFocus={idx === bulkFolderNames.length - 1}
+                    onChange={(e) => {
+                      const next = [...bulkFolderNames];
+                      next[idx] = e.target.value;
+                      setBulkFolderNames(next);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        setBulkFolderNames([...bulkFolderNames, ""]);
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setBulkFolderNames([...bulkFolderNames, ""])}
+                    title="Add another folder"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                  {bulkFolderNames.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        setBulkFolderNames(bulkFolderNames.filter((_, i) => i !== idx))
+                      }
+                      title="Remove"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button
+                className="w-full"
+                onClick={handleCreateFolders}
+                disabled={!bulkFolderNames.some(n => n.trim())}
+              >
+                {bulkFolderNames.filter(n => n.trim()).length > 1
+                  ? `Create ${bulkFolderNames.filter(n => n.trim()).length} folders`
+                  : "Create folder"}
               </Button>
             </div>
             {folders.length === 0 ? (
