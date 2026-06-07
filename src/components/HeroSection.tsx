@@ -1,4 +1,3 @@
-import { Brain, TrendingUp, Target } from "lucide-react";
 import heroBg from "@/assets/hero-bg.jpg";
 
 export const HeroSection = () => {
@@ -30,19 +29,16 @@ export const HeroSection = () => {
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 pt-4 sm:pt-8 animate-slide-up">
             <FeatureCard
-              icon={<Brain className="w-6 h-6 sm:w-8 sm:h-8" />}
               title="Structured Extraction"
-              description="Pull the lessons that matter from any video"
+              description="Pull the lessons that matter from any video. Every insight is organized into a clear, scannable format you can act on."
             />
             <FeatureCard
-              icon={<TrendingUp className="w-6 h-6 sm:w-8 sm:h-8" />}
               title="Actionable Insights"
-              description="Ranked by impact and actionability"
+              description="Each takeaway is ranked by impact and actionability. Spend your time on the moves that actually move the needle."
             />
             <FeatureCard
-              icon={<Target className="w-6 h-6 sm:w-8 sm:h-8" />}
               title="Tailored to You"
-              description="Relevant callouts for your business"
+              description="Generic advice gets translated into callouts relevant to your business. Your stage, market, and goals shape every recommendation."
             />
           </div>
         </div>
@@ -51,12 +47,9 @@ export const HeroSection = () => {
   );
 };
 
-const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) => {
+const FeatureCard = ({ title, description }: { title: string; description: string }) => {
   return (
     <div className="glass elevate-hover p-4 sm:p-6 rounded-2xl hover:border-primary/30">
-      <div className="text-primary mb-3 sm:mb-4">
-        {icon}
-      </div>
       <h3 className="font-semibold text-base sm:text-lg mb-1 sm:mb-2">{title}</h3>
       <p className="text-xs sm:text-sm text-muted-foreground">{description}</p>
     </div>
