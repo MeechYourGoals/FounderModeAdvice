@@ -26,13 +26,16 @@ export const ShareButton = ({
   const handleClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const result = await shareNative(share);
-    if (!result.ok && result.reason !== "cancelled") {
+    if (!result.ok) {
+      if (result.reason === "cancelled") return;
       toast({
         title: "Couldn't share",
         description: "Sharing isn't available on this device.",
         variant: "destructive",
       });
-    } else if (result.ok && result.transport === "clipboard") {
+      return;
+    }
+    if (result.transport === "clipboard") {
       toast({ title: "Copied to clipboard" });
     }
   };
