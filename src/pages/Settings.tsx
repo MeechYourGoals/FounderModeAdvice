@@ -16,9 +16,12 @@ import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 import { useOnboarding } from "@/hooks/useOnboarding";
+import { NotificationSettings } from "@/components/NotificationSettings";
+import { clearOfflineCache } from "@/lib/offlineCache";
+import { useToast } from "@/hooks/use-toast";
 import {
-  ArrowLeft, Loader2, RotateCcw, Shield, FileText, LifeBuoy, Mail, Bell,
-  Sparkles, Building2, Globe, CreditCard, SlidersHorizontal, User, Users,
+  ArrowLeft, Loader2, RotateCcw, Shield, FileText, LifeBuoy, Mail,
+  Sparkles, Building2, Globe, CreditCard, SlidersHorizontal, User, Users, Trash2, Info,
 } from "lucide-react";
 import {
   getLibraryPrefs, setLibraryPrefs, SORT_LABELS, VIEW_LABELS,
@@ -32,8 +35,23 @@ const Settings = () => {
   const { restart: restartOnboarding } = useOnboarding();
   const navigate = useNavigate();
   const isMobile = useMediaQuery("(max-width: 767px)");
+  const { toast } = useToast();
 
   const [prefs, setPrefs] = useState(getLibraryPrefs());
+  const [clearing, setClearing] = useState(false);
+
+  const handleClearCache = async () => {
+    triggerHapticFeedback("medium");
+    setClearing(true);
+    try {
+      await clearOfflineCache();
+      toast({ title: "Offline cache cleared" });
+    } catch {
+      toast({ title: "Couldn't clear cache", variant: "destructive" });
+    } finally {
+      setClearing(false);
+    }
+  };
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -176,18 +194,25 @@ const Settings = () => {
               </CardContent>
             </Card>
 
-            {/* Notifications (placeholder) */}
+            {/* Notifications */}
+            <NotificationSettings />
+
+            {/* Offline & storage */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Bell className="h-5 w-5 text-primary" />
-                  Notifications
+                  <Trash2 className="h-5 w-5 text-primary" />
+                  Offline & storage
                 </CardTitle>
-                <CardDescription>Get notified when an analysis finishes. Coming soon.</CardDescription>
+                <CardDescription>
+                  Saved insights and your most recent analysis are cached on this device so they work offline.
+                </CardDescription>
               </CardHeader>
-              <CardContent className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Push notifications</span>
-                <Switch disabled aria-label="Push notifications (coming soon)" />
+              <CardContent>
+                <Button variant="outline" onClick={handleClearCache} disabled={clearing}>
+                  {clearing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                  Clear offline cache
+                </Button>
               </CardContent>
             </Card>
 
