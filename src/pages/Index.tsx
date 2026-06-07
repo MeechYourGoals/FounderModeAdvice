@@ -44,7 +44,7 @@ import { ProfileSwitcher } from "@/components/ProfileSwitcher";
 const Index = () => {
   const [selectedEpisodeId, setSelectedEpisodeId] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"profiles" | "bookmarks" | "subscription">("profiles");
+  const [activeTab, setActiveTab] = useState<"profiles" | "bookmarks">("profiles");
 
   const { user, loading, signOut } = useAuth();
   const { subscription } = useSubscription();
@@ -191,12 +191,12 @@ const Index = () => {
                 Business Profiles
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[350px] mr-4 p-0" align="end" sideOffset={8}>
+            <PopoverContent className="w-[min(420px,calc(100vw-2rem))] mr-4 p-0" align="end" sideOffset={8}>
               <div className="max-h-[calc(100vh-100px)] overflow-hidden p-4">
                 <ScrollArea className="h-full max-h-[calc(100vh-140px)]">
                   <ProfileSettings
                     key="profiles"
-                    defaultTab="profiles"
+                    view="profiles"
                     onSelectEpisode={setSelectedEpisodeId}
                     condensed={true}
                   />
@@ -219,12 +219,12 @@ const Index = () => {
                 Bookmarks
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[350px] mr-4 p-0" align="end" sideOffset={8}>
+            <PopoverContent className="w-[min(420px,calc(100vw-2rem))] mr-4 p-0" align="end" sideOffset={8}>
                <div className="max-h-[calc(100vh-100px)] overflow-hidden p-4">
                 <ScrollArea className="h-full max-h-[calc(100vh-140px)]">
                   <ProfileSettings
                     key="bookmarks"
-                    defaultTab="bookmarks"
+                    view="bookmarks"
                     onSelectEpisode={setSelectedEpisodeId}
                     condensed={true}
                   />
@@ -253,15 +253,17 @@ const Index = () => {
         <Sheet open={profileOpen} onOpenChange={setProfileOpen}>
           <SheetContent side="right" className="w-full max-w-[100vw] sm:w-[400px] safe-top safe-bottom">
             <SheetHeader>
-              <SheetTitle>Profiles & Bookmarks</SheetTitle>
+              <SheetTitle>{activeTab === "bookmarks" ? "Bookmarks" : "Business Profiles"}</SheetTitle>
               <SheetDescription>
-                Manage your business profiles and bookmark folders
+                {activeTab === "bookmarks"
+                  ? "Organize saved episodes into folders"
+                  : "Manage your business profiles"}
               </SheetDescription>
             </SheetHeader>
             <ScrollArea className="h-[calc(100vh-120px)] pr-4 mt-4">
               {profileOpen && (
                 <ProfileSettings
-                  defaultTab={activeTab}
+                  view={activeTab}
                   onSelectEpisode={(id) => {
                     setSelectedEpisodeId(id);
                     setProfileOpen(false);
