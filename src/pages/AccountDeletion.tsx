@@ -33,8 +33,8 @@ const AccountDeletion = () => {
             <p>When your account is deleted, we remove:</p>
             <ul className="list-disc pl-6 space-y-2">
               <li>Your account and profile information (such as your email and startup profiles).</li>
-              <li>Your saved videos, bookmarks, and AI-generated advice.</li>
-              <li>App preferences tied to your account.</li>
+              <li>Your saved videos, bookmarks, AI-generated advice, chat history, and uploaded deck/export files stored under your user ID.</li>
+              <li>App preferences, notification preferences, onboarding state, and subscription records stored in Supabase.</li>
             </ul>
           </section>
 
@@ -42,8 +42,8 @@ const AccountDeletion = () => {
             <h2 className="text-2xl font-semibold mb-4">What May Be Retained</h2>
             <p>
               We may retain a limited amount of information where required for legitimate legal, security, fraud-prevention,
-              or accounting reasons — for example, records of transactions needed to comply with tax or financial
-              obligations. Retained data is kept only as long as necessary and then deleted.
+              or accounting reasons — for example, payment processor records held by Stripe, Apple, Google, or RevenueCat that are needed to comply with tax or financial
+              obligations. Retained data is kept only as long as necessary and then deleted according to those processors' policies.
             </p>
           </section>
 

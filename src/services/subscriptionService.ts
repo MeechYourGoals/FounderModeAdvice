@@ -2,25 +2,50 @@ import { Capacitor } from '@capacitor/core';
 import despia from 'despia-native';
 import { supabase } from '@/integrations/supabase/client';
 import type { SubscriptionTier, SubscriptionInfo, TierLimits } from '@/types/subscription';
-import { TIER_LIMITS, REVENUECAT_ENTITLEMENTS } from '@/types/subscription';
+import {
+  TIER_LIMITS,
+  REVENUECAT_ENTITLEMENTS,
+  REVENUECAT_TIER_IDENTIFIERS,
+  pickHighestSubscriptionTier,
+} from '@/types/subscription';
 import { isDespia, launchDespiaPaywall } from './despiaService';
 
 /** Founder/Super Admin emails with unlimited access - no feature limits */
 const FOUNDER_EMAILS = ['ccamechi@gmail.com'];
 
-/**
- * RevenueCat API key — platform-specific.
- * Uses env vars when available, falls back to the provided test key.
- */
+/** RevenueCat API key — platform-specific and mandatory for native builds. */
 function getRevenueCatApiKey(): string {
   const platform = Capacitor.getPlatform();
-  if (platform === 'ios') {
-    return import.meta.env.VITE_REVENUECAT_IOS_API_KEY || 'test_iOiaiuTdgHlGqXWbJXQCqwBVTOj';
+  const apiKey = platform === 'ios'
+    ? import.meta.env.VITE_REVENUECAT_IOS_API_KEY
+    : platform === 'android'
+      ? import.meta.env.VITE_REVENUECAT_ANDROID_API_KEY
+      : undefined;
+
+  if (!apiKey) {
+    throw new Error(`RevenueCat ${platform} API key is not configured. Set VITE_REVENUECAT_IOS_API_KEY or VITE_REVENUECAT_ANDROID_API_KEY before native release.`);
   }
-  if (platform === 'android') {
-    return import.meta.env.VITE_REVENUECAT_ANDROID_API_KEY || 'test_iOiaiuTdgHlGqXWbJXQCqwBVTOj';
+
+  return apiKey;
+}
+
+function resolveTierFromIdentifiers(identifiers: Array<string | null | undefined>): SubscriptionTier {
+  return pickHighestSubscriptionTier(
+    identifiers
+      .map((identifier) => identifier ? REVENUECAT_TIER_IDENTIFIERS[identifier] : undefined)
+      .filter((tier): tier is SubscriptionTier => Boolean(tier)),
+  );
+}
+
+function getDespiaSubscriptionManagementUrl(): string {
+  const userAgent = typeof navigator === 'undefined' ? '' : navigator.userAgent.toLowerCase();
+  const isAndroidRuntime = Capacitor.getPlatform() === 'android' || /android/.test(userAgent);
+
+  if (isAndroidRuntime) {
+    return 'https://play.google.com/store/account/subscriptions?package=com.foundermodeadvice.app';
   }
-  return 'test_iOiaiuTdgHlGqXWbJXQCqwBVTOj';
+
+  return 'https://apps.apple.com/account/subscriptions';
 }
 
 // RevenueCat SDK - conditionally loaded for native platforms
@@ -97,19 +122,7 @@ export async function getRevenueCatEntitlements(): Promise<SubscriptionTier> {
     const { customerInfo } = await Purchases.getCustomerInfo();
     const entitlements = customerInfo.entitlements.active;
 
-    // Primary entitlement — "Founder Mode Advisor Pro" grants Series Z access
-    if (entitlements[REVENUECAT_ENTITLEMENTS.PRO]) {
-      return 'series_z';
-    }
-
-    // Legacy entitlements
-    if (entitlements[REVENUECAT_ENTITLEMENTS.SERIES_Z]) {
-      return 'series_z';
-    }
-    if (entitlements[REVENUECAT_ENTITLEMENTS.SEED]) {
-      return 'seed';
-    }
-    return 'free';
+    return resolveTierFromIdentifiers(Object.keys(entitlements));
   } catch (error) {
     console.error('RevenueCat: Failed to get entitlements', error);
     return 'free';
@@ -191,7 +204,7 @@ export async function purchasePackage(packageId: string): Promise<boolean> {
 
 // ─── RevenueCat Paywall (native UI) ────────────────────────────────
 
-export type PaywallResult = 'PURCHASED' | 'RESTORED' | 'CANCELLED' | 'ERROR';
+export type PaywallResult = 'PURCHASED' | 'RESTORED' | 'CANCELLED' | 'OPENED' | 'ERROR';
 
 /**
  * Present the RevenueCat native paywall.
@@ -207,7 +220,7 @@ export async function presentPaywall(
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return 'ERROR';
       await launchDespiaPaywall(user.id, 'default');
-      return 'PURCHASED'; // Despia handles result via callbacks
+      return 'OPENED'; // Despia reports success later via native callbacks
     } catch {
       return 'ERROR';
     }
@@ -247,7 +260,7 @@ export async function presentPaywallAlways(): Promise<PaywallResult> {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return 'ERROR';
       await launchDespiaPaywall(user.id, 'default');
-      return 'PURCHASED';
+      return 'OPENED';
     } catch {
       return 'ERROR';
     }
@@ -280,6 +293,17 @@ export async function presentPaywallAlways(): Promise<PaywallResult> {
  * This provides a self-service UI for users to manage, cancel, or restore subscriptions.
  */
 export async function presentCustomerCenter(): Promise<void> {
+  if (isDespia()) {
+    try {
+      // Despia does not expose the RevenueCatUI Customer Center object to JS.
+      // Route users to the platform-native subscription management screen instead.
+      despia(getDespiaSubscriptionManagementUrl());
+    } catch (error) {
+      console.error('Despia: Failed to open subscription management', error);
+    }
+    return;
+  }
+
   if (!RevenueCatUI || !Capacitor.isNativePlatform()) {
     console.warn('RevenueCat UI: Customer Center not available');
     return;
@@ -475,6 +499,11 @@ export async function incrementAnalysisCount(): Promise<number> {
 
 // Get Stripe checkout URL (for web payments)
 export async function getStripeCheckoutUrl(priceId: string): Promise<string | null> {
+  if (Capacitor.isNativePlatform() || isDespia()) {
+    console.warn('Stripe checkout blocked in native app context; use RevenueCat/Despia IAP instead.');
+    return null;
+  }
+
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
@@ -497,6 +526,11 @@ export async function getStripeCheckoutUrl(priceId: string): Promise<string | nu
 
 // Get Stripe customer portal URL
 export async function getStripePortalUrl(): Promise<string | null> {
+  if (Capacitor.isNativePlatform() || isDespia()) {
+    console.warn('Stripe customer portal blocked in native app context; use native subscription management instead.');
+    return null;
+  }
+
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
@@ -530,18 +564,13 @@ export async function getDespiaEntitlements(): Promise<SubscriptionTier> {
     // Filter for active purchases
     const activePurchases = restoredData.filter((p: any) => p.isActive);
 
-    // Check for primary "Founder Mode Advisor Pro" entitlement first
-    const hasPro = activePurchases.some((p: any) => p.entitlementId === REVENUECAT_ENTITLEMENTS.PRO);
-    if (hasPro) return 'series_z';
-
-    // Legacy entitlements
-    const hasSeriesZ = activePurchases.some((p: any) => p.entitlementId === REVENUECAT_ENTITLEMENTS.SERIES_Z);
-    if (hasSeriesZ) return 'series_z';
-
-    const hasSeed = activePurchases.some((p: any) => p.entitlementId === REVENUECAT_ENTITLEMENTS.SEED);
-    if (hasSeed) return 'seed';
-
-    return 'free';
+    return resolveTierFromIdentifiers(
+      activePurchases.flatMap((purchase: any) => [
+        purchase.entitlementId,
+        purchase.productIdentifier,
+        purchase.productId,
+      ]),
+    );
   } catch (error) {
     console.error('Failed to get Despia entitlements', error);
     return 'free';

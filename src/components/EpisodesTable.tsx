@@ -109,8 +109,8 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
   const [folderAssignments, setFolderAssignments] = useState<Record<string, string[]>>({});
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [manageFoldersOpen, setManageFoldersOpen] = useState(false);
-  const [newFolderName, setNewFolderName] = useState("");
   const [bulkFolderNames, setBulkFolderNames] = useState<string[]>([""]);
+  const [creatingFolders, setCreatingFolders] = useState(false);
   const [folderPendingDelete, setFolderPendingDelete] = useState<EpisodeFolder | null>(null);
   const [deleteMoveTarget, setDeleteMoveTarget] = useState<string>("none");
 
@@ -354,53 +354,82 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data: foldersData } = await supabase
+    const { data: foldersData, error: foldersError } = await supabase
       .from("episode_folders")
       .select("id, name, color")
-      .eq("user_id", user.id);
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: true });
 
-    if (foldersData) setFolders(foldersData as any);
+    if (foldersError) throw foldersError;
+    setFolders((foldersData || []) as EpisodeFolder[]);
 
-    const { data: assignments } = await supabase
+    const { data: assignments, error: assignmentsError } = await supabase
       .from("episode_folder_assignments")
       .select("episode_id, folder_id")
       .eq("user_id", user.id);
 
-    if (assignments) {
-      const map: Record<string, string[]> = {};
-      (assignments as any[]).forEach((a: any) => {
-        if (!map[a.episode_id]) map[a.episode_id] = [];
-        map[a.episode_id].push(a.folder_id);
-      });
-      setFolderAssignments(map);
-    }
+    if (assignmentsError) throw assignmentsError;
+
+    const map: Record<string, string[]> = {};
+    ((assignments || []) as any[]).forEach((a: any) => {
+      if (!map[a.episode_id]) map[a.episode_id] = [];
+      map[a.episode_id].push(a.folder_id);
+    });
+    setFolderAssignments(map);
   };
 
   const handleCreateFolders = async () => {
+    if (creatingFolders) return;
+
+    const existingNames = new Set(folders.map(folder => folder.name.trim().toLowerCase()));
     const names = Array.from(
       new Set(
         bulkFolderNames
           .map(n => n.trim())
           .filter(n => n.length > 0)
       )
-    );
-    if (names.length === 0) return;
-    triggerHapticFeedback('medium');
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    ).filter(name => !existingNames.has(name.toLowerCase()));
 
-    const { error } = await supabase
-      .from("episode_folders")
-      .insert(names.map(name => ({ user_id: user.id, name })) as any);
-
-    if (error) {
-      toast({ title: "Could not create folders", description: error.message, variant: "destructive" });
+    if (names.length === 0) {
+      toast({ title: "Folder already exists", description: "Enter a new folder name to create." });
       return;
     }
-    setBulkFolderNames([""]);
-    setNewFolderName("");
-    fetchFolders();
-    toast({ title: names.length === 1 ? "Folder created" : `Created ${names.length} folders` });
+
+    triggerHapticFeedback('medium');
+    setCreatingFolders(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({ title: "Sign in required", description: "Please sign in to create folders.", variant: "destructive" });
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("episode_folders")
+        .insert(names.map(name => ({ user_id: user.id, name })) as any)
+        .select("id, name, color")
+        .order("name", { ascending: true });
+
+      if (error) throw error;
+
+      const createdFolders = (data || []) as EpisodeFolder[];
+      if (createdFolders.length > 0) {
+        setFolders(prev => {
+          const byId = new Map(prev.map(folder => [folder.id, folder]));
+          createdFolders.forEach(folder => byId.set(folder.id, folder));
+          return Array.from(byId.values());
+        });
+      }
+
+      setBulkFolderNames([""]);
+      await fetchFolders();
+      toast({ title: names.length === 1 ? "Folder created" : `Created ${names.length} folders` });
+    } catch (error: any) {
+      toast({ title: "Could not create folders", description: error?.message || "Please try again.", variant: "destructive" });
+    } finally {
+      setCreatingFolders(false);
+    }
   };
 
   const handleDeleteFolder = async (folderId: string, moveToFolderId?: string) => {
@@ -434,7 +463,11 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
       .eq("id", folderId);
     if (!error) {
       if (selectedFolderId === folderId) setSelectedFolderId(null);
-      fetchFolders();
+      try {
+        await fetchFolders();
+      } catch (refreshError) {
+        console.error("Error refreshing folders after delete:", refreshError);
+      }
       toast({ title: "Folder deleted" });
     } else {
       toast({ title: "Couldn't delete folder", description: error.message, variant: "destructive" });
@@ -443,23 +476,30 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
 
   const handleAssignFolder = async (episodeId: string, folderId: string) => {
     triggerHapticFeedback('light');
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
 
-    const existing = folderAssignments[episodeId] || [];
-    if (existing.includes(folderId)) {
-      await supabase
-        .from("episode_folder_assignments")
-        .delete()
-        .eq("episode_id", episodeId)
-        .eq("folder_id", folderId)
-        .eq("user_id", user.id);
-    } else {
-      await supabase
-        .from("episode_folder_assignments")
-        .insert({ user_id: user.id, episode_id: episodeId, folder_id: folderId } as any);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const existing = folderAssignments[episodeId] || [];
+      if (existing.includes(folderId)) {
+        const { error } = await supabase
+          .from("episode_folder_assignments")
+          .delete()
+          .eq("episode_id", episodeId)
+          .eq("folder_id", folderId)
+          .eq("user_id", user.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("episode_folder_assignments")
+          .insert({ user_id: user.id, episode_id: episodeId, folder_id: folderId } as any);
+        if (error) throw error;
+      }
+      await fetchFolders();
+    } catch (error: any) {
+      toast({ title: "Couldn't update folder", description: error?.message || "Please try again.", variant: "destructive" });
     }
-    fetchFolders();
   };
 
   const handleDelete = async (episodeId: string, e: React.MouseEvent) => {
@@ -485,7 +525,10 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
 
   useEffect(() => {
     fetchEpisodes();
-    fetchFolders();
+    fetchFolders().catch((error) => {
+      console.error("Error fetching folders:", error);
+      toast({ title: "Could not load folders", description: "Folder data may be temporarily out of date.", variant: "destructive" });
+    });
     const handleEpisodeAnalyzed = () => { fetchEpisodes(); };
     const handleHomeReset = () => {
       setSelectedTags(new Set());
@@ -1160,11 +1203,13 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
               <Button
                 className="w-full"
                 onClick={handleCreateFolders}
-                disabled={!bulkFolderNames.some(n => n.trim())}
+                disabled={creatingFolders || !bulkFolderNames.some(n => n.trim())}
               >
-                {bulkFolderNames.filter(n => n.trim()).length > 1
-                  ? `Create ${bulkFolderNames.filter(n => n.trim()).length} folders`
-                  : "Create folder"}
+                {creatingFolders
+                  ? "Creating..."
+                  : bulkFolderNames.filter(n => n.trim()).length > 1
+                    ? `Create ${bulkFolderNames.filter(n => n.trim()).length} folders`
+                    : "Create folder"}
               </Button>
             </div>
             {folders.length === 0 ? (

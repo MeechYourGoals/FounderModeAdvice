@@ -12,13 +12,19 @@ const corsHeaders = {
 
 type Tier = "free" | "seed" | "series_z";
 
-// Map RevenueCat entitlement identifiers to internal tiers.
-// Adjust to match the entitlement IDs configured in RevenueCat.
+// Map RevenueCat entitlement/product identifiers to internal tiers.
+// Keep in sync with src/types/subscription.ts and RevenueCat Offerings.
 const ENTITLEMENT_TO_TIER: Record<string, Tier> = {
+  "Founder Mode Advisor Pro": "series_z",
+  founder_mode_advisor_pro: "series_z",
+  series_z_subscription: "series_z",
   series_z: "series_z",
   boardroom: "series_z",
+  series_z_monthly: "series_z",
+  seed_subscription: "seed",
   seed: "seed",
   c_suite: "seed",
+  seed_monthly: "seed",
 };
 
 function pickHighestTier(tiers: Tier[]): Tier {
@@ -52,11 +58,18 @@ Deno.serve(async (req) => {
     }
     const user = userData.user;
 
+    if (!rcKey) {
+      console.error("REVENUECAT_API_KEY not configured; refusing to overwrite subscription state");
+      return new Response(JSON.stringify({ error: "REVENUECAT_API_KEY not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     let verifiedTier: Tier = "free";
 
-    if (rcKey) {
-      // Server-side verification against the RevenueCat REST API
-      const rcRes = await fetch(
+    // Server-side verification against the RevenueCat REST API
+    const rcRes = await fetch(
         `https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(user.id)}`,
         {
           headers: {
@@ -66,36 +79,30 @@ Deno.serve(async (req) => {
         },
       );
 
-      if (rcRes.ok) {
-        const body = await rcRes.json();
-        const entitlements = body?.subscriber?.entitlements ?? {};
-        const now = Date.now();
-        const activeTiers: Tier[] = [];
-        for (const [key, value] of Object.entries<any>(entitlements)) {
-          const expires = value?.expires_date
-            ? Date.parse(value.expires_date)
-            : Infinity;
-          if (expires > now) {
-            const mapped =
-              ENTITLEMENT_TO_TIER[key] ??
-              ENTITLEMENT_TO_TIER[value?.product_identifier ?? ""];
-            if (mapped) activeTiers.push(mapped);
-          }
+    if (rcRes.ok) {
+      const body = await rcRes.json();
+      const entitlements = body?.subscriber?.entitlements ?? {};
+      const now = Date.now();
+      const activeTiers: Tier[] = [];
+      for (const [key, value] of Object.entries<any>(entitlements)) {
+        const expires = value?.expires_date
+          ? Date.parse(value.expires_date)
+          : Infinity;
+        if (expires > now) {
+          const mapped =
+            ENTITLEMENT_TO_TIER[key] ??
+            ENTITLEMENT_TO_TIER[value?.product_identifier ?? ""];
+          if (mapped) activeTiers.push(mapped);
         }
-        verifiedTier = pickHighestTier(activeTiers);
-      } else {
-        console.error(
-          "RevenueCat verification failed",
-          rcRes.status,
-          await rcRes.text(),
-        );
       }
+      verifiedTier = pickHighestTier(activeTiers);
     } else {
-      // REVENUECAT_API_KEY not configured — fall back to a conservative default.
-      // Stripe-paid users are written by the stripe-webhook edge function.
-      console.warn(
-        "REVENUECAT_API_KEY not set — skipping verification, defaulting to free",
-      );
+      const errorBody = await rcRes.text();
+      console.error("RevenueCat verification failed", rcRes.status, errorBody);
+      return new Response(JSON.stringify({ error: "RevenueCat verification failed" }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const admin = createClient(supabaseUrl, serviceRoleKey, {

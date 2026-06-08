@@ -39,11 +39,14 @@ export const DeckUploadZone = ({ onSummaryExtracted }: DeckUploadZoneProps) => {
     setUploading(true);
     setProgress(20);
 
+    let uploadedPath: string | null = null;
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
       const filePath = `${user.id}/${Date.now()}-${file.name}`;
+      uploadedPath = filePath;
       setProgress(40);
 
       const { error: uploadError } = await supabase.storage
@@ -77,6 +80,15 @@ export const DeckUploadZone = ({ onSummaryExtracted }: DeckUploadZoneProps) => {
 
       setProgress(100);
     } catch (error: any) {
+      if (uploadedPath) {
+        const { error: cleanupError } = await supabase.storage
+          .from("startup-decks")
+          .remove([uploadedPath]);
+        if (cleanupError) {
+          console.warn("Could not clean up failed deck upload:", cleanupError.message);
+        }
+      }
+
       console.error("Deck upload/parse error:", error);
       toast({
         title: "Analysis failed",
