@@ -40,6 +40,54 @@ function isMissingRelationError(error: { code?: string; message?: string }): boo
   return error.code === "PGRST205" || /could not find|does not exist|not found/i.test(error.message ?? "");
 }
 
+async function listStoragePathsForPrefix(
+  adminClient: any,
+  bucket: string,
+  prefix: string,
+): Promise<string[]> {
+  const paths: string[] = [];
+  const pageSize = 100;
+  let offset = 0;
+
+  while (true) {
+    const { data: objects, error } = await adminClient.storage
+      .from(bucket)
+      .list(prefix, { limit: pageSize, offset, sortBy: { column: "name", order: "asc" } });
+
+    if (error) throw error;
+    if (!objects || objects.length === 0) break;
+
+    for (const object of objects) {
+      const objectPath = `${prefix}/${object.name}`;
+      // Supabase Storage returns folder placeholders without an object id. Recurse
+      // so account deletion covers future nested deck/export paths too.
+      if (object.id) {
+        paths.push(objectPath);
+      } else {
+        paths.push(...await listStoragePathsForPrefix(adminClient, bucket, objectPath));
+      }
+    }
+
+    if (objects.length < pageSize) break;
+    offset += pageSize;
+  }
+
+  return paths;
+}
+
+async function removeStoragePaths(
+  adminClient: any,
+  bucket: string,
+  paths: string[],
+): Promise<void> {
+  const chunkSize = 100;
+  for (let index = 0; index < paths.length; index += chunkSize) {
+    const chunk = paths.slice(index, index + chunkSize);
+    const { error } = await adminClient.storage.from(bucket).remove(chunk);
+    if (error) throw error;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -75,27 +123,19 @@ serve(async (req) => {
     const failures: Array<{ target: string; message: string }> = [];
 
     for (const bucket of USER_STORAGE_BUCKETS) {
-      const { data: objects, error: listError } = await adminClient.storage
-        .from(bucket)
-        .list(userId, { limit: 1000 });
+      try {
+        const paths = await listStoragePathsForPrefix(adminClient, bucket, userId);
+        if (paths.length === 0) continue;
 
-      if (listError) {
-        if (isMissingRelationError(listError)) {
+        await removeStoragePaths(adminClient, bucket, paths);
+        deletedStorageObjects.push(...paths.map((path) => `${bucket}/${path}`));
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (isMissingRelationError({ message })) {
           skippedTables.push(`storage:${bucket}`);
         } else {
-          failures.push({ target: `storage:${bucket}`, message: listError.message });
+          failures.push({ target: `storage:${bucket}`, message });
         }
-        continue;
-      }
-
-      const paths = (objects ?? []).map((object) => `${userId}/${object.name}`);
-      if (paths.length === 0) continue;
-
-      const { error: removeError } = await adminClient.storage.from(bucket).remove(paths);
-      if (removeError) {
-        failures.push({ target: `storage:${bucket}`, message: removeError.message });
-      } else {
-        deletedStorageObjects.push(...paths.map((path) => `${bucket}/${path}`));
       }
     }
 

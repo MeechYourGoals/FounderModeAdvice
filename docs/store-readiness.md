@@ -12,7 +12,7 @@ This repo is a Vite/React/Supabase app with Capacitor and Despia native hooks. I
 | Despia native wrapper | 90 | Native share/haptics/paywall hooks exist; purchase success is only trusted after callback + server RevenueCat verification. |
 | Capacitor native wrapper | 88 | Config/scripts exist, but native `ios/` and `android/` projects must be generated and configured externally before store upload. |
 | Expo/EAS | 35 | Not configured. Use only after adding an Expo wrapper or migrating to React Native. |
-| Store compliance | 88 | In-app deletion, legal routes, IAP boundaries, and review notes exist. External dashboards/secrets/privacy forms remain blockers. |
+| Store compliance | 90 | In-app deletion, legal routes, IAP boundaries, private-content RLS hardening, screenshot tooling, and review notes exist. External dashboards/secrets/privacy forms remain blockers. |
 
 ## Required preflight commands
 
@@ -22,7 +22,17 @@ Run before any native upload:
 npm ci
 npm run lint
 npm run build
+npm run test:subscription-mapping
 npm run cap:sync
+```
+
+Generate store screenshots after `npm run dev` or `npm run preview` is serving the app. Authenticated screens require `APP_SCREENSHOT_EMAIL` and `APP_SCREENSHOT_PASSWORD` for a seeded demo account:
+
+```bash
+APP_SCREENSHOT_BASE_URL=http://localhost:8080 \
+APP_SCREENSHOT_EMAIL=reviewer@example.com \
+APP_SCREENSHOT_PASSWORD='replace-me' \
+npm run screenshots
 ```
 
 For Capacitor-first release, generate native projects once:
@@ -55,6 +65,15 @@ Accepted entitlement/product identifiers in code today:
 - `series_z_monthly` → `series_z`
 - `seed_subscription` → `seed`
 - `seed_monthly` → `seed`
+
+## Database and Supabase readiness
+
+The forward migration `20260608090000_harden_private_content_rls.sql` removes legacy public/demo RLS policies from episode, lesson, callout, tag assignment, and personalized-insight data. Apply it before production launch, then manually verify:
+
+- unauthenticated clients cannot read private episode/library data;
+- authenticated users can read/delete only their own analyses;
+- admins can read/delete all analyses;
+- service-role edge functions can still create analyses, lessons, callouts, tags, and transcripts.
 
 ## Required Supabase secrets
 
@@ -90,6 +109,9 @@ VITE_STRIPE_SERIES_Z_PRICE_ID
 VITE_REVENUECAT_IOS_API_KEY
 VITE_REVENUECAT_ANDROID_API_KEY
 VITE_ONESIGNAL_APP_ID
+APP_SCREENSHOT_BASE_URL=http://localhost:8080 (local screenshot runs only)
+APP_SCREENSHOT_EMAIL=reviewer@example.com (local screenshot runs only)
+APP_SCREENSHOT_PASSWORD=replace-me (local screenshot runs only)
 ```
 
 `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` are fail-fast required at app startup.
@@ -117,6 +139,7 @@ RevenueCat native API keys are fail-fast required when Capacitor RevenueCat init
    - offline saved content
    - native share/haptics
    - no Stripe checkout visible in iOS app
+   - screenshots generated for landing, auth, dashboard, settings, and account screens
 
 ## Google Play checklist
 
@@ -127,7 +150,7 @@ RevenueCat native API keys are fail-fast required when Capacitor RevenueCat init
    - `https://foundermodeadvice.com/account-deletion`
 5. Configure FCM/OneSignal if push is enabled.
 6. Test internal track on real Android device:
-   - auth, purchase, restore, account deletion, push opt-in, offline saved content.
+   - auth, purchase, restore, account deletion, push opt-in, offline saved content, screenshots.
 
 ## Privacy manifest / native project notes
 
@@ -162,7 +185,8 @@ When native projects are generated, add iOS `PrivacyInfo.xcprivacy` entries for 
 8. Copy iOS public SDK key to VITE_REVENUECAT_IOS_API_KEY.
 9. Copy Android public SDK key to VITE_REVENUECAT_ANDROID_API_KEY.
 10. Copy secret API key to Supabase secret REVENUECAT_API_KEY.
-11. Run sandbox purchase and restore tests.
+11. Confirm Android subscription management opens Google Play subscriptions and iOS opens Apple subscriptions.
+12. Run sandbox purchase and restore tests.
 ```
 
 ## Agentic browser script — App Store Connect

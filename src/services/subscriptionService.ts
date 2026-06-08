@@ -37,6 +37,17 @@ function resolveTierFromIdentifiers(identifiers: Array<string | null | undefined
   );
 }
 
+function getDespiaSubscriptionManagementUrl(): string {
+  const userAgent = typeof navigator === 'undefined' ? '' : navigator.userAgent.toLowerCase();
+  const isAndroidRuntime = Capacitor.getPlatform() === 'android' || /android/.test(userAgent);
+
+  if (isAndroidRuntime) {
+    return 'https://play.google.com/store/account/subscriptions?package=com.foundermodeadvice.app';
+  }
+
+  return 'https://apps.apple.com/account/subscriptions';
+}
+
 // RevenueCat SDK - conditionally loaded for native platforms
 let Purchases: typeof import('@revenuecat/purchases-capacitor').Purchases | null = null;
 // RevenueCat UI SDK - conditionally loaded for paywalls and customer center
@@ -285,8 +296,8 @@ export async function presentCustomerCenter(): Promise<void> {
   if (isDespia()) {
     try {
       // Despia does not expose the RevenueCatUI Customer Center object to JS.
-      // Route users to the App Store subscription management screen instead.
-      despia('https://apps.apple.com/account/subscriptions');
+      // Route users to the platform-native subscription management screen instead.
+      despia(getDespiaSubscriptionManagementUrl());
     } catch (error) {
       console.error('Despia: Failed to open subscription management', error);
     }
