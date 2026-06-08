@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Heart, FolderPlus, Zap } from "lucide-react";
+import { Heart, FolderPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";

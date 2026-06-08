@@ -170,17 +170,16 @@ const Index = () => {
           </div>
         </div>
       ) : (
-        /* Desktop nav */
         <>
-          <div className="fixed top-4 left-4 z-50">
-            <button
-              onClick={() => { triggerHapticFeedback('light'); setSelectedEpisodeId(null); window.dispatchEvent(new Event("homeReset")); }}
-              className="flex items-center hover:opacity-80 transition-opacity"
-              aria-label="Founder Mode Advice — home"
-            >
-              <BrandLogo className="h-10 w-auto" />
-            </button>
-          </div>
+        {/* Desktop brand - fixed top-left */}
+        <button
+          onClick={() => { setSelectedEpisodeId(null); window.dispatchEvent(new Event("homeReset")); }}
+          className="fixed top-4 left-4 z-50 flex items-center hover:opacity-80 transition-opacity"
+          aria-label="Founder Mode Advice — home"
+        >
+          <BrandLogo className="h-10 w-auto" />
+        </button>
+        {/* Desktop nav */}
         <div className="fixed top-4 right-4 z-50 flex gap-2 items-center">
           <ProfileSwitcher />
 
@@ -254,8 +253,8 @@ const Index = () => {
           <ThemeToggle />
         </div>
         </>
-
       )}
+
 
       {/* Slide-over panel for Profiles/Bookmarks (used by the bottom-nav tray,
           profile switcher, and empty-state CTAs across all viewports). */}
