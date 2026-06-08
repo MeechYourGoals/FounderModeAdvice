@@ -57,19 +57,10 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp,woff,woff2}"],
         navigateFallbackDenylist: [/^\/~oauth/],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "supabase-api",
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 5,
-              },
-            },
-          },
-        ],
+        // Do not runtime-cache Supabase REST/Auth/Functions/Storage responses here.
+        // Authenticated offline data is intentionally scoped in src/lib/offlineCache.ts
+        // so one user cannot see another user's cached API responses after sign-out.
+        cleanupOutdatedCaches: true,
       },
     }),
   ].filter(Boolean),

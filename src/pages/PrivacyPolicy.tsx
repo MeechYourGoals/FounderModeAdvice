@@ -87,11 +87,17 @@ const PrivacyPolicy = () => {
             <ul className="list-disc pl-6 space-y-2 mt-2">
               <li>
                 <strong>Supabase:</strong> We use Supabase for authentication, database storage, and backend services.
-                Supabase securely stores your user account information (email) and application data (bookmarks, profiles, etc.).
+                Supabase securely stores your user account information (email) and application data (bookmarks, profiles, analyses, chat history, uploaded decks, and export files).
               </li>
               <li>
                 <strong>RevenueCat:</strong> We use RevenueCat to manage subscriptions and in-app purchase history.
-                RevenueCat may process transaction data to verify your subscription status and entitlements.
+                RevenueCat may process transaction data from Apple, Google, or Stripe to verify your subscription status and entitlements.
+              </li>
+              <li>
+                <strong>AI processing:</strong> Video links, transcripts when available, startup profile context, and deck summaries may be sent to our AI gateway to generate the advice you request.
+              </li>
+              <li>
+                <strong>OneSignal:</strong> If you opt in to push notifications, OneSignal processes notification tokens and delivery metadata so we can send reminders and product updates.
               </li>
             </ul>
           </section>
@@ -108,7 +114,7 @@ const PrivacyPolicy = () => {
             <h2 className="text-2xl font-semibold mb-4">6. AI &amp; Advisory Interactions</h2>
             <p>
               Founder Mode Advice uses AI to analyze the videos and context you provide and to generate advice
-              tailored to your situation. The video links, startup profiles, and generated advice you save are
+              tailored to your situation. The video links, startup profiles, uploaded deck summaries, chat prompts, and generated advice you save are
               stored to provide the service to you. AI-generated advice is informational only and is not
               professional, legal, financial, or investment advice.
             </p>
