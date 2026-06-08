@@ -1,29 +1,62 @@
+## What's broken
+
+- **Desktop in-app top bar** (`src/pages/Index.tsx`, the `else` branch at line 172) only renders nav buttons in the top-right. There is no `BrandLogo` on the left, so signed-in desktop users never see the FMA mark. (Mobile/tablet already renders `<BrandLogo />` on the left; public landing already renders it too.)
+- **Browser tab favicon** (`public/favicon.ico`), **iOS home-screen icon** (`public/apple-touch-icon.png`), and **PWA install icons** (`public/pwa-192x192.png`, `public/pwa-512x512.png`) are all the default Lovable heart artwork.
+- **`public/manifest.webmanifest`** is referenced from `index.html` but the file does not exist, so PWA installs fall back to defaults.
+
 ## Changes
 
-### 1. Remove icons from "Turn expert content into personalized strategy" cards
-File: `src/components/PublicLanding.tsx`
+### 1. Add the FMA logo to the desktop in-app nav
+File: `src/pages/Index.tsx`
 
-- Drop the three lucide icons (Brain, TrendingUp, CirclePlay) from the three `FeatureCard`s in the features grid.
-- Update `FeatureCard` so the icon tile is no longer rendered (make `icon` optional / remove the `mb-3 sm:mb-4 flex h-10 w-10 ... bg-primary/10` square entirely).
-- Tighten the resulting card padding so the title now sits at the top of the card without a leftover gap where the square used to be.
-- Remove the now-unused `Brain`, `TrendingUp`, `CirclePlay` imports.
+In the desktop branch (currently `<div className="fixed top-4 right-4 ...">`), add a matching fixed top-left container that renders `<BrandLogo className="h-9 w-auto" />` wrapped in a button that resets the home view (same handler as the mobile version: clear selected episode + dispatch `homeReset`). Keep the existing right-side nav cluster untouched.
 
-### 2. Add three more sample insight groups
-File: `src/lib/sampleDemoData.ts`
+### 2. Replace the Lovable heart favicon / PWA icons with the FMA crisp-red icon
+Source: `user-uploads://fma_app_icon_crisp_red_2048.png` (the dark-navy square with white FMA mark and red accent — works on light and dark browser chrome).
 
-Append three entries to `SAMPLE_INSIGHT_GROUPS` so users see more idea-sparks as they scroll. Each follows the existing `{ title, general, tailored }` shape with Maple & Oak–specific tailored copy:
+Generate from that single source and overwrite in `public/`:
+- `favicon.ico` — multi-size ICO (16, 32, 48)
+- `favicon-32.png`, `favicon-16.png` (added as `<link rel="icon">` entries)
+- `apple-touch-icon.png` — 180×180
+- `pwa-192x192.png` — 192×192
+- `pwa-512x512.png` — 512×512 (also used as maskable; safe-area padding already inside the source)
 
-- **Hiring** — general insight on first operational hires (when to hire vs. systemize), tailored to Maple & Oak's first non-founder hire (lead barista / shift lead to free founders from peak-hour bar work).
-- **Influencer marketing** — general insight on micro-influencer credibility vs. paid reach, tailored to Maple & Oak partnering with local food/neighborhood creators for in-store visits and limited drops instead of paid social.
-- **Competitor analysis** — general insight on studying competitors for gaps rather than copying menus, tailored to Maple & Oak mapping nearby cafés on speed, seating, and wholesale to find an unowned position.
+Use ImageMagick via `nix run nixpkgs#imagemagick` to resize/convert from the uploaded PNG. No new repo binary beyond the public icons that already existed.
 
-These will render automatically in the demo since `SampleDemo` iterates `SAMPLE_INSIGHT_GROUPS`.
+### 3. Create the missing PWA manifest
+File: `public/manifest.webmanifest` (new)
 
-### 3. Expand the Business profile blurb
-File: `src/lib/sampleDemoData.ts`
+```json
+{
+  "name": "Founder Mode Advice",
+  "short_name": "FMA",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0f1420",
+  "theme_color": "#0f1420",
+  "icons": [
+    { "src": "/pwa-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/pwa-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/pwa-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
+```
 
-Extend `SAMPLE_PROFILE.description` with a second sentence written in the voice of a passionate small-business owner — a husband-and-wife family business that put their savings into the shop. Keep it to one extra sentence, warm and personal, not corporate.
+This is manifest-only home-screen support per the PWA guidance — no service worker added.
+
+### 4. Tighten favicon `<link>` tags in `index.html`
+Add explicit PNG icon links alongside the existing ico/apple-touch/manifest references so browsers pick the crisp FMA mark at the right size:
+
+```html
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+<link rel="icon" href="/favicon.ico" sizes="any" />
+```
+
+Keep all existing meta tags (theme-color, apple-mobile-web-app-*, og:*, twitter:*) as-is.
 
 ## Out of scope
-- No backend, schema, or routing changes.
-- No changes to the `SampleDemo` component itself — it already loops the data.
+- No service worker / offline behavior.
+- No changes to the BrandLogo component itself — its light/dark swap already works correctly.
+- No changes to the public landing nav (logo is already there).
