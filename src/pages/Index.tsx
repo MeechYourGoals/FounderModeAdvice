@@ -252,8 +252,9 @@ const Index = () => {
 
           <ThemeToggle />
         </div>
-
+        </>
       )}
+
 
       {/* Slide-over panel for Profiles/Bookmarks (used by the bottom-nav tray,
           profile switcher, and empty-state CTAs across all viewports). */}
