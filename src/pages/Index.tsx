@@ -170,7 +170,16 @@ const Index = () => {
           </div>
         </div>
       ) : (
-        /* Desktop nav */
+        <>
+        {/* Desktop brand - fixed top-left */}
+        <button
+          onClick={() => { setSelectedEpisodeId(null); window.dispatchEvent(new Event("homeReset")); }}
+          className="fixed top-4 left-4 z-50 flex items-center hover:opacity-80 transition-opacity"
+          aria-label="Founder Mode Advice — home"
+        >
+          <BrandLogo className="h-10 w-auto" />
+        </button>
+        {/* Desktop nav */}
         <div className="fixed top-4 right-4 z-50 flex gap-2 items-center">
           <ProfileSwitcher />
 
