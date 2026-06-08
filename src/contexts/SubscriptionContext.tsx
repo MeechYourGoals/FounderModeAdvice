@@ -11,7 +11,6 @@ import {
   incrementAnalysisCount,
   getStripeCheckoutUrl,
   getStripePortalUrl,
-  purchasePackage,
   restorePurchases,
   getDespiaEntitlements,
   syncSubscriptionToSupabase,
@@ -19,7 +18,6 @@ import {
   presentPaywallAlways as presentPaywallAlwaysService,
   presentCustomerCenter as presentCustomerCenterService,
 } from '@/services/subscriptionService';
-import { isDespia } from '@/services/despiaService';
 import type { SubscriptionInfo, SubscriptionTier } from '@/types/subscription';
 import { STRIPE_PRICE_IDS, REVENUECAT_ENTITLEMENTS } from '@/types/subscription';
 import type { PaywallResult } from '@/services/subscriptionService';
@@ -69,8 +67,9 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
       // On native platforms, also check RevenueCat entitlements
       if (isNative && !isDespiaApp) {
-        await getRevenueCatEntitlements();
-      } else if (isDespia) {
+        const tier = await getRevenueCatEntitlements();
+        await syncSubscriptionToSupabase(tier);
+      } else if (isDespiaApp) {
         const tier = await getDespiaEntitlements();
         await syncSubscriptionToSupabase(tier);
       }
@@ -95,26 +94,22 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     }
   }, [user, isNative, isDespiaApp]);
 
-  // Setup Despia listener
+  // Despia Native reports purchase/restore completion through global callbacks.
+  // Register them in one place so callbacks cannot overwrite each other.
   useEffect(() => {
-    if (isDespiaApp) {
-      window.onRevenueCatPurchase = () => {
-        console.log('Despia: Purchase successful, refreshing subscription');
-        refreshSubscription();
-      };
+    if (!isDespiaApp) return;
 
-      // Also listen for iapSuccess which is sometimes used
-      window.iapSuccess = () => {
-        console.log('Despia: Purchase successful (iapSuccess), refreshing subscription');
-        refreshSubscription();
-      };
-    }
+    const handleNativePurchaseSuccess = (transactionData?: unknown) => {
+      console.log('Despia: Purchase callback received, refreshing subscription', transactionData);
+      void refreshSubscription();
+    };
+
+    window.onRevenueCatPurchase = handleNativePurchaseSuccess;
+    window.iapSuccess = handleNativePurchaseSuccess;
 
     return () => {
-      if (isDespiaApp) {
-        window.onRevenueCatPurchase = undefined;
-        window.iapSuccess = undefined;
-      }
+      window.onRevenueCatPurchase = undefined;
+      window.iapSuccess = undefined;
     };
   }, [isDespiaApp, refreshSubscription]);
 
@@ -129,19 +124,6 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     }
     init();
   }, [user, isNative, isDespiaApp, refreshSubscription]);
-
-  // Handle global iapSuccess callback from Despia Native
-  useEffect(() => {
-    window.iapSuccess = (transactionData: any) => {
-      console.log('IAP Success:', transactionData);
-      refreshSubscription();
-    };
-
-    return () => {
-      // Clean up if necessary, though overwriting on unmount might not be needed
-      // window.iapSuccess = undefined;
-    };
-  }, [refreshSubscription]);
 
   const canCreateProfile = useCallback(() => {
     if (!subscription?.limits) {
@@ -255,7 +237,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         presentPaywall: handlePresentPaywall,
         presentPaywallAlways: handlePresentPaywallAlways,
         presentCustomerCenter: handlePresentCustomerCenter,
-        isNative,
+        isNative: isNative || isDespiaApp,
       }}
     >
       {children}

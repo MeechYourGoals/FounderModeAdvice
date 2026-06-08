@@ -11,7 +11,12 @@
     "preview": "vite preview",
     "cap:sync": "cap sync",
     "cap:ios": "cap open ios",
-    "cap:build": "npm run build && cap sync"
+    "cap:build": "npm run build && cap sync",
+    "cap:add:ios": "cap add ios",
+    "cap:add:android": "cap add android",
+    "cap:android": "cap open android",
+    "cap:build:ios": "npm run build && cap sync ios",
+    "cap:build:android": "npm run build && cap sync android"
   },
   "dependencies": {
     "@capacitor/app": "^6.0.0",

@@ -17,7 +17,7 @@ Founder Mode Advice is built as a native iPhone experience using the Despia runt
 2. **Native share sheet** — Saved insights and analysis results invoke the iOS share sheet through the Despia `share://` URL scheme. Tap the share icon on any Saved item or analysis result to verify.
 3. **Haptic feedback** — Triggered on tab switches, save actions, analyze submissions, and share completions.
 4. **Push notifications** — Optional daily founder prompts, plan reminders, and product updates. Toggles live under Settings → Notifications. Users explicitly opt in; preferences are stored server-side and respected immediately.
-5. **Biometric-protected premium content** — Premium founder insights are gated behind RevenueCat / Face ID via the Despia paywall flow.
+5. **Native in-app subscriptions** — Premium founder insights are gated by RevenueCat / Apple IAP in the installed app. Restore Purchases is available from Account and Settings.
 6. **Deep linking** — Shared links open the corresponding analysis or saved item directly inside the installed app (`com.foundermodeadvice.app://`).
 7. **Offline access** — The **Saved** tab and the **most recently viewed analysis** remain fully usable without network connectivity. An "Offline — showing saved content" banner appears when the device is offline. To verify: enable Airplane Mode, open the Saved tab, then open any cached item.
 
@@ -52,6 +52,9 @@ Terms of Service: https://foundermodeadvice.com/terms-of-service
 - [ ] App Store Connect listing created with screenshots, description, keywords
 - [ ] TestFlight build approved and tested with internal users
 - [ ] Subscription products created in App Store Connect and linked to RevenueCat
+- [ ] RevenueCat entitlement IDs match `src/types/subscription.ts` and `sync-revenuecat-subscription`
+- [ ] Confirm no Stripe checkout/portal appears inside the iOS installed app
+- [ ] Confirm `delete-user-account` removes Supabase user data and storage objects for the demo user
 
 ### Daily prompt cron snippet (run via Supabase SQL editor once OneSignal keys are set)
 

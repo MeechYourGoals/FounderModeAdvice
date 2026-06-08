@@ -158,11 +158,38 @@ export const TIER_PRICING: Record<SubscriptionTier, TierPricing> = {
 export const REVENUECAT_ENTITLEMENTS = {
   /** Primary entitlement for the app — unlocks all Pro features */
   PRO: 'Founder Mode Advisor Pro',
+  /** Stable slug alias for dashboards that reject spaces in entitlement identifiers. */
+  PRO_SLUG: 'founder_mode_advisor_pro',
   /** Legacy: maps to Seed tier */
   SEED: 'seed_subscription',
   /** Legacy: maps to Series Z tier */
   SERIES_Z: 'series_z_subscription',
 } as const;
+
+/**
+ * RevenueCat entitlement/product identifiers mapped to internal subscription tiers.
+ * Keep this map in sync with `supabase/functions/sync-revenuecat-subscription/index.ts`
+ * and RevenueCat Offerings. The edge function is the source of truth for writes;
+ * this client-side map is only for immediate native UX refreshes.
+ */
+export const REVENUECAT_TIER_IDENTIFIERS: Record<string, SubscriptionTier> = {
+  [REVENUECAT_ENTITLEMENTS.PRO]: 'series_z',
+  [REVENUECAT_ENTITLEMENTS.PRO_SLUG]: 'series_z',
+  [REVENUECAT_ENTITLEMENTS.SERIES_Z]: 'series_z',
+  series_z: 'series_z',
+  boardroom: 'series_z',
+  series_z_monthly: 'series_z',
+  [REVENUECAT_ENTITLEMENTS.SEED]: 'seed',
+  seed: 'seed',
+  c_suite: 'seed',
+  seed_monthly: 'seed',
+};
+
+export function pickHighestSubscriptionTier(tiers: SubscriptionTier[]): SubscriptionTier {
+  if (tiers.includes('series_z')) return 'series_z';
+  if (tiers.includes('seed')) return 'seed';
+  return 'free';
+}
 
 /**
  * RevenueCat product identifiers — must match App Store Connect / Google Play Console.
