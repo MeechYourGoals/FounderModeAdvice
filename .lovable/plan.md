@@ -1,34 +1,29 @@
-## Problem
+## Changes
 
-Clicking **Add** in Manage Folders does nothing because the `episode_folders` and `episode_folder_assignments` tables are missing GRANTs to `authenticated` / `service_role`. Supabase's Data API silently rejects the insert (permission denied), the toast never fires, and the list stays empty. Same issue affects assigning episodes to folders.
+### 1. Remove icons from "Turn expert content into personalized strategy" cards
+File: `src/components/PublicLanding.tsx`
 
-## Fix
+- Drop the three lucide icons (Brain, TrendingUp, CirclePlay) from the three `FeatureCard`s in the features grid.
+- Update `FeatureCard` so the icon tile is no longer rendered (make `icon` optional / remove the `mb-3 sm:mb-4 flex h-10 w-10 ... bg-primary/10` square entirely).
+- Tighten the resulting card padding so the title now sits at the top of the card without a leftover gap where the square used to be.
+- Remove the now-unused `Brain`, `TrendingUp`, `CirclePlay` imports.
 
-### 1. Database migration — add missing GRANTs
-```sql
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.episode_folders TO authenticated;
-GRANT ALL ON public.episode_folders TO service_role;
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.episode_folder_assignments TO authenticated;
-GRANT ALL ON public.episode_folder_assignments TO service_role;
-```
+### 2. Add three more sample insight groups
+File: `src/lib/sampleDemoData.ts`
 
-### 2. Surface insert errors
-In `handleCreateFolder` (EpisodesTable.tsx), show an error toast when `error` is present instead of silently failing — so future permission issues are visible.
+Append three entries to `SAMPLE_INSIGHT_GROUPS` so users see more idea-sparks as they scroll. Each follows the existing `{ title, general, tailored }` shape with Maple & Oak–specific tailored copy:
 
-### 3. Bulk-add UI in the Manage Folders modal
-Replace the single input + Add row with a dynamic list of inputs:
+- **Hiring** — general insight on first operational hires (when to hire vs. systemize), tailored to Maple & Oak's first non-founder hire (lead barista / shift lead to free founders from peak-hour bar work).
+- **Influencer marketing** — general insight on micro-influencer credibility vs. paid reach, tailored to Maple & Oak partnering with local food/neighborhood creators for in-store visits and limited drops instead of paid social.
+- **Competitor analysis** — general insight on studying competitors for gaps rather than copying menus, tailored to Maple & Oak mapping nearby cafés on speed, seating, and wholesale to find an unowned position.
 
-- Start with one input row.
-- A **＋** button next to each row appends another empty input below.
-- A small **✕** button on extra rows removes that row.
-- A single **Create folders** button at the bottom inserts all non-empty, trimmed, de-duplicated names in one batched `insert([...])` call.
-- Enter in any field also appends a new row (so users can rapid-fire add).
-- After success: clear rows back to one, refetch folders, toast `Created N folder(s)`.
+These will render automatically in the demo since `SampleDemo` iterates `SAMPLE_INSIGHT_GROUPS`.
 
-Existing folder list below stays the same (color dot + name + delete).
+### 3. Expand the Business profile blurb
+File: `src/lib/sampleDemoData.ts`
 
-No other files change. The "Add" pattern in `ProfileSettings.tsx` is unrelated (different tables) and is left alone.
+Extend `SAMPLE_PROFILE.description` with a second sentence written in the voice of a passionate small-business owner — a husband-and-wife family business that put their savings into the shop. Keep it to one extra sentence, warm and personal, not corporate.
 
-## Files touched
-- New migration (GRANTs only — no schema change)
-- `src/components/EpisodesTable.tsx` — `handleCreateFolder` → `handleCreateFolders` (bulk), modal JSX rewritten for the multi-input UI
+## Out of scope
+- No backend, schema, or routing changes.
+- No changes to the `SampleDemo` component itself — it already loops the data.
