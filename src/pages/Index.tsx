@@ -171,6 +171,16 @@ const Index = () => {
         </div>
       ) : (
         /* Desktop nav */
+        <>
+          <div className="fixed top-4 left-4 z-50">
+            <button
+              onClick={() => { triggerHapticFeedback('light'); setSelectedEpisodeId(null); window.dispatchEvent(new Event("homeReset")); }}
+              className="flex items-center hover:opacity-80 transition-opacity"
+              aria-label="Founder Mode Advice — home"
+            >
+              <BrandLogo className="h-10 w-auto" />
+            </button>
+          </div>
         <div className="fixed top-4 right-4 z-50 flex gap-2 items-center">
           <ProfileSwitcher />
 
