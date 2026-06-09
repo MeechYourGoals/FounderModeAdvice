@@ -6,7 +6,7 @@ const AccountDeletion = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="h-screen overflow-y-auto bg-background p-6 md:p-12" style={{ paddingTop: 'calc(1.5rem + var(--safe-area-top))', paddingBottom: 'calc(1.5rem + var(--safe-area-bottom))' }}>
+    <div className="h-screen overflow-y-auto bg-background p-6 md:p-12 pb-nav" style={{ paddingTop: 'calc(1.5rem + var(--safe-area-top))' }}>
       <div className="max-w-3xl mx-auto">
         <Button variant="ghost" onClick={() => navigate(-1)} className="mb-8 -ml-2">
           <ArrowLeft className="h-4 w-4 mr-2" />

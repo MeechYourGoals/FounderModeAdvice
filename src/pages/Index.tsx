@@ -34,7 +34,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { Card } from "@/components/ui/card";
 import { useNavigate, Navigate, useLocation } from "react-router-dom";
-import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 import { shouldShowAppAuthFirst } from "@/lib/appMode";
 import { OnboardingDialog } from "@/components/onboarding/OnboardingDialog";
@@ -302,8 +301,6 @@ const Index = () => {
           )}
         </div>
       </div>
-
-      <MobileBottomNav />
     </div>
   );
 };

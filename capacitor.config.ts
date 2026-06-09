@@ -12,7 +12,7 @@ const config: CapacitorConfig = {
     SplashScreen: {
       launchShowDuration: 2000,
       launchAutoHide: true,
-      backgroundColor: '#000000',
+      backgroundColor: '#0f1420',
       androidSplashResourceName: 'splash',
       androidScaleType: 'CENTER_CROP',
       showSpinner: false,
@@ -20,8 +20,9 @@ const config: CapacitorConfig = {
       splashImmersive: true,
     },
     StatusBar: {
-      style: 'default',
-      backgroundColor: '#000000',
+      // Dark theme is the app default; src/lib/capacitor.ts re-syncs on theme toggle
+      style: 'DARK',
+      backgroundColor: '#0f1420',
     },
     Keyboard: {
       resize: 'body',
