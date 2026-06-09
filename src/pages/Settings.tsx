@@ -21,7 +21,7 @@ import { clearOfflineCache } from "@/lib/offlineCache";
 import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft, Loader2, Shield, FileText, LifeBuoy, Mail,
-  Sparkles, Building2, Globe, SlidersHorizontal, User, Users, Trash2, Info,
+  RotateCcw, Building2, Globe, SlidersHorizontal, User, Users, Trash2, Info,
 } from "lucide-react";
 import {
   getLibraryPrefs, setLibraryPrefs, SORT_LABELS, VIEW_LABELS,
@@ -225,7 +225,7 @@ const Settings = () => {
               </CardHeader>
               <CardContent>
                 <Button variant="ghost" className="justify-start w-full" onClick={handleReplayTour}>
-                  <Sparkles className="h-4 w-4 mr-2" />
+                  <RotateCcw className="h-4 w-4 mr-2" />
                   Replay product tour
                 </Button>
               </CardContent>

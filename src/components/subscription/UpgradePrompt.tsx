@@ -1,7 +1,7 @@
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sparkles, ArrowRight } from 'lucide-react';
+import { Crown, ArrowRight } from 'lucide-react';
 import { TIER_PRICING } from '@/types/subscription';
 
 interface UpgradePromptProps {
@@ -30,7 +30,7 @@ export function UpgradePrompt({ message, feature, onUpgrade, compact = false }: 
     return (
       <div className="flex items-center justify-between p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-amber-500" />
+          <Crown className="h-4 w-4 text-amber-500" />
           <span className="text-sm text-amber-700 dark:text-amber-300">{message}</span>
         </div>
         <Button size="sm" variant="outline" onClick={handleUpgrade} className="shrink-0">
@@ -47,7 +47,7 @@ export function UpgradePrompt({ message, feature, onUpgrade, compact = false }: 
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-full bg-amber-500/10">
-            <Sparkles className="h-5 w-5 text-amber-500" />
+            <Crown className="h-5 w-5 text-amber-500" />
           </div>
           <div>
             <CardTitle className="text-lg">Upgrade Required</CardTitle>
@@ -71,7 +71,6 @@ export function UpgradePrompt({ message, feature, onUpgrade, compact = false }: 
           </ul>
         </div>
         <Button onClick={handleUpgrade} className="w-full">
-          <Sparkles className="h-4 w-4 mr-2" />
           Upgrade to {planTier.displayName}
         </Button>
       </CardContent>
