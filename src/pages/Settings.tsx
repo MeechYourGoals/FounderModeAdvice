@@ -11,7 +11,6 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 import { useOnboarding } from "@/hooks/useOnboarding";
@@ -267,8 +266,6 @@ const Settings = () => {
           </div>
         </div>
       </div>
-
-      <MobileBottomNav />
     </div>
   );
 };

@@ -9,7 +9,6 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { UsageDisplay, PricingPlans } from "@/components/subscription";
 import { ArrowLeft, LogOut, Mail, Calendar, Loader2, RotateCcw, Shield, FileText, Trash2, ExternalLink, LifeBuoy, Sparkles } from "lucide-react";
 import { useOnboarding } from "@/hooks/useOnboarding";
-import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -345,8 +344,6 @@ const Account = () => {
         </div>
       </div>
       </div>
-
-      <MobileBottomNav />
     </div>
   );
 };

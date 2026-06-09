@@ -145,6 +145,14 @@ All colors MUST be HSL.
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     touch-action: manipulation;
+    /* No browser pull-to-refresh / rubber-band on the page itself — inner
+       scroll containers still bounce natively on iOS. */
+    overscroll-behavior-y: none;
+  }
+
+  /* No long-press save/copy callout on controls — a webview giveaway on iOS */
+  button, a, [role="button"] {
+    -webkit-touch-callout: none;
   }
 }
 
@@ -240,6 +248,34 @@ All colors MUST be HSL.
 @media (display-mode: standalone) {
   body {
     overscroll-behavior-y: contain;
+  }
+}
+
+/* Bottom padding that clears the fixed tab bar on mobile, plain spacing on
+   desktop. Kept outside @layer so it always beats Tailwind padding utilities. */
+.pb-nav {
+  padding-bottom: calc(1.5rem + var(--safe-area-bottom));
+}
+@media (max-width: 767px) {
+  .pb-nav {
+    padding-bottom: calc(5.5rem + var(--safe-area-bottom));
+  }
+}
+
+/* Slide the tab bar out of the way while the on-screen keyboard is up —
+   native apps never show the tab bar above the keyboard. The .keyboard-open
+   class is toggled on <body> by src/lib/capacitor.ts (Capacitor Keyboard
+   plugin on native, visualViewport watcher in Despia/PWA). */
+.mobile-bottom-nav {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+body.keyboard-open .mobile-bottom-nav {
+  transform: translateY(110%);
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mobile-bottom-nav {
+    transition: none;
   }
 }
 
