@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PricingPlans } from './PricingPlans';
 import { UsageDisplay } from './UsageDisplay';
-import { Sparkles, RotateCcw, Loader2 } from 'lucide-react';
+import { Crown, RotateCcw, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface SubscriptionModalProps {
@@ -61,7 +61,7 @@ export function SubscriptionModal({
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-amber-500" />
+            <Crown className="h-5 w-5 text-amber-500" />
             Subscription
           </DialogTitle>
           <DialogDescription>

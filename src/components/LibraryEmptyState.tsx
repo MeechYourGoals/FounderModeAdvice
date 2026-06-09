@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Building2, Play, Sparkles, ArrowUp } from "lucide-react";
+import { Building2, Play, ArrowUp } from "lucide-react";
 import { useActiveProfile } from "@/contexts/ActiveProfileContext";
 import { STARTER_VIDEOS } from "@/lib/starterVideos";
 import { triggerHapticFeedback } from "@/lib/capacitor";
@@ -22,7 +22,7 @@ export const LibraryEmptyState = () => {
     <Card className="p-6 sm:p-10 text-center space-y-6">
       <div>
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <Sparkles className="h-6 w-6" />
+          <Play className="h-6 w-6" />
         </div>
         <h3 className="text-lg sm:text-xl font-semibold">Analyze your first video</h3>
         <p className="text-sm text-muted-foreground max-w-md mx-auto mt-1">

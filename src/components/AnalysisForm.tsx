@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Loader2, ArrowLeft, Sparkles, FastForward } from "lucide-react";
+import { Loader2, ArrowLeft, FastForward } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useSubscription } from "@/contexts/SubscriptionContext";
@@ -414,15 +414,9 @@ export const AnalysisForm = () => {
                 Upgrade to Continue
               </>
             ) : activeProfile ? (
-              <>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Analyze for {activeProfile.company_name}
-              </>
+              <>Analyze for {activeProfile.company_name}</>
             ) : (
-              <>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Analyze (Personalized)
-              </>
+              <>Analyze (Personalized)</>
             )}
           </Button>
 
