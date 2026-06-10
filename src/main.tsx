@@ -1,15 +1,20 @@
 import { createRoot } from "react-dom/client";
+import { PostHogProvider } from "posthog-js/react";
 import App from "./App.tsx";
 import "./index.css";
 import { initializeNativePlugins, handleBackButton, initKeyboardViewportWatcher } from "./lib/capacitor";
 import { isDespia } from "./services/despiaService";
 import { isNativeWrapper, isStandalonePWA } from "./lib/appMode";
+import { initAnalytics, posthog } from "./lib/posthog";
 import { Capacitor } from "@capacitor/core";
 
 // Initialize native plugins (Capacitor)
 initializeNativePlugins();
 handleBackButton();
 initKeyboardViewportWatcher();
+
+// PostHog analytics (no-op when VITE_PUBLIC_POSTHOG_KEY is unset)
+initAnalytics();
 
 // Installed-app contexts get a fixed, non-zoomable viewport like a native app.
 // Plain browser visitors keep pinch-zoom for accessibility.
@@ -47,4 +52,8 @@ if (isDespia()) {
 // Expose app version for Settings → About display
 console.log(`Founder Mode Advice — v${__APP_VERSION__}`);
 
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(
+  <PostHogProvider client={posthog}>
+    <App />
+  </PostHogProvider>,
+);
