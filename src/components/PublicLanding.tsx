@@ -215,21 +215,48 @@ export const PublicLanding = () => {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="container mx-auto px-4 py-12 sm:py-16 md:py-24">
-        <div className="max-w-2xl mx-auto text-center space-y-4 sm:space-y-6">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">
-            Ready to build your boardroom?
-          </h2>
-          <p className="text-sm sm:text-lg text-muted-foreground">
-            Create your free account, paste a video, and get advice tailored to your business in minutes.
-          </p>
-          <Button size="lg" className="text-base sm:text-lg px-6 sm:px-8" onClick={goToAuth}>
-            Analyze Your First Video
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
+      {/* FAQ */}
+      <section className="container mx-auto px-4 py-12 sm:py-16">
+        <div className="max-w-5xl mx-auto">
+          <div className="inline-block rounded-2xl bg-card/95 px-5 py-3 shadow-sm ring-1 ring-border/50 backdrop-blur-sm">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">Common questions.</h2>
+          </div>
+          <div className="mt-8 grid gap-4 md:grid-cols-2">
+            {FAQS.map((f) => (
+              <Card key={f.q} className="bg-card/95 ring-1 ring-border/50">
+                <CardContent className="p-5">
+                  <h3 className="text-base font-semibold">{f.q}</h3>
+                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{f.a}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </section>
+
+      {/* Final CTA — primary-filled */}
+      <section className="container mx-auto px-4 pb-16 sm:pb-24">
+        <div className="max-w-5xl mx-auto rounded-3xl bg-primary px-6 py-12 text-center text-primary-foreground shadow-lg sm:px-12">
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Ready to build your boardroom?</h2>
+          <p className="mx-auto mt-3 max-w-xl text-base text-primary-foreground/90">
+            Create your free account, paste a video, and get advice tailored to your business in minutes.
+          </p>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <Button size="lg" variant="secondary" className="h-12 px-6 text-base" onClick={goToAuth}>
+              Analyze your first video <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="h-12 border-primary-foreground/30 bg-transparent px-6 text-base text-primary-foreground hover:bg-primary-foreground/10"
+              onClick={() => scrollTo("pricing")}
+            >
+              See pricing
+            </Button>
+          </div>
+        </div>
+      </section>
+
 
       <Footer />
       </div>
