@@ -1,6 +1,7 @@
-import { ArrowRight, MessageSquare, ShieldCheck, Check, X, Target } from "lucide-react";
+import { ArrowRight, MessageSquare, ShieldCheck, Check, X, Target, Lightbulb, Building2, Folder } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { BrandLogo } from "@/components/BrandLogo";
 
@@ -48,53 +49,60 @@ export const PublicLanding = () => {
 
       {/* Scrollable content (Despia pattern) */}
       <div className="despia-scroll">
-      {/* Hero Section */}
+      {/* Hero — asymmetric split with framed product preview */}
       <section className="relative overflow-hidden">
         <div
-          className="absolute inset-0 opacity-10"
+          className="absolute inset-0 opacity-[0.06]"
           style={{
             backgroundImage: `url(${heroBg})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center'
           }}
         />
-        <div
-          className="absolute inset-0"
-          style={{ background: 'var(--gradient-hero)' }}
-        />
-        <div
-          className="absolute inset-0"
-          style={{ background: 'var(--gradient-mesh)' }}
-        />
-        <div className="container relative mx-auto px-4 py-16 sm:py-24 md:py-32">
-          <div className="max-w-4xl mx-auto text-center space-y-6 sm:space-y-8">
-            <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold tracking-tight text-foreground animate-slide-up">
-              Build Your Boardroom
-              <span className="block text-lg sm:text-2xl md:text-3xl font-normal text-muted-foreground mt-3 sm:mt-4">
-                then,
+        <div className="absolute inset-0" style={{ background: 'var(--gradient-hero)' }} />
+        <div className="absolute inset-0" style={{ background: 'var(--gradient-mesh)' }} />
+        <div className="container relative mx-auto px-4 py-12 sm:py-20 lg:py-28">
+          <div className="grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:items-center lg:gap-16">
+            {/* Left: copy panel */}
+            <div className="glass rounded-3xl p-6 sm:p-10 ring-1 ring-border/50 shadow-[var(--shadow-card)]">
+              <span className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                <Lightbulb className="mr-1.5 h-3 w-3" aria-hidden /> Personalized advice from any business video
               </span>
-              <span className="block mt-2 sm:mt-3">Instill Their Insights</span>
-            </h1>
-            <p className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto animate-slide-up">
-              Turn founder, operator, and business-building videos into personalized advice for your company, industry, and stage — whether you run a startup, an agency, a local shop, a storefront, or a side hustle.
-            </p>
-            <div className="flex flex-col items-center gap-2 animate-slide-up">
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-                <Button size="lg" className="text-base sm:text-lg px-6 sm:px-8" onClick={goToAuth}>
-                  Analyze a Video Free
-                  <ArrowRight className="ml-2 h-5 w-5" />
+              <h1 className="mt-5 text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.05] tracking-tight text-foreground">
+                Build Your Boardroom.
+                <span className="block text-base sm:text-lg lg:text-xl font-normal text-muted-foreground mt-3">
+                  then,
+                </span>
+                <span className="block mt-1">Instill Their Insights.</span>
+              </h1>
+              <p className="mt-5 max-w-xl text-base sm:text-lg text-foreground/85 leading-relaxed">
+                Turn founder, operator, and business-building videos into personalized advice for your company,
+                industry, and stage — startup, agency, local shop, storefront, or side hustle.
+              </p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Button size="lg" className="h-12 px-6 text-base" onClick={goToAuth}>
+                  Analyze a Video Free <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
-                <Button size="lg" variant="outline" className="text-base sm:text-lg px-6 sm:px-8" onClick={goToAuth}>
-                  Sign In
+                <Button size="lg" variant="outline" className="h-12 bg-card/90 px-6 text-base" onClick={() => scrollTo("demo")}>
+                  See the demo
                 </Button>
               </div>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Create your free account to start — no credit card required.
-              </p>
+              <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-foreground/80">
+                <li className="flex items-center gap-1.5"><Check className="h-4 w-4 text-primary" /> Free forever tier</li>
+                <li className="flex items-center gap-1.5"><Check className="h-4 w-4 text-primary" /> No credit card</li>
+                <li className="flex items-center gap-1.5"><Check className="h-4 w-4 text-primary" /> iOS, Android, web</li>
+              </ul>
+            </div>
+
+            {/* Right: framed product preview */}
+            <div className="relative">
+              <div aria-hidden className="absolute -inset-10 -z-10 rounded-full bg-primary/20 blur-3xl" />
+              <HeroPreview />
             </div>
           </div>
         </div>
       </section>
+
 
       {/* Features Grid */}
       <section className="container mx-auto px-4 pt-12 sm:pt-16 md:pt-24 pb-8 sm:pb-10 md:pb-12">
@@ -207,21 +215,48 @@ export const PublicLanding = () => {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="container mx-auto px-4 py-12 sm:py-16 md:py-24">
-        <div className="max-w-2xl mx-auto text-center space-y-4 sm:space-y-6">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">
-            Ready to build your boardroom?
-          </h2>
-          <p className="text-sm sm:text-lg text-muted-foreground">
-            Create your free account, paste a video, and get advice tailored to your business in minutes.
-          </p>
-          <Button size="lg" className="text-base sm:text-lg px-6 sm:px-8" onClick={goToAuth}>
-            Analyze Your First Video
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
+      {/* FAQ */}
+      <section className="container mx-auto px-4 py-12 sm:py-16">
+        <div className="max-w-5xl mx-auto">
+          <div className="inline-block rounded-2xl bg-card/95 px-5 py-3 shadow-sm ring-1 ring-border/50 backdrop-blur-sm">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">Common questions.</h2>
+          </div>
+          <div className="mt-8 grid gap-4 md:grid-cols-2">
+            {FAQS.map((f) => (
+              <Card key={f.q} className="bg-card/95 ring-1 ring-border/50">
+                <CardContent className="p-5">
+                  <h3 className="text-base font-semibold">{f.q}</h3>
+                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{f.a}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </section>
+
+      {/* Final CTA — primary-filled */}
+      <section className="container mx-auto px-4 pb-16 sm:pb-24">
+        <div className="max-w-5xl mx-auto rounded-3xl bg-primary px-6 py-12 text-center text-primary-foreground shadow-lg sm:px-12">
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Ready to build your boardroom?</h2>
+          <p className="mx-auto mt-3 max-w-xl text-base text-primary-foreground/90">
+            Create your free account, paste a video, and get advice tailored to your business in minutes.
+          </p>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <Button size="lg" variant="secondary" className="h-12 px-6 text-base" onClick={goToAuth}>
+              Analyze your first video <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="h-12 border-primary-foreground/30 bg-transparent px-6 text-base text-primary-foreground hover:bg-primary-foreground/10"
+              onClick={() => scrollTo("pricing")}
+            >
+              See pricing
+            </Button>
+          </div>
+        </div>
+      </section>
+
 
       <Footer />
       </div>
@@ -301,3 +336,78 @@ const ComparisonItem = ({ positive, children }: { positive: boolean; children: R
     </li>
   );
 };
+
+const FAQS = [
+  {
+    q: "What kinds of videos work?",
+    a: "Any public YouTube video — founder interviews, podcasts, talks, operator deep-dives. Spotify and Apple Podcasts aren't supported because they don't expose public transcripts.",
+  },
+  {
+    q: "How is this different from MasterClass or Augment?",
+    a: "Those platforms lock you to a fixed roster and give every viewer the same generic clip. Founder Mode Advice works on any video online and tailors every insight to your industry, stage, and customers.",
+  },
+  {
+    q: "Do I need to know who the speaker is?",
+    a: "No. Paste any business video and you'll get structured lessons, risks, and action items mapped to your business — even if you've never heard of the person.",
+  },
+  {
+    q: "Is the free tier actually useful?",
+    a: "Yes. The free tier includes real video analyses every month with the full insights view. Upgrade when you want more volume and the ask-the-video chat.",
+  },
+  {
+    q: "How do I cancel?",
+    a: "One tap in Settings. Subscriptions renew until canceled and you keep access until the period ends.",
+  },
+  {
+    q: "Does this replace real advisors?",
+    a: "No. Founder Mode Advice analyzes public content only. It's independent, doesn't imply endorsement, and isn't a substitute for legal, financial, or fiduciary advice.",
+  },
+] as const;
+
+const HeroPreview = () => (
+  <div className="rounded-3xl bg-card/95 p-4 sm:p-5 ring-1 ring-border/50 shadow-[var(--shadow-elegant)] backdrop-blur-sm">
+    <div className="flex items-center gap-1.5 px-1 pb-3">
+      <span className="h-2.5 w-2.5 rounded-full bg-destructive/60" />
+      <span className="h-2.5 w-2.5 rounded-full bg-yellow-500/60" />
+      <span className="h-2.5 w-2.5 rounded-full bg-success/60" />
+      <span className="ml-3 text-[10px] uppercase tracking-wider text-muted-foreground">foundermodeadvice.com</span>
+    </div>
+
+    <div className="flex items-center gap-3 rounded-2xl border border-border/60 bg-background/60 p-3 mb-3">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+        <MessageSquare className="h-4 w-4" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold truncate">How we bootstrapped a 7-figure coffee roaster</p>
+        <p className="text-[11px] text-muted-foreground truncate">YouTube · The Founder Podcast</p>
+      </div>
+      <span className="hidden sm:inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+        <Building2 className="mr-1 h-3 w-3" /> Maple &amp; Oak
+      </span>
+    </div>
+
+    <div className="space-y-2.5">
+      {[
+        { tag: "Margin leverage", text: "Raise wholesale prices 8% before peak season — your roaster cost basis already absorbed it." },
+        { tag: "Influencer marketing", text: "Skip macro creators. Partner with 5 local micro-baristas for in-cafe content trades." },
+        { tag: "Competitor analysis", text: "Blue Bottle's loyalty leans on streaks — your subscription box already has the data hook." },
+      ].map((c) => (
+        <div key={c.tag} className="rounded-xl border border-border/60 bg-background/70 p-3">
+          <div className="flex items-center gap-2 mb-1">
+            <Lightbulb className="h-3.5 w-3.5 text-primary" />
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-primary">{c.tag}</span>
+            <span className="ml-auto text-[10px] text-muted-foreground">Tailored</span>
+          </div>
+          <p className="text-xs text-foreground/85 leading-relaxed">{c.text}</p>
+        </div>
+      ))}
+    </div>
+
+    <div className="mt-3 flex items-center justify-between rounded-xl bg-muted/40 px-3 py-2">
+      <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <Folder className="h-3 w-3" /> Saved to · Coffee playbook
+      </span>
+      <span className="text-[11px] font-medium text-primary">12 insights</span>
+    </div>
+  </div>
+);
