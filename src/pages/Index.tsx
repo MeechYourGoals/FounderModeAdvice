@@ -6,11 +6,12 @@ import { EpisodeDetail } from "@/components/EpisodeDetail";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ProfileSettings } from "@/components/ProfileSettings";
 import { BrandLogo } from "@/components/BrandLogo";
+import { AppLoadingScreen } from "@/components/AppLoadingScreen";
 
 import { PublicLanding } from "@/components/PublicLanding";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/contexts/SubscriptionContext";
-import { Loader2, Bookmark, LogOut, Briefcase, Menu, User, Settings } from "lucide-react";
+import { Bookmark, LogOut, Briefcase, Menu, User, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -101,11 +102,7 @@ const Index = () => {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <AppLoadingScreen label="Preparing your library..." />;
   }
 
   const handleToggle = (tab: "profiles" | "bookmarks") => {

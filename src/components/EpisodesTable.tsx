@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -558,7 +559,34 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
   }, [sortColumn, sortDirection, viewMode]);
 
   if (loading) {
-    return <Card className="p-6 sm:p-8"><div className="text-center text-muted-foreground">Loading episodes...</div></Card>;
+    return (
+      <Card className="p-4 sm:p-6 shadow-card border-primary/10" role="status" aria-live="polite" aria-label="Loading your analyzed videos">
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-4 w-64 max-w-[70vw]" />
+          </div>
+          <Skeleton className="hidden sm:block h-10 w-32 rounded-lg" />
+        </div>
+        <div className="space-y-3">
+          {Array.from({ length: isMobile ? 4 : 6 }).map((_, index) => (
+            <div key={index} className="rounded-xl border border-border/70 p-4 bg-card/60">
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-3 flex-1">
+                  <Skeleton className="h-4 w-4/5" />
+                  <Skeleton className="h-3 w-2/3" />
+                  <div className="flex gap-2">
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                    <Skeleton className="h-5 w-20 rounded-full" />
+                  </div>
+                </div>
+                <Skeleton className="h-8 w-8 rounded-full" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+    );
   }
 
   const getPlatformIcon = (url: string) => url.includes("youtube.com") || url.includes("youtu.be") ? <Youtube className="w-4 h-4" /> : <Headphones className="w-4 h-4" />;
@@ -1213,7 +1241,11 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
               </Button>
             </div>
             {folders.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">No folders yet</p>
+              <div className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-6 text-center">
+                <Folder className="mx-auto mb-2 h-5 w-5 text-muted-foreground" />
+                <p className="text-sm font-medium">No folders yet</p>
+                <p className="text-xs text-muted-foreground mt-1">Add a name above, then create your first folder.</p>
+              </div>
             ) : (
               <div className="space-y-2">
                 {folders.map(folder => (
