@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { AppLoadingScreen } from "@/components/AppLoadingScreen";
 import { UsageDisplay, PricingPlans } from "@/components/subscription";
-import { ArrowLeft, LogOut, Mail, Calendar, Loader2, RotateCcw, Shield, FileText, Trash2, ExternalLink, LifeBuoy, Sparkles } from "lucide-react";
+import { ArrowLeft, LogOut, Mail, Calendar, RotateCcw, Shield, FileText, Trash2, ExternalLink, LifeBuoy, Sparkles } from "lucide-react";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
@@ -95,11 +96,7 @@ const Account = () => {
   };
 
   if (authLoading || subLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <AppLoadingScreen label="Loading your account..." />;
   }
 
   if (!user) {

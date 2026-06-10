@@ -1,55 +1,70 @@
-import { test, expect } from '@playwright/test';
+import { mkdirSync } from 'node:fs';
+import { test, type Page } from '@playwright/test';
 
-// Define standard App Store screenshot sizes
+const BASE_URL = process.env.APP_SCREENSHOT_BASE_URL || process.env.APP_BASE_URL || 'http://localhost:8080';
+const SCREENSHOT_DIR = process.env.APP_SCREENSHOT_DIR || 'screenshots';
+const DEMO_EMAIL = process.env.APP_SCREENSHOT_EMAIL;
+const DEMO_PASSWORD = process.env.APP_SCREENSHOT_PASSWORD;
+
+// App Store / Play Store representative device sizes.
 const DEVICES = [
-  { name: 'iphone-6.5', width: 1242, height: 2688 }, // iPhone 11 Pro Max, XS Max
-  { name: 'iphone-5.5', width: 1242, height: 2208 }, // iPhone 8 Plus, 7 Plus, 6s Plus
-  { name: 'ipad-12.9', width: 2048, height: 2732 },  // iPad Pro 12.9-inch
+  { name: 'iphone-6.7', width: 1290, height: 2796 },
+  { name: 'iphone-6.5', width: 1242, height: 2688 },
+  { name: 'ipad-12.9', width: 2048, height: 2732 },
+  { name: 'android-phone', width: 1080, height: 2400 },
 ];
 
-// Helper to capture screenshots for all devices
-async function captureScreenshots(page, name) {
+async function captureScreenshots(page: Page, name: string) {
+  mkdirSync(SCREENSHOT_DIR, { recursive: true });
+
   for (const device of DEVICES) {
     await page.setViewportSize({ width: device.width, height: device.height });
-    // Wait for any resizing or layout shifts
     await page.waitForTimeout(500);
-    await page.screenshot({ path: `screenshots/${device.name}-${name}.png` });
+    await page.screenshot({
+      path: `${SCREENSHOT_DIR}/${device.name}-${name}.png`,
+      fullPage: true,
+    });
   }
 }
 
-test('generate app store screenshots', async ({ page }) => {
-  // 1. Landing Page (Public)
-  await page.goto('http://localhost:8080/');
+async function loginIfConfigured(page: Page): Promise<boolean> {
+  if (!DEMO_EMAIL || !DEMO_PASSWORD) return false;
+
+  await page.goto(`${BASE_URL}/auth`);
+  await page.waitForLoadState('networkidle');
+  await page.getByRole('tab', { name: /sign in/i }).click().catch(() => undefined);
+  await page.locator('input[type="email"]').fill(DEMO_EMAIL);
+  await page.locator('input[type="password"]').fill(DEMO_PASSWORD);
+  await page.locator('button[type="submit"]').first().click();
+  await page.waitForURL((url) => !url.pathname.startsWith('/auth'), { timeout: 15000 });
+  await page.waitForLoadState('networkidle');
+  return true;
+}
+
+test('generate store screenshots', async ({ page }) => {
+  await page.goto(BASE_URL);
   await page.waitForLoadState('networkidle');
   await captureScreenshots(page, '01-landing');
 
-  // 2. Auth Page
-  await page.goto('http://localhost:8080/auth');
+  await page.goto(`${BASE_URL}/auth`);
   await page.waitForLoadState('networkidle');
   await captureScreenshots(page, '02-auth');
 
-  // NOTE: To capture authenticated pages (Dashboard, Account), you would typically need to:
-  // 1. Mock the authentication state, or
-  // 2. Perform a login action in the test.
-  // Since this is a specialized script for the developer to run locally or in CI with specific env vars,
-  // we will outline the steps but comment them out or keep them simple for now to avoid breaking if credentials aren't set.
+  const isAuthenticated = await loginIfConfigured(page);
+  if (!isAuthenticated) {
+    console.warn('Skipping authenticated screenshots. Set APP_SCREENSHOT_EMAIL and APP_SCREENSHOT_PASSWORD to capture app screens.');
+    return;
+  }
 
-  /*
-  // Example of logging in (uncomment and configure if running against a local instance with known creds)
-  await page.fill('input[type="email"]', 'test@example.com');
-  await page.fill('input[type="password"]', 'password123');
-  await page.click('button[type="submit"]');
-  await page.waitForURL('http://localhost:8080/');
-
-  // 3. Dashboard (Authenticated)
+  await page.goto(BASE_URL);
+  await page.waitForLoadState('networkidle');
   await captureScreenshots(page, '03-dashboard');
 
-  // 4. Episode Detail (Mock navigation or direct link)
-  // await page.click('text=Episode Title');
-  // await captureScreenshots(page, '04-detail');
+  await page.goto(`${BASE_URL}/settings`);
+  await page.waitForLoadState('networkidle');
+  await captureScreenshots(page, '04-settings');
 
-  // 5. Account / Paywall
-  await page.goto('http://localhost:8080/account');
-  await captureScreenshots(page, '05-account');
-  */
+  await page.goto(`${BASE_URL}/account`);
+  await page.waitForLoadState('networkidle');
+  await captureScreenshots(page, '05-account-subscription');
 });
