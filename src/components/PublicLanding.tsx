@@ -49,53 +49,60 @@ export const PublicLanding = () => {
 
       {/* Scrollable content (Despia pattern) */}
       <div className="despia-scroll">
-      {/* Hero Section */}
+      {/* Hero — asymmetric split with framed product preview */}
       <section className="relative overflow-hidden">
         <div
-          className="absolute inset-0 opacity-10"
+          className="absolute inset-0 opacity-[0.06]"
           style={{
             backgroundImage: `url(${heroBg})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center'
           }}
         />
-        <div
-          className="absolute inset-0"
-          style={{ background: 'var(--gradient-hero)' }}
-        />
-        <div
-          className="absolute inset-0"
-          style={{ background: 'var(--gradient-mesh)' }}
-        />
-        <div className="container relative mx-auto px-4 py-16 sm:py-24 md:py-32">
-          <div className="max-w-4xl mx-auto text-center space-y-6 sm:space-y-8">
-            <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold tracking-tight text-foreground animate-slide-up">
-              Build Your Boardroom
-              <span className="block text-lg sm:text-2xl md:text-3xl font-normal text-muted-foreground mt-3 sm:mt-4">
-                then,
+        <div className="absolute inset-0" style={{ background: 'var(--gradient-hero)' }} />
+        <div className="absolute inset-0" style={{ background: 'var(--gradient-mesh)' }} />
+        <div className="container relative mx-auto px-4 py-12 sm:py-20 lg:py-28">
+          <div className="grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:items-center lg:gap-16">
+            {/* Left: copy panel */}
+            <div className="glass rounded-3xl p-6 sm:p-10 ring-1 ring-border/50 shadow-[var(--shadow-card)]">
+              <span className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                <Lightbulb className="mr-1.5 h-3 w-3" aria-hidden /> Personalized advice from any business video
               </span>
-              <span className="block mt-2 sm:mt-3">Instill Their Insights</span>
-            </h1>
-            <p className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto animate-slide-up">
-              Turn founder, operator, and business-building videos into personalized advice for your company, industry, and stage — whether you run a startup, an agency, a local shop, a storefront, or a side hustle.
-            </p>
-            <div className="flex flex-col items-center gap-2 animate-slide-up">
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-                <Button size="lg" className="text-base sm:text-lg px-6 sm:px-8" onClick={goToAuth}>
-                  Analyze a Video Free
-                  <ArrowRight className="ml-2 h-5 w-5" />
+              <h1 className="mt-5 text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.05] tracking-tight text-foreground">
+                Build Your Boardroom.
+                <span className="block text-base sm:text-lg lg:text-xl font-normal text-muted-foreground mt-3">
+                  then,
+                </span>
+                <span className="block mt-1">Instill Their Insights.</span>
+              </h1>
+              <p className="mt-5 max-w-xl text-base sm:text-lg text-foreground/85 leading-relaxed">
+                Turn founder, operator, and business-building videos into personalized advice for your company,
+                industry, and stage — startup, agency, local shop, storefront, or side hustle.
+              </p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Button size="lg" className="h-12 px-6 text-base" onClick={goToAuth}>
+                  Analyze a Video Free <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
-                <Button size="lg" variant="outline" className="text-base sm:text-lg px-6 sm:px-8" onClick={goToAuth}>
-                  Sign In
+                <Button size="lg" variant="outline" className="h-12 bg-card/90 px-6 text-base" onClick={() => scrollTo("demo")}>
+                  See the demo
                 </Button>
               </div>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Create your free account to start — no credit card required.
-              </p>
+              <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-foreground/80">
+                <li className="flex items-center gap-1.5"><Check className="h-4 w-4 text-primary" /> Free forever tier</li>
+                <li className="flex items-center gap-1.5"><Check className="h-4 w-4 text-primary" /> No credit card</li>
+                <li className="flex items-center gap-1.5"><Check className="h-4 w-4 text-primary" /> iOS, Android, web</li>
+              </ul>
+            </div>
+
+            {/* Right: framed product preview */}
+            <div className="relative">
+              <div aria-hidden className="absolute -inset-10 -z-10 rounded-full bg-primary/20 blur-3xl" />
+              <HeroPreview />
             </div>
           </div>
         </div>
       </section>
+
 
       {/* Features Grid */}
       <section className="container mx-auto px-4 pt-12 sm:pt-16 md:pt-24 pb-8 sm:pb-10 md:pb-12">
