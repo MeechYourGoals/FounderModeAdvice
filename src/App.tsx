@@ -22,6 +22,7 @@ import AccountDeletion from "./pages/AccountDeletion";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 import { OfflineBadge } from "@/components/OfflineBadge";
+import { AppChrome } from "@/components/AppChrome";
 
 const queryClient = new QueryClient();
 
@@ -79,6 +80,7 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <AppChrome />
           </BrowserRouter>
         </TooltipProvider>
         </ActiveProfileProvider>

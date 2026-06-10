@@ -15,22 +15,19 @@ export async function initializeNativePlugins() {
   }
 
   try {
-    // Status Bar - set style for iOS
-    if (isIOS) {
-      const { StatusBar, Style } = await import('@capacitor/status-bar');
-      await StatusBar.setStyle({ style: Style.Default });
-    }
+    // Status Bar - follow the active theme (and keep following it on toggle)
+    await syncStatusBarWithTheme();
+    watchThemeForStatusBar();
 
-    // Keyboard - configure for proper form handling
+    // Keyboard - hide the bottom tab bar while typing (see index.css .keyboard-open)
     const { Keyboard } = await import('@capacitor/keyboard');
 
-    // Optional: Listen for keyboard events
-    Keyboard.addListener('keyboardWillShow', (info) => {
-      console.log('Keyboard will show:', info.keyboardHeight);
+    Keyboard.addListener('keyboardWillShow', () => {
+      document.body.classList.add('keyboard-open');
     });
 
     Keyboard.addListener('keyboardWillHide', () => {
-      console.log('Keyboard will hide');
+      document.body.classList.remove('keyboard-open');
     });
 
     // App lifecycle handling
@@ -65,6 +62,47 @@ export async function initializeNativePlugins() {
   }
 }
 
+// Status bar follows the app theme: light icons on the dark theme,
+// dark icons on the light theme. Colors match --background in index.css.
+async function syncStatusBarWithTheme() {
+  if (!isNative) return;
+
+  try {
+    const { StatusBar, Style } = await import('@capacitor/status-bar');
+    const darkTheme = document.documentElement.classList.contains('dark');
+
+    await StatusBar.setStyle({ style: darkTheme ? Style.Dark : Style.Light });
+    if (isAndroid) {
+      await StatusBar.setBackgroundColor({ color: darkTheme ? '#0f1420' : '#fbfcfe' });
+    }
+  } catch (error) {
+    console.log('Status bar styling not available');
+  }
+}
+
+// next-themes swaps the "dark" class on <html> when the user toggles theme
+function watchThemeForStatusBar() {
+  const observer = new MutationObserver(() => syncStatusBarWithTheme());
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+}
+
+/**
+ * Keyboard detection for non-Capacitor wrappers (Despia, installed PWA, plain
+ * mobile browser): the on-screen keyboard shrinks the visual viewport, so a
+ * large height drop means the keyboard is up. Toggles the same body class the
+ * Capacitor Keyboard plugin uses, so index.css handles both paths.
+ */
+export function initKeyboardViewportWatcher() {
+  if (isNative || typeof window === 'undefined' || !window.visualViewport) return;
+
+  const viewport = window.visualViewport;
+  const onResize = () => {
+    const keyboardLikelyOpen = window.innerHeight - viewport.height > 150;
+    document.body.classList.toggle('keyboard-open', keyboardLikelyOpen);
+  };
+  viewport.addEventListener('resize', onResize);
+}
+
 // Handle back button on Android
 export async function handleBackButton() {
   if (!isAndroid) return;
@@ -84,9 +122,13 @@ export async function handleBackButton() {
   }
 }
 
-// Haptic feedback for native interactions
+// Haptic feedback for native interactions (Capacitor or Despia runtime)
 export async function triggerHapticFeedback(type: 'light' | 'medium' | 'heavy' = 'light') {
-  if (!isNative) return;
+  if (!isNative) {
+    const { isDespia, triggerDespiaHaptic } = await import('@/services/despiaService');
+    if (isDespia()) triggerDespiaHaptic(type);
+    return;
+  }
 
   try {
     const { Haptics, ImpactStyle } = await import('@capacitor/haptics');

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Loader2, ArrowLeft, Zap, FastForward } from "lucide-react";
+import { Loader2, ArrowLeft, FastForward } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useSubscription } from "@/contexts/SubscriptionContext";
@@ -297,7 +297,6 @@ export const AnalysisForm = () => {
 
       {analysisCheck.allowed && subscription && (
         <div className="mb-2 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-          <Zap className="h-4 w-4" />
           <span>
             {isUnlimited(subscription.limits.analyses.max)
               ? `${subscription.limits.analyses.used} analyses this month · Unlimited`
@@ -412,19 +411,12 @@ export const AnalysisForm = () => {
               </>
             ) : !analysisCheck.allowed ? (
               <>
-                <Zap className="mr-2 h-4 w-4" />
                 Upgrade to Continue
               </>
             ) : activeProfile ? (
-              <>
-                <Zap className="mr-2 h-4 w-4" />
-                Analyze for {activeProfile.company_name}
-              </>
+              <>Analyze for {activeProfile.company_name}</>
             ) : (
-              <>
-                <Zap className="mr-2 h-4 w-4" />
-                Analyze (Personalized)
-              </>
+              <>Analyze (Personalized)</>
             )}
           </Button>
 

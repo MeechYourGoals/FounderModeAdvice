@@ -2,7 +2,7 @@ import { useSubscription } from '@/contexts/SubscriptionContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, Zap, Crown, Star } from 'lucide-react';
+import { Check, Crown, Star, ArrowUp } from 'lucide-react';
 import { TIER_PRICING, type SubscriptionTier, type TierPricing } from '@/types/subscription';
 import { cn } from '@/lib/utils';
 
@@ -29,7 +29,7 @@ export function PricingPlans({ onSelect, showCurrentPlan = true }: PricingPlansP
       case 'free':
         return <Star className="h-5 w-5" />;
       case 'seed':
-        return <Zap className="h-5 w-5" />;
+        return <ArrowUp className="h-5 w-5" />;
       case 'series_z':
         return <Crown className="h-5 w-5" />;
     }

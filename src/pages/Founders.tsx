@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import { Users, ArrowLeft } from "lucide-react";
-import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { SpeakerDirectory } from "@/components/SpeakerDirectory";
@@ -35,7 +34,6 @@ export default function Founders() {
            <SpeakerDirectory variant="grid" />
          </div>
        </div>
-       <MobileBottomNav />
     </div>
   );
 }

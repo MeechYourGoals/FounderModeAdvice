@@ -1,4 +1,4 @@
-import { Brain, TrendingUp, CirclePlay, ArrowRight, MessageSquare, ShieldCheck, Check, X, Target } from "lucide-react";
+import { ArrowRight, MessageSquare, ShieldCheck, Check, X, Target } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -104,17 +104,14 @@ export const PublicLanding = () => {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
             <FeatureCard
-              icon={<Brain className="h-5 w-5" />}
               title="Beyond passive watching"
               description="Convert interviews, talks, and podcasts into structured lessons, risks, and action items for your business"
             />
             <FeatureCard
-              icon={<TrendingUp className="h-5 w-5" />}
               title="Tailored to your business"
               description="Map the speaker's thinking to your industry, stage, customers, and next decision"
             />
             <FeatureCard
-              icon={<CirclePlay className="h-5 w-5" />}
               title="Ask any video"
               description="Open a transcript-grounded chat after analysis and dig into the advice behind each recommendation"
             />
@@ -248,12 +245,9 @@ const MiniFeature = ({ icon, title, description }: { icon: React.ReactNode; titl
   </div>
 );
 
-const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) => {
+const FeatureCard = ({ title, description }: { title: string; description: string }) => {
   return (
     <div className="glass elevate-hover p-4 sm:p-6 rounded-2xl hover:border-primary/30">
-      <div className="mb-3 sm:mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-        {icon}
-      </div>
       <h3 className="font-semibold text-base sm:text-lg mb-1 sm:mb-2">{title}</h3>
       <p className="text-xs sm:text-sm text-muted-foreground">{description}</p>
     </div>

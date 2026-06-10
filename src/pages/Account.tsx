@@ -10,7 +10,6 @@ import { AppLoadingScreen } from "@/components/AppLoadingScreen";
 import { UsageDisplay, PricingPlans } from "@/components/subscription";
 import { ArrowLeft, LogOut, Mail, Calendar, RotateCcw, Shield, FileText, Trash2, ExternalLink, LifeBuoy, Sparkles } from "lucide-react";
 import { useOnboarding } from "@/hooks/useOnboarding";
-import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -176,7 +175,7 @@ const Account = () => {
                   Sign Out
                 </Button>
                 <Button variant="ghost" onClick={handleReplayTour}>
-                  <Sparkles className="h-4 w-4 mr-2" />
+                  <RotateCcw className="h-4 w-4 mr-2" />
                   Replay Product Tour
                 </Button>
               </div>
@@ -342,8 +341,6 @@ const Account = () => {
         </div>
       </div>
       </div>
-
-      <MobileBottomNav />
     </div>
   );
 };

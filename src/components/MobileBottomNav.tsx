@@ -45,7 +45,7 @@ export const MobileBottomNav = () => {
 
   return (
     <nav
-      className="glass-nav fixed bottom-0 left-0 right-0 z-50 border-t border-border safe-bottom md:hidden"
+      className="mobile-bottom-nav glass-nav fixed bottom-0 left-0 right-0 z-50 border-t border-border safe-bottom md:hidden"
       role="navigation"
       aria-label="Main navigation"
     >
@@ -82,7 +82,7 @@ export const MobileBottomNav = () => {
         />
         <SideItem
           icon={User}
-          label="Profile"
+          label="Account"
           active={location.pathname.startsWith("/account")}
           onClick={() => { triggerHapticFeedback("light"); navigate("/account"); }}
         />

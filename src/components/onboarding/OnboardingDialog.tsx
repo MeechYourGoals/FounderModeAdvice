@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
-  Sparkles,
+  Rocket,
   FolderOpen,
   Video,
   MessageSquare,
@@ -28,7 +28,7 @@ interface OnboardingStep {
 
 const STEPS: OnboardingStep[] = [
   {
-    icon: Sparkles,
+    icon: Rocket,
     title: "Welcome to Founder Mode Advice",
     body: "Turn any business, founder, operator, investor, or leadership video into practical, personalized advice for your company — whatever kind of business you run.",
   },

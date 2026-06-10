@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, Bookmark, Video, Zap, Settings } from 'lucide-react';
+import { Users, Bookmark, Video, Crown, Settings } from 'lucide-react';
 import { TIER_PRICING } from '@/types/subscription';
 import { cn } from '@/lib/utils';
 
@@ -123,7 +123,7 @@ export function UsageDisplay({ showUpgrade = true, compact = false }: UsageDispl
             className="w-full mt-2"
             onClick={() => upgradeTo('seed')}
           >
-            <Zap className="h-4 w-4 mr-1" />
+            <Crown className="h-4 w-4 mr-1" />
             Upgrade
           </Button>
         )}
@@ -218,7 +218,7 @@ export function UsageDisplay({ showUpgrade = true, compact = false }: UsageDispl
               className="w-full"
               onClick={() => upgradeTo(tier === 'free' ? 'seed' : 'series_z')}
             >
-              <Zap className="h-4 w-4 mr-2" />
+              <Crown className="h-4 w-4 mr-2" />
               Upgrade to {TIER_PRICING[tier === 'free' ? 'seed' : 'series_z'].displayName}
             </Button>
           </div>
