@@ -8,25 +8,72 @@ export interface SampleInsightGroup {
   tailored: string;
 }
 
-export const SAMPLE_PROFILE = {
-  company_name: "Maple & Oak Coffee Roasters",
-  industry: "Food / Beverage / Hospitality",
-  stage: "Bootstrapped",
-  description:
-    "A neighborhood coffee roaster with one cafe and a small wholesale route, looking to grow without raising money. We're a husband-and-wife team who poured our savings into this place because we believe a great cup of coffee can anchor a whole neighborhood — and we want to build something our kids can be proud of.",
-};
+export interface DemoBusinessProfile {
+  id: string;
+  name: string;
+  stageOrType: string[];
+  description: string;
+  folders: {
+    id: string;
+    title: string;
+    color: string;
+  }[];
+}
 
+export const SAMPLE_BUSINESS_PROFILES: DemoBusinessProfile[] = [
+  {
+    id: "maple-oak-coffee",
+    name: "Maple & Oak Coffee Roasters",
+    stageOrType: ["Food / Beverage / Hospitality", "Bootstrapped"],
+    description:
+      "A neighborhood coffee roaster with one cafe and a small wholesale route, looking to grow without raising money. We're a husband-and-wife team who poured our savings into this place because we believe a great cup of coffee can anchor a whole neighborhood — and we want to build something our kids can be proud of.",
+    folders: [
+      { id: "growth-ideas", title: "Growth ideas", color: "#16a34a" },
+      { id: "hiring", title: "Hiring", color: "#a855f7" },
+      { id: "margins", title: "Margins", color: "#f59e0b" },
+    ],
+  },
+  {
+    id: "series-b-ai",
+    name: "HelixMind AI",
+    stageOrType: ["AI / Enterprise Software", "Series B"],
+    description:
+      "A fast-growing AI infrastructure company helping enterprise teams deploy, evaluate, and govern frontier models across internal workflows. The team is scaling GTM, sharpening positioning, and deciding which model stack best supports reliability, cost, and customer trust.",
+    folders: [
+      { id: "marketing", title: "Marketing", color: "#2563eb" },
+      {
+        id: "competitor-analysis",
+        title: "Competitor Analysis",
+        color: "#14b8a6",
+      },
+      {
+        id: "frontier-model-choice",
+        title: "Which Frontier Model to Choose",
+        color: "#e11d48",
+      },
+    ],
+  },
+  {
+    id: "nuclear-drones",
+    name: "Aegis Atomics",
+    stageOrType: ["Aerospace / Defense", "Seed Stage"],
+    description:
+      "A seed-stage company developing long-endurance nuclear-powered drone systems for remote sensing, disaster response, and defense logistics. The team is balancing technical validation, regulatory strategy, capital planning, and early government partnership development.",
+    folders: [
+      {
+        id: "defense-partnerships",
+        title: "Defense Partnerships",
+        color: "#22c55e",
+      },
+      { id: "regulatory-path", title: "Regulatory Path", color: "#f97316" },
+      { id: "prototype-roadmap", title: "Prototype Roadmap", color: "#8b5cf6" },
+    ],
+  },
+];
 export const SAMPLE_VIDEO = {
   title: "Scaling a Neighborhood Business: An Operator's Playbook",
   source: "Sample analysis · illustrative only",
 };
-
-export const SAMPLE_FOLDERS: { name: string; color: string }[] = [
-  { name: "Growth ideas", color: "#16a34a" },
-  { name: "Hiring", color: "#a855f7" },
-  { name: "Margins", color: "#f59e0b" },
-];
-
 export const SAMPLE_INSIGHT_GROUPS: SampleInsightGroup[] = [
   {
     title: "Expansion timing",
@@ -68,7 +115,8 @@ export const SAMPLE_INSIGHT_GROUPS: SampleInsightGroup[] = [
 export const SAMPLE_CHAT: { role: "user" | "assistant"; content: string }[] = [
   {
     role: "user",
-    content: "We're at capacity during morning rush. Should I open a second location?",
+    content:
+      "We're at capacity during morning rush. Should I open a second location?",
   },
   {
     role: "assistant",
