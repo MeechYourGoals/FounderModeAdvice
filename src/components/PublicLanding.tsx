@@ -238,7 +238,7 @@ export const PublicLanding = () => {
         <div className="max-w-5xl mx-auto">
           <Reveal>
             <div className="text-center space-y-3 mb-10 sm:mb-14">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Pricing</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">Pricing</p>
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
                 Simple,{" "}
                 <span className="font-display font-medium italic text-gradient">honest</span> pricing
