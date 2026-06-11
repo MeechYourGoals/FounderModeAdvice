@@ -13,7 +13,11 @@ const Contact = () => {
           Back
         </Button>
 
-        <h1 className="text-4xl font-bold mb-8">Contact &amp; Support</h1>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary mb-3">Support</p>
+        <h1 className="text-4xl font-bold tracking-tight mb-8">
+          Contact &amp;{" "}
+          <span className="font-display font-medium italic text-gradient">support</span>
+        </h1>
 
         <div className="prose prose-slate dark:prose-invert max-w-none space-y-6">
           <p>
@@ -25,9 +29,11 @@ const Contact = () => {
             <h2 className="text-2xl font-semibold mb-4">Email Us</h2>
             <a
               href="mailto:CA@saintmarlolabs.com"
-              className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-3 no-underline hover:bg-muted transition-colors"
+              className="inline-flex items-center gap-3 rounded-2xl border border-border/70 bg-card px-4 py-3 no-underline shadow-sm transition-all hover:border-primary/30 hover:bg-primary/5 hover:shadow-md active:scale-[0.99]"
             >
-              <Mail className="h-5 w-5 text-primary" />
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Mail className="h-4 w-4" />
+              </span>
               <span className="font-medium">CA@saintmarlolabs.com</span>
             </a>
           </section>

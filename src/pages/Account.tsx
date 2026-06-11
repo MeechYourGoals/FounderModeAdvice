@@ -144,9 +144,7 @@ const Account = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-primary/10">
-                  <Mail className="h-5 w-5 text-primary" />
-                </div>
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Mail className="h-4 w-4" /></span>
                 <div>
                   <p className="text-sm text-muted-foreground">Email</p>
                   <p className="font-medium">{user.email}</p>
@@ -154,9 +152,7 @@ const Account = () => {
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-primary/10">
-                  <Calendar className="h-5 w-5 text-primary" />
-                </div>
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Calendar className="h-4 w-4" /></span>
                 <div>
                   <p className="text-sm text-muted-foreground">Member since</p>
                   <p className="font-medium">

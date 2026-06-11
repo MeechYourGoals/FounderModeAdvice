@@ -17,7 +17,7 @@ const TermsOfService = () => {
           Back
         </Button>
 
-        <h1 className="text-4xl font-bold mb-8">Terms of Service</h1>
+        <h1 className="text-4xl font-bold tracking-tight mb-8">Terms of Service</h1>
 
         <div className="prose prose-slate dark:prose-invert max-w-none space-y-6">
           <p className="text-muted-foreground italic">Last Updated: {new Date().toLocaleDateString()}</p>

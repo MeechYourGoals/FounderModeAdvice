@@ -68,18 +68,22 @@ const FAQ = () => {
           Back
         </Button>
 
-        <h1 className="text-4xl font-bold mb-8">Frequently Asked Questions</h1>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary mb-3">FAQ</p>
+        <h1 className="text-4xl font-bold tracking-tight mb-8">
+          Frequently asked{" "}
+          <span className="font-display font-medium italic text-gradient">questions</span>
+        </h1>
 
-        <div className="prose prose-slate dark:prose-invert max-w-none space-y-6">
+        <div className="space-y-4">
           {FAQS.map((item) => (
-            <section key={item.q}>
-              <h2 className="text-xl sm:text-2xl font-semibold mb-2">{item.q}</h2>
-              <p>{item.a}</p>
+            <section key={item.q} className="rounded-2xl border border-border/70 bg-card p-5 transition-colors hover:border-primary/25">
+              <h2 className="text-base sm:text-lg font-semibold tracking-tight mb-2">{item.q}</h2>
+              <p className="text-sm text-muted-foreground leading-relaxed">{item.a}</p>
             </section>
           ))}
 
-          <section>
-            <p className="text-muted-foreground">
+          <section className="pt-2">
+            <p className="text-sm text-muted-foreground">
               Still have questions? Contact us at{" "}
               <a href="mailto:CA@saintmarlolabs.com" className="underline hover:text-primary">CA@saintmarlolabs.com</a>.
             </p>

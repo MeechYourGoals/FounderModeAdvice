@@ -90,7 +90,7 @@ export const OfflineBadge = () => {
     <div
       role="status"
       aria-live="polite"
-      className="fixed left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full bg-muted text-muted-foreground text-xs font-medium px-3 py-1.5 shadow-sm border border-border"
+      className="glass-strong fixed left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full text-muted-foreground text-xs font-medium px-3.5 py-1.5 shadow-md animate-slide-up"
       style={{ top: "calc(var(--safe-area-top) + 0.5rem)" }}
     >
       <WifiOff className="h-3.5 w-3.5" />

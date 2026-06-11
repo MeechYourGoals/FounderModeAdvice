@@ -13,7 +13,7 @@ const AccountDeletion = () => {
           Back
         </Button>
 
-        <h1 className="text-4xl font-bold mb-8">Delete Your Account</h1>
+        <h1 className="text-4xl font-bold tracking-tight mb-8">Delete Your Account</h1>
 
         <div className="prose prose-slate dark:prose-invert max-w-none space-y-6">
           <p>
