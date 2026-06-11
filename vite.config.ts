@@ -54,13 +54,34 @@ export default defineConfig(({ mode }) => ({
           },
         ],
       },
+      devOptions: {
+        enabled: false,
+      },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp,woff,woff2}"],
+        globPatterns: ["**/*.{js,css,ico,png,svg,jpg,jpeg,webp,woff,woff2}"],
         navigateFallbackDenylist: [/^\/~oauth/],
         // Do not runtime-cache Supabase REST/Auth/Functions/Storage responses here.
         // Authenticated offline data is intentionally scoped in src/lib/offlineCache.ts
         // so one user cannot see another user's cached API responses after sign-out.
         cleanupOutdatedCaches: true,
+        // Take control immediately so new deploys are visible on next navigation,
+        // not after the user closes every tab. Prevents stale-preview confusion.
+        skipWaiting: true,
+        clientsClaim: true,
+        // Always revalidate index.html from network so newly deployed builds
+        // (with updated asset hashes) appear without a hard refresh.
+        navigateFallback: "/index.html",
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.mode === "navigate",
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "html-pages",
+              networkTimeoutSeconds: 3,
+              expiration: { maxEntries: 32, maxAgeSeconds: 60 * 60 * 24 },
+            },
+          },
+        ],
       },
     }),
   ].filter(Boolean),
