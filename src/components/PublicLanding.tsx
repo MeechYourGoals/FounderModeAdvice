@@ -303,7 +303,7 @@ export const PublicLanding = () => {
                 Ready to build your{" "}
                 <span className="font-display font-medium italic">boardroom</span>?
               </h2>
-              <p className="mx-auto mt-4 max-w-xl text-base text-primary-foreground/90">
+              <p className="mx-auto mt-4 max-w-xl text-lg text-primary-foreground/95">
                 Create your free account, paste a video, and get advice tailored to your business in minutes.
               </p>
               <div className="mt-7 flex flex-wrap justify-center gap-3">
