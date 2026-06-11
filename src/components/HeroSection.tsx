@@ -1,4 +1,4 @@
-import { ListChecks, Sparkles, Target } from "lucide-react";
+import { ListChecks, Lightbulb, Target } from "lucide-react";
 import heroBg from "@/assets/hero-bg.jpg";
 
 export const HeroSection = () => {
@@ -31,7 +31,7 @@ export const HeroSection = () => {
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pt-2 sm:pt-4 animate-slide-up">
             <FeatureCard
-              icon={<Sparkles className="h-4 w-4" />}
+              icon={<Lightbulb className="h-4 w-4" />}
               title="Structured Extraction"
               description="Pull the lessons that matter from any video. Every insight is organized into a clear, scannable format you can act on."
             />
