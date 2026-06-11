@@ -121,7 +121,7 @@ export const PublicLanding = () => {
       <section className="container mx-auto px-4 pt-14 sm:pt-20 md:pt-28 pb-8 sm:pb-10 md:pb-12">
         <div className="max-w-5xl mx-auto">
           <Reveal>
-            <p className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-primary mb-3">How it works</p>
+            <p className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-primary mb-3">How it works</p>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-center mb-10 sm:mb-14">
               Turn expert content into{" "}
               <span className="font-display font-medium italic text-gradient">personalized strategy</span>
