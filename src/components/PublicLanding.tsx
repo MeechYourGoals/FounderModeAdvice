@@ -63,12 +63,12 @@ export const PublicLanding = () => {
         <div className="absolute inset-0" style={{ background: 'var(--gradient-hero)' }} />
         <div className="absolute inset-0" style={{ background: 'var(--gradient-mesh)' }} />
         <div className="container relative mx-auto px-4 pt-14 pb-16 sm:pt-24 sm:pb-24 lg:pt-28 lg:pb-32">
-          <div className="grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:items-center lg:gap-16">
+          <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:items-center lg:gap-16">
             {/* Left: copy */}
             <div>
               <Reveal>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3.5 py-1.5 text-xs font-medium text-primary shadow-sm">
-                  <Sparkles className="h-3 w-3" aria-hidden /> Personalized advice from any business video
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3.5 py-1.5 text-sm font-medium text-primary shadow-sm">
+                  Personalized advice from any business video
                 </span>
               </Reveal>
               <Reveal delay={80}>
@@ -79,7 +79,7 @@ export const PublicLanding = () => {
                 </h1>
               </Reveal>
               <Reveal delay={160}>
-                <p className="mt-6 max-w-xl text-base sm:text-lg text-muted-foreground leading-relaxed">
+                <p className="mt-6 max-w-xl text-lg sm:text-xl text-foreground/90 leading-relaxed">
                   Turn founder, operator, and business-building videos into personalized advice for your company,
                   industry, and stage — startup, agency, local shop, storefront, or side hustle.
                 </p>
@@ -95,7 +95,7 @@ export const PublicLanding = () => {
                 </div>
               </Reveal>
               <Reveal delay={320}>
-                <ul className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
+                <ul className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-base text-foreground/90">
                   <li className="flex items-center gap-1.5"><Check className="h-4 w-4 text-primary" /> Free forever tier</li>
                   <li className="flex items-center gap-1.5"><Check className="h-4 w-4 text-primary" /> No credit card</li>
                   <li className="flex items-center gap-1.5"><Check className="h-4 w-4 text-primary" /> iOS, Android, web</li>
