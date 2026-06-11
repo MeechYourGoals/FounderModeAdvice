@@ -1,16 +1,46 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
-import { readFileSync } from "fs";
+import { readFileSync, writeFileSync, mkdirSync } from "fs";
 
 const pkg = JSON.parse(readFileSync(path.resolve(__dirname, "package.json"), "utf-8"));
+
+// Stable per-build identifier injected into index.html so a post-deploy script
+// can verify the live preview is serving the freshly built shell (not a stale
+// service-worker cached copy) without any manual SW unregister.
+const BUILD_ID = `${pkg.version}-${Date.now().toString(36)}`;
+
+function buildIdPlugin(): Plugin {
+  return {
+    name: "fma-build-id",
+    transformIndexHtml(html) {
+      return html.replace(
+        "</head>",
+        `  <meta name="build-id" content="${BUILD_ID}" />\n  </head>`,
+      );
+    },
+    closeBundle() {
+      try {
+        mkdirSync(path.resolve(__dirname, "dist"), { recursive: true });
+        writeFileSync(
+          path.resolve(__dirname, "dist/build-id.txt"),
+          BUILD_ID + "\n",
+          "utf-8",
+        );
+      } catch {
+        // dist may not exist during non-build commands; safe to ignore
+      }
+    },
+  };
+}
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
+    __BUILD_ID__: JSON.stringify(BUILD_ID),
   },
   server: {
     host: "::",
@@ -18,6 +48,7 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
+    buildIdPlugin(),
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
