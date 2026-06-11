@@ -243,7 +243,7 @@ export const PublicLanding = () => {
                 Simple,{" "}
                 <span className="font-display font-medium italic text-gradient">honest</span> pricing
               </h2>
-              <p className="text-sm sm:text-lg text-muted-foreground max-w-2xl mx-auto">
+              <p className="text-base sm:text-xl text-foreground/90 max-w-2xl mx-auto">
                 Start free. Upgrade when you're ready. Cancel anytime.
               </p>
             </div>
@@ -255,7 +255,7 @@ export const PublicLanding = () => {
               </Reveal>
             ))}
           </div>
-          <p className="mt-6 text-center text-xs text-muted-foreground">
+          <p className="mt-6 text-center text-sm text-foreground/80">
             Prices in USD. Web subscriptions are billed via Stripe; in-app subscriptions via the App Store.
           </p>
         </div>
