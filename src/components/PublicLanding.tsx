@@ -442,7 +442,7 @@ const HeroPreview = () => (
       <span className="h-2.5 w-2.5 rounded-full bg-destructive/60" />
       <span className="h-2.5 w-2.5 rounded-full bg-yellow-500/60" />
       <span className="h-2.5 w-2.5 rounded-full bg-success/60" />
-      <span className="ml-3 text-[10px] uppercase tracking-wider text-muted-foreground">foundermodeadvice.com</span>
+      <span className="ml-3 text-xs uppercase tracking-wider text-foreground/70">foundermodeadvice.com</span>
     </div>
 
     <div className="flex items-center gap-3 rounded-2xl border border-border/60 bg-background/60 p-3 mb-3">
@@ -450,10 +450,10 @@ const HeroPreview = () => (
         <MessageSquare className="h-4 w-4" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold truncate">How we bootstrapped a 7-figure coffee roaster</p>
-        <p className="text-[11px] text-muted-foreground truncate">YouTube · The Founder Podcast</p>
+        <p className="text-base font-semibold truncate">How we bootstrapped a 7-figure coffee roaster</p>
+        <p className="text-sm text-foreground/75 truncate">YouTube · The Founder Podcast</p>
       </div>
-      <span className="hidden sm:inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+      <span className="hidden sm:inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
         <Building2 className="mr-1 h-3 w-3" /> Maple &amp; Oak
       </span>
     </div>
@@ -467,19 +467,19 @@ const HeroPreview = () => (
         <div key={c.tag} className="rounded-xl border border-border/60 bg-background/70 p-3 transition-colors hover:border-primary/30">
           <div className="flex items-center gap-2 mb-1">
             <Lightbulb className="h-3.5 w-3.5 text-primary" />
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-primary">{c.tag}</span>
-            <span className="ml-auto text-[10px] text-muted-foreground">Tailored</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-primary">{c.tag}</span>
+            <span className="ml-auto text-xs text-foreground/70">Tailored</span>
           </div>
-          <p className="text-xs text-foreground/85 leading-relaxed">{c.text}</p>
+          <p className="text-sm text-foreground/90 leading-relaxed">{c.text}</p>
         </div>
       ))}
     </div>
 
     <div className="mt-3 flex items-center justify-between rounded-xl bg-muted/40 px-3 py-2">
-      <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+      <span className="inline-flex items-center gap-1.5 text-xs text-foreground/80">
         <Folder className="h-3 w-3" /> Saved to · Coffee playbook
       </span>
-      <span className="text-[11px] font-medium text-primary">12 insights</span>
+      <span className="text-xs font-medium text-primary">12 insights</span>
     </div>
   </div>
 );
