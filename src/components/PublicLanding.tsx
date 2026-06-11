@@ -276,8 +276,8 @@ export const PublicLanding = () => {
               <Reveal key={f.q} delay={(i % 2) * 80}>
                 <Card className="h-full bg-card/95 elevate-hover">
                   <CardContent className="p-5">
-                    <h3 className="text-base font-semibold">{f.q}</h3>
-                    <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{f.a}</p>
+                    <h3 className="text-lg font-semibold">{f.q}</h3>
+                    <p className="mt-2 text-base text-foreground/85 leading-relaxed">{f.a}</p>
                   </CardContent>
                 </Card>
               </Reveal>
