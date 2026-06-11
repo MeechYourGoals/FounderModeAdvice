@@ -195,20 +195,20 @@ export const PublicLanding = () => {
                   Not another{" "}
                   <span className="font-display font-medium italic">locked-in</span> subscription
                 </h2>
-                <p className="text-sm sm:text-lg text-muted-foreground max-w-2xl mx-auto">
+                <p className="text-base sm:text-xl text-foreground/90 max-w-2xl mx-auto">
                   MasterClass, Augment, and Delphi cost a lot more and only give you the people on
                   their roster — and even then, you get the generic takes those people chose to share.
                   One clip, the same advice for thousands of different viewers.
                 </p>
               </div>
             </Reveal>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 sm:items-stretch">
               <Reveal delay={0}>
-                <div className="glass h-full rounded-2xl p-5 sm:p-6 space-y-3 opacity-90">
-                  <h3 className="font-semibold text-base sm:text-lg text-muted-foreground">
+                <div className="glass h-full rounded-2xl p-5 sm:p-6 space-y-3">
+                  <h3 className="font-semibold text-lg sm:text-xl text-foreground/85">
                     MasterClass · Augment · Delphi
                   </h3>
-                  <ul className="space-y-2 text-sm text-muted-foreground">
+                  <ul className="space-y-2 text-base text-foreground/85">
                     <ComparisonItem positive={false}>Locked to who they have on the platform</ComparisonItem>
                     <ComparisonItem positive={false}>One-size-fits-all insights for every viewer</ComparisonItem>
                     <ComparisonItem positive={false}>Premium price for a fixed library</ComparisonItem>
@@ -217,10 +217,10 @@ export const PublicLanding = () => {
               </Reveal>
               <Reveal delay={120}>
                 <div className="glass h-full rounded-2xl p-5 sm:p-6 space-y-3 ring-glow border border-primary/30">
-                  <h3 className="font-semibold text-base sm:text-lg text-primary">
+                  <h3 className="font-semibold text-lg sm:text-xl text-primary">
                     Founder Mode Advice
                   </h3>
-                  <ul className="space-y-2 text-sm">
+                  <ul className="space-y-2 text-base text-foreground">
                     <ComparisonItem positive>Learn from anyone with a video online</ComparisonItem>
                     <ComparisonItem positive>Every video tailored to your business and industry</ComparisonItem>
                     <ComparisonItem positive>One app, any source — at a fraction of the cost</ComparisonItem>
