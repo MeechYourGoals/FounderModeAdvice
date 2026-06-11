@@ -160,24 +160,24 @@ export const PublicLanding = () => {
       <section className="container mx-auto px-4 pb-12 sm:pb-16 md:pb-24">
         <Reveal>
           <div className="max-w-5xl mx-auto glass rounded-3xl p-5 sm:p-8 md:p-10 border-primary/15 shadow-card">
-            <div className="grid grid-cols-1 md:grid-cols-[1.1fr_0.9fr] gap-6 md:gap-10 items-start">
-              <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 md:items-stretch">
+              <div className="space-y-4 flex flex-col">
                 <BadgeLabel>Advice for every kind of builder</BadgeLabel>
                 <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
                   You do not need a boardroom of advisors to{" "}
                   <span className="font-display font-medium italic text-gradient">learn like you have one</span>.
                 </h2>
-                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                <p className="text-base sm:text-lg text-foreground/90 leading-relaxed">
                   The best founders, operators, and business owners have shared thousands of hours of hard-won lessons in public interviews, podcasts, and talks. Founder Mode Advice turns that content into structured guidance tailored to your business — without implying affiliation, endorsement, or replacing real advisors.
                 </p>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-3 flex flex-col">
                 <MiniFeature icon={<ShieldCheck className="w-4 h-4" />} title="Any public YouTube video in" description="Paste a business, founder, operator, investor, strategy, or leadership video from YouTube. Spotify and Apple Podcasts links are not supported because those platforms do not provide public transcripts." />
                 <MiniFeature icon={<Target className="w-4 h-4" />} title="Tailored advice out" description="Insight mapped to your industry, stage, customers, and constraints — not generic venture-scale playbooks." />
                 <MiniFeature icon={<MessageSquare className="w-4 h-4" />} title="Transcript-grounded Q&A" description="Ask follow-up questions directly against the video transcript and your business context after analysis." />
               </div>
             </div>
-            <p className="mt-6 text-[11px] sm:text-xs text-muted-foreground">
+            <p className="mt-6 text-sm text-foreground/80">
               Founder Mode Advice analyzes public content only. It is independent and does not provide private access, endorsement, or investment advice from any person or firm referenced in a video.
             </p>
           </div>
