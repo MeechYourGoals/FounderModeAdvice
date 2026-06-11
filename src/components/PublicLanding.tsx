@@ -1,4 +1,4 @@
-import { ArrowRight, MessageSquare, ShieldCheck, Check, X, Target, Lightbulb, Building2, Folder } from "lucide-react";
+import { ArrowRight, MessageSquare, ShieldCheck, Check, X, Target, Lightbulb, Building2, Folder, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,6 +7,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 
 import { Footer } from "@/components/Footer";
 import { SampleDemo } from "@/components/marketing/SampleDemo";
+import { Reveal } from "@/hooks/useReveal";
 import { TIER_PRICING, type SubscriptionTier } from "@/types/subscription";
 import heroBg from "@/assets/hero-bg.jpg";
 
@@ -21,24 +22,24 @@ export const PublicLanding = () => {
   return (
     <div className="h-screen flex flex-col bg-gradient-to-b from-background to-muted/20">
       {/* Navigation - relative top bar with safe area (Despia pattern) */}
-      <nav className="glass-nav relative z-50 border-b border-border" style={{ paddingTop: 'var(--safe-area-top)' }}>
+      <nav className="glass-nav relative z-50 border-b border-border/60" style={{ paddingTop: 'var(--safe-area-top)' }}>
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <button onClick={() => navigate("/")} className="flex items-center gap-2 hover:opacity-80 transition-opacity" aria-label="Founder Mode Advice — home">
             <BrandLogo className="h-9 sm:h-11 w-auto" />
           </button>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <Button variant="ghost" size="sm" className="hidden sm:flex" onClick={() => scrollTo("demo")}>
+            <Button variant="ghost" size="sm" className="hidden sm:flex rounded-full" onClick={() => scrollTo("demo")}>
               Demo
             </Button>
-            <Button variant="ghost" size="sm" className="hidden sm:flex" onClick={() => scrollTo("pricing")}>
+            <Button variant="ghost" size="sm" className="hidden sm:flex rounded-full" onClick={() => scrollTo("pricing")}>
               Pricing
             </Button>
             <ThemeToggle />
-            <Button variant="ghost" size="sm" className="hidden sm:flex" onClick={goToAuth}>
+            <Button variant="ghost" size="sm" className="hidden sm:flex rounded-full" onClick={goToAuth}>
               Sign In
             </Button>
-            <Button size="sm" onClick={goToAuth}>
+            <Button size="sm" className="rounded-full px-4" onClick={goToAuth}>
               <span className="sm:hidden">Sign In</span>
               <span className="hidden sm:inline">Get Started</span>
               <ArrowRight className="ml-1 h-4 w-4 hidden sm:inline-block" />
@@ -49,8 +50,8 @@ export const PublicLanding = () => {
 
       {/* Scrollable content (Despia pattern) */}
       <div className="despia-scroll">
-      {/* Hero — asymmetric split with framed product preview */}
-      <section className="relative overflow-hidden">
+      {/* Hero — open editorial layout over aurora + grain */}
+      <section className="grain relative overflow-hidden">
         <div
           className="absolute inset-0 opacity-[0.06]"
           style={{
@@ -61,68 +62,93 @@ export const PublicLanding = () => {
         />
         <div className="absolute inset-0" style={{ background: 'var(--gradient-hero)' }} />
         <div className="absolute inset-0" style={{ background: 'var(--gradient-mesh)' }} />
-        <div className="container relative mx-auto px-4 py-12 sm:py-20 lg:py-28">
-          <div className="grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:items-center lg:gap-16">
-            {/* Left: copy panel */}
-            <div className="glass rounded-3xl p-6 sm:p-10 ring-1 ring-border/50 shadow-[var(--shadow-card)]">
-              <span className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                <Lightbulb className="mr-1.5 h-3 w-3" aria-hidden /> Personalized advice from any business video
-              </span>
-              <h1 className="mt-5 text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.05] tracking-tight text-foreground">
-                Build Your Boardroom.
-                <span className="block text-base sm:text-lg lg:text-xl font-normal text-muted-foreground mt-3">
-                  then,
+        <div className="container relative mx-auto px-4 pt-14 pb-16 sm:pt-24 sm:pb-24 lg:pt-28 lg:pb-32">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:items-center lg:gap-16">
+            {/* Left: copy */}
+            <div>
+              <Reveal>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3.5 py-1.5 text-xs font-medium text-primary shadow-sm">
+                  <Sparkles className="h-3 w-3" aria-hidden /> Personalized advice from any business video
                 </span>
-                <span className="block mt-1">Instill Their Insights.</span>
-              </h1>
-              <p className="mt-5 max-w-xl text-base sm:text-lg text-foreground/85 leading-relaxed">
-                Turn founder, operator, and business-building videos into personalized advice for your company,
-                industry, and stage — startup, agency, local shop, storefront, or side hustle.
-              </p>
-              <div className="mt-7 flex flex-wrap gap-3">
-                <Button size="lg" className="h-12 px-6 text-base" onClick={goToAuth}>
-                  Analyze a Video Free <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-                <Button size="lg" variant="outline" className="h-12 bg-card/90 px-6 text-base" onClick={() => scrollTo("demo")}>
-                  See the demo
-                </Button>
-              </div>
-              <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-foreground/80">
-                <li className="flex items-center gap-1.5"><Check className="h-4 w-4 text-primary" /> Free forever tier</li>
-                <li className="flex items-center gap-1.5"><Check className="h-4 w-4 text-primary" /> No credit card</li>
-                <li className="flex items-center gap-1.5"><Check className="h-4 w-4 text-primary" /> iOS, Android, web</li>
-              </ul>
+              </Reveal>
+              <Reveal delay={80}>
+                <h1 className="mt-6 text-[2.75rem] leading-[1.04] sm:text-6xl lg:text-[4.25rem] font-bold tracking-tight text-foreground">
+                  Build your{" "}
+                  <span className="font-display font-medium italic text-gradient">boardroom</span>.
+                  <span className="block mt-2">Instill their insights.</span>
+                </h1>
+              </Reveal>
+              <Reveal delay={160}>
+                <p className="mt-6 max-w-xl text-base sm:text-lg text-muted-foreground leading-relaxed">
+                  Turn founder, operator, and business-building videos into personalized advice for your company,
+                  industry, and stage — startup, agency, local shop, storefront, or side hustle.
+                </p>
+              </Reveal>
+              <Reveal delay={240}>
+                <div className="mt-8 flex flex-wrap gap-3">
+                  <Button size="lg" className="h-12 rounded-full px-7 text-base" onClick={goToAuth}>
+                    Analyze a Video Free <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                  <Button size="lg" variant="outline" className="h-12 rounded-full bg-card/80 px-7 text-base" onClick={() => scrollTo("demo")}>
+                    See the demo
+                  </Button>
+                </div>
+              </Reveal>
+              <Reveal delay={320}>
+                <ul className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
+                  <li className="flex items-center gap-1.5"><Check className="h-4 w-4 text-primary" /> Free forever tier</li>
+                  <li className="flex items-center gap-1.5"><Check className="h-4 w-4 text-primary" /> No credit card</li>
+                  <li className="flex items-center gap-1.5"><Check className="h-4 w-4 text-primary" /> iOS, Android, web</li>
+                </ul>
+              </Reveal>
             </div>
 
-            {/* Right: framed product preview */}
-            <div className="relative">
+            {/* Right: floating framed product preview */}
+            <Reveal delay={200} className="relative">
               <div aria-hidden className="absolute -inset-10 -z-10 rounded-full bg-primary/20 blur-3xl" />
-              <HeroPreview />
-            </div>
+              <div className="animate-float">
+                <HeroPreview />
+              </div>
+            </Reveal>
           </div>
         </div>
+        {/* Hairline fade into the page body */}
+        <div aria-hidden className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
       </section>
 
 
-      {/* Features Grid */}
-      <section className="container mx-auto px-4 pt-12 sm:pt-16 md:pt-24 pb-8 sm:pb-10 md:pb-12">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-8 sm:mb-12">
-            Turn expert content into personalized strategy
-          </h2>
+      {/* How it works — numbered steps */}
+      <section className="container mx-auto px-4 pt-14 sm:pt-20 md:pt-28 pb-8 sm:pb-10 md:pb-12">
+        <div className="max-w-5xl mx-auto">
+          <Reveal>
+            <p className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-primary mb-3">How it works</p>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-center mb-10 sm:mb-14">
+              Turn expert content into{" "}
+              <span className="font-display font-medium italic text-gradient">personalized strategy</span>
+            </h2>
+          </Reveal>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-            <FeatureCard
-              title="Beyond passive watching"
-              description="Convert interviews, talks, and podcasts into structured lessons, risks, and action items for your business"
-            />
-            <FeatureCard
-              title="Tailored to your business"
-              description="Map the speaker's thinking to your industry, stage, customers, and next decision"
-            />
-            <FeatureCard
-              title="Ask any video"
-              description="Open a transcript-grounded chat after analysis and dig into the advice behind each recommendation"
-            />
+            <Reveal delay={0}>
+              <FeatureCard
+                step="01"
+                title="Beyond passive watching"
+                description="Convert interviews, talks, and podcasts into structured lessons, risks, and action items for your business"
+              />
+            </Reveal>
+            <Reveal delay={100}>
+              <FeatureCard
+                step="02"
+                title="Tailored to your business"
+                description="Map the speaker's thinking to your industry, stage, customers, and next decision"
+              />
+            </Reveal>
+            <Reveal delay={200}>
+              <FeatureCard
+                step="03"
+                title="Ask any video"
+                description="Open a transcript-grounded chat after analysis and dig into the advice behind each recommendation"
+              />
+            </Reveal>
           </div>
         </div>
       </section>
@@ -132,81 +158,101 @@ export const PublicLanding = () => {
 
       {/* Positioning */}
       <section className="container mx-auto px-4 pb-12 sm:pb-16 md:pb-24">
-        <div className="max-w-5xl mx-auto glass rounded-3xl p-5 sm:p-8 md:p-10 border-primary/15">
-          <div className="grid grid-cols-1 md:grid-cols-[1.1fr_0.9fr] gap-6 md:gap-10 items-start">
-            <div className="space-y-4">
-              <BadgeLabel>Advice for every kind of builder</BadgeLabel>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
-                You do not need a boardroom of advisors to learn like you have one.
-              </h2>
-              <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-                The best founders, operators, and business owners have shared thousands of hours of hard-won lessons in public interviews, podcasts, and talks. Founder Mode Advice turns that content into structured guidance tailored to your business — without implying affiliation, endorsement, or replacing real advisors.
-              </p>
+        <Reveal>
+          <div className="max-w-5xl mx-auto glass rounded-3xl p-5 sm:p-8 md:p-10 border-primary/15 shadow-card">
+            <div className="grid grid-cols-1 md:grid-cols-[1.1fr_0.9fr] gap-6 md:gap-10 items-start">
+              <div className="space-y-4">
+                <BadgeLabel>Advice for every kind of builder</BadgeLabel>
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
+                  You do not need a boardroom of advisors to{" "}
+                  <span className="font-display font-medium italic text-gradient">learn like you have one</span>.
+                </h2>
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                  The best founders, operators, and business owners have shared thousands of hours of hard-won lessons in public interviews, podcasts, and talks. Founder Mode Advice turns that content into structured guidance tailored to your business — without implying affiliation, endorsement, or replacing real advisors.
+                </p>
+              </div>
+              <div className="space-y-3">
+                <MiniFeature icon={<ShieldCheck className="w-4 h-4" />} title="Any public YouTube video in" description="Paste a business, founder, operator, investor, strategy, or leadership video from YouTube. Spotify and Apple Podcasts links are not supported because those platforms do not provide public transcripts." />
+                <MiniFeature icon={<Target className="w-4 h-4" />} title="Tailored advice out" description="Insight mapped to your industry, stage, customers, and constraints — not generic venture-scale playbooks." />
+                <MiniFeature icon={<MessageSquare className="w-4 h-4" />} title="Transcript-grounded Q&A" description="Ask follow-up questions directly against the video transcript and your business context after analysis." />
+              </div>
             </div>
-            <div className="space-y-3">
-              <MiniFeature icon={<ShieldCheck className="w-4 h-4" />} title="Any public YouTube video in" description="Paste a business, founder, operator, investor, strategy, or leadership video from YouTube. Spotify and Apple Podcasts links are not supported because those platforms do not provide public transcripts." />
-              <MiniFeature icon={<Target className="w-4 h-4" />} title="Tailored advice out" description="Insight mapped to your industry, stage, customers, and constraints — not generic venture-scale playbooks." />
-              <MiniFeature icon={<MessageSquare className="w-4 h-4" />} title="Transcript-grounded Q&A" description="Ask follow-up questions directly against the video transcript and your business context after analysis." />
-            </div>
+            <p className="mt-6 text-[11px] sm:text-xs text-muted-foreground">
+              Founder Mode Advice analyzes public content only. It is independent and does not provide private access, endorsement, or investment advice from any person or firm referenced in a video.
+            </p>
           </div>
-          <p className="mt-6 text-[11px] sm:text-xs text-muted-foreground">
-            Founder Mode Advice analyzes public content only. It is independent and does not provide private access, endorsement, or investment advice from any person or firm referenced in a video.
-          </p>
-        </div>
+        </Reveal>
       </section>
 
       {/* Social Proof */}
-      <section className="bg-muted/30 py-12 sm:py-16 md:py-24">
+      <section className="relative bg-muted/30 py-14 sm:py-20 md:py-28 overflow-hidden">
+        <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto space-y-8">
-            <div className="text-center space-y-3">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">
-                Not Another Locked-In Subscription
-              </h2>
-              <p className="text-sm sm:text-lg text-muted-foreground max-w-2xl mx-auto">
-                MasterClass, Augment, and Delphi cost a lot more and only give you the people on
-                their roster — and even then, you get the generic takes those people chose to share.
-                One clip, the same advice for thousands of different viewers.
-              </p>
-            </div>
+          <div className="max-w-4xl mx-auto space-y-10">
+            <Reveal>
+              <div className="text-center space-y-3">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
+                  Not another{" "}
+                  <span className="font-display font-medium italic">locked-in</span> subscription
+                </h2>
+                <p className="text-sm sm:text-lg text-muted-foreground max-w-2xl mx-auto">
+                  MasterClass, Augment, and Delphi cost a lot more and only give you the people on
+                  their roster — and even then, you get the generic takes those people chose to share.
+                  One clip, the same advice for thousands of different viewers.
+                </p>
+              </div>
+            </Reveal>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-              <div className="glass rounded-2xl p-5 sm:p-6 space-y-3">
-                <h3 className="font-semibold text-base sm:text-lg text-muted-foreground">
-                  MasterClass · Augment · Delphi
-                </h3>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <ComparisonItem positive={false}>Locked to who they have on the platform</ComparisonItem>
-                  <ComparisonItem positive={false}>One-size-fits-all insights for every viewer</ComparisonItem>
-                  <ComparisonItem positive={false}>Premium price for a fixed library</ComparisonItem>
-                </ul>
-              </div>
-              <div className="glass rounded-2xl p-5 sm:p-6 space-y-3 border border-primary/30">
-                <h3 className="font-semibold text-base sm:text-lg text-primary">
-                  Founder Mode Advice
-                </h3>
-                <ul className="space-y-2 text-sm">
-                  <ComparisonItem positive>Learn from anyone with a video online</ComparisonItem>
-                  <ComparisonItem positive>Every video tailored to your business and industry</ComparisonItem>
-                  <ComparisonItem positive>One app, any source — at a fraction of the cost</ComparisonItem>
-                </ul>
-              </div>
+              <Reveal delay={0}>
+                <div className="glass h-full rounded-2xl p-5 sm:p-6 space-y-3 opacity-90">
+                  <h3 className="font-semibold text-base sm:text-lg text-muted-foreground">
+                    MasterClass · Augment · Delphi
+                  </h3>
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    <ComparisonItem positive={false}>Locked to who they have on the platform</ComparisonItem>
+                    <ComparisonItem positive={false}>One-size-fits-all insights for every viewer</ComparisonItem>
+                    <ComparisonItem positive={false}>Premium price for a fixed library</ComparisonItem>
+                  </ul>
+                </div>
+              </Reveal>
+              <Reveal delay={120}>
+                <div className="glass h-full rounded-2xl p-5 sm:p-6 space-y-3 ring-glow border border-primary/30">
+                  <h3 className="font-semibold text-base sm:text-lg text-primary">
+                    Founder Mode Advice
+                  </h3>
+                  <ul className="space-y-2 text-sm">
+                    <ComparisonItem positive>Learn from anyone with a video online</ComparisonItem>
+                    <ComparisonItem positive>Every video tailored to your business and industry</ComparisonItem>
+                    <ComparisonItem positive>One app, any source — at a fraction of the cost</ComparisonItem>
+                  </ul>
+                </div>
+              </Reveal>
             </div>
           </div>
         </div>
+        <div aria-hidden className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="container mx-auto px-4 py-12 sm:py-16 md:py-24 scroll-mt-20">
+      <section id="pricing" className="container mx-auto px-4 py-14 sm:py-20 md:py-28 scroll-mt-20">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center space-y-3 mb-8 sm:mb-12">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">Simple, honest pricing</h2>
-            <p className="text-sm sm:text-lg text-muted-foreground max-w-2xl mx-auto">
-              Start free. Upgrade when you're ready. Cancel anytime.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-            {(Object.keys(TIER_PRICING) as SubscriptionTier[]).map((key) => (
-              <PricingCard key={key} tier={key} onSelect={goToAuth} />
+          <Reveal>
+            <div className="text-center space-y-3 mb-10 sm:mb-14">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Pricing</p>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
+                Simple,{" "}
+                <span className="font-display font-medium italic text-gradient">honest</span> pricing
+              </h2>
+              <p className="text-sm sm:text-lg text-muted-foreground max-w-2xl mx-auto">
+                Start free. Upgrade when you're ready. Cancel anytime.
+              </p>
+            </div>
+          </Reveal>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 md:items-stretch">
+            {(Object.keys(TIER_PRICING) as SubscriptionTier[]).map((key, i) => (
+              <Reveal key={key} delay={i * 100}>
+                <PricingCard tier={key} onSelect={goToAuth} />
+              </Reveal>
             ))}
           </div>
           <p className="mt-6 text-center text-xs text-muted-foreground">
@@ -218,43 +264,64 @@ export const PublicLanding = () => {
       {/* FAQ */}
       <section className="container mx-auto px-4 py-12 sm:py-16">
         <div className="max-w-5xl mx-auto">
-          <div className="inline-block rounded-2xl bg-card/95 px-5 py-3 shadow-sm ring-1 ring-border/50 backdrop-blur-sm">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">Common questions.</h2>
-          </div>
+          <Reveal>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary mb-3">FAQ</p>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
+              Common{" "}
+              <span className="font-display font-medium italic text-gradient">questions</span>.
+            </h2>
+          </Reveal>
           <div className="mt-8 grid gap-4 md:grid-cols-2">
-            {FAQS.map((f) => (
-              <Card key={f.q} className="bg-card/95 ring-1 ring-border/50">
-                <CardContent className="p-5">
-                  <h3 className="text-base font-semibold">{f.q}</h3>
-                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{f.a}</p>
-                </CardContent>
-              </Card>
+            {FAQS.map((f, i) => (
+              <Reveal key={f.q} delay={(i % 2) * 80}>
+                <Card className="h-full bg-card/95 elevate-hover">
+                  <CardContent className="p-5">
+                    <h3 className="text-base font-semibold">{f.q}</h3>
+                    <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{f.a}</p>
+                  </CardContent>
+                </Card>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Final CTA — primary-filled */}
+      {/* Final CTA — primary-filled with mesh + grain */}
       <section className="container mx-auto px-4 pb-16 sm:pb-24">
-        <div className="max-w-5xl mx-auto rounded-3xl bg-primary px-6 py-12 text-center text-primary-foreground shadow-lg sm:px-12">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Ready to build your boardroom?</h2>
-          <p className="mx-auto mt-3 max-w-xl text-base text-primary-foreground/90">
-            Create your free account, paste a video, and get advice tailored to your business in minutes.
-          </p>
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <Button size="lg" variant="secondary" className="h-12 px-6 text-base" onClick={goToAuth}>
-              Analyze your first video <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="h-12 border-primary-foreground/30 bg-transparent px-6 text-base text-primary-foreground hover:bg-primary-foreground/10"
-              onClick={() => scrollTo("pricing")}
-            >
-              See pricing
-            </Button>
+        <Reveal>
+          <div className="grain relative max-w-5xl mx-auto overflow-hidden rounded-3xl bg-primary px-6 py-14 text-center text-primary-foreground shadow-elegant sm:px-12 sm:py-16">
+            <div
+              aria-hidden
+              className="absolute inset-0"
+              style={{
+                background:
+                  "radial-gradient(80% 100% at 20% 0%, hsl(199 90% 60% / 0.5), transparent 60%), radial-gradient(70% 90% at 90% 100%, hsl(224 90% 50% / 0.45), transparent 60%)",
+              }}
+            />
+            <div className="relative">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-5xl">
+                Ready to build your{" "}
+                <span className="font-display font-medium italic">boardroom</span>?
+              </h2>
+              <p className="mx-auto mt-4 max-w-xl text-base text-primary-foreground/90">
+                Create your free account, paste a video, and get advice tailored to your business in minutes.
+              </p>
+              <div className="mt-7 flex flex-wrap justify-center gap-3">
+                <Button size="lg" variant="secondary" className="h-12 rounded-full px-7 text-base" onClick={goToAuth}>
+                  Analyze your first video <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-12 rounded-full border-primary-foreground/30 bg-transparent px-7 text-base text-primary-foreground hover:bg-primary-foreground/10 hover:border-primary-foreground/50 hover:text-primary-foreground"
+                  onClick={() => scrollTo("pricing")}
+                >
+                  See pricing
+                </Button>
+              </div>
+            </div>
           </div>
-        </div>
+        </Reveal>
       </section>
 
 
@@ -271,20 +338,23 @@ const BadgeLabel = ({ children }: { children: React.ReactNode }) => (
 );
 
 const MiniFeature = ({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) => (
-  <div className="rounded-2xl bg-background/70 border border-border p-4">
+  <div className="rounded-2xl bg-background/70 border border-border p-4 transition-colors hover:border-primary/30">
     <div className="flex items-center gap-2 font-semibold text-sm sm:text-base mb-1">
-      <span className="text-primary">{icon}</span>
+      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">{icon}</span>
       {title}
     </div>
     <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">{description}</p>
   </div>
 );
 
-const FeatureCard = ({ title, description }: { title: string; description: string }) => {
+const FeatureCard = ({ step, title, description }: { step: string; title: string; description: string }) => {
   return (
-    <div className="glass elevate-hover p-4 sm:p-6 rounded-2xl hover:border-primary/30">
-      <h3 className="font-semibold text-base sm:text-lg mb-1 sm:mb-2">{title}</h3>
-      <p className="text-xs sm:text-sm text-muted-foreground">{description}</p>
+    <div className="glass elevate-hover relative h-full overflow-hidden p-5 sm:p-6 rounded-2xl hover:border-primary/30">
+      <span aria-hidden className="font-display block text-4xl sm:text-5xl font-medium italic leading-none text-primary/25">
+        {step}
+      </span>
+      <h3 className="font-semibold text-base sm:text-lg mt-4 mb-1 sm:mb-2">{title}</h3>
+      <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">{description}</p>
     </div>
   );
 };
@@ -294,30 +364,32 @@ const PricingCard = ({ tier, onSelect }: { tier: SubscriptionTier; onSelect: () 
   const isFree = tier === "free";
   return (
     <div
-      className={`relative glass rounded-2xl p-5 sm:p-6 flex flex-col ${
-        plan.recommended ? "border-2 border-primary shadow-lg" : "border border-border"
+      className={`relative glass h-full rounded-2xl p-5 sm:p-6 flex flex-col transition-transform duration-300 ${
+        plan.recommended ? "ring-glow border border-primary/40 md:scale-[1.03]" : "border border-border"
       }`}
     >
       {plan.recommended && (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-xs font-medium text-primary-foreground">
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3.5 py-1 text-xs font-semibold text-primary-foreground shadow-md">
           Most Popular
         </span>
       )}
       <h3 className="text-lg font-bold">{plan.displayName}</h3>
-      <div className="mt-2 mb-4">
-        <span className="text-3xl font-bold">{isFree ? "Free" : `$${plan.price}`}</span>
+      <div className="mt-2 mb-4 flex items-baseline gap-1">
+        <span className="text-4xl font-bold tracking-tight">{isFree ? "Free" : `$${plan.price}`}</span>
         {!isFree && <span className="text-sm text-muted-foreground">/month</span>}
       </div>
-      <ul className="space-y-2 flex-1">
+      <ul className="space-y-2.5 flex-1">
         {plan.features.map((feature, i) => (
           <li key={i} className="flex items-start gap-2 text-sm">
-            <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+            <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary/10">
+              <Check className="h-3 w-3 text-primary" />
+            </span>
             <span>{feature}</span>
           </li>
         ))}
       </ul>
       <Button
-        className="w-full mt-6"
+        className="w-full mt-6 rounded-full"
         variant={plan.recommended ? "default" : "outline"}
         onClick={onSelect}
       >
@@ -392,7 +464,7 @@ const HeroPreview = () => (
         { tag: "Influencer marketing", text: "Skip macro creators. Partner with 5 local micro-baristas for in-cafe content trades." },
         { tag: "Competitor analysis", text: "Blue Bottle's loyalty leans on streaks — your subscription box already has the data hook." },
       ].map((c) => (
-        <div key={c.tag} className="rounded-xl border border-border/60 bg-background/70 p-3">
+        <div key={c.tag} className="rounded-xl border border-border/60 bg-background/70 p-3 transition-colors hover:border-primary/30">
           <div className="flex items-center gap-2 mb-1">
             <Lightbulb className="h-3.5 w-3.5 text-primary" />
             <span className="text-[11px] font-semibold uppercase tracking-wide text-primary">{c.tag}</span>

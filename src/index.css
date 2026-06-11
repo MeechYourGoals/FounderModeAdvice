@@ -45,8 +45,10 @@ All colors MUST be HSL.
 
     --gradient-primary: linear-gradient(135deg, hsl(211 100% 50%), hsl(199 90% 55%));
     --gradient-hero: radial-gradient(120% 120% at 50% 0%, hsl(211 100% 96%) 0%, hsl(210 30% 99%) 55%);
-    --gradient-mesh: radial-gradient(60% 50% at 20% 10%, hsl(211 100% 60% / 0.12), transparent 70%),
-                     radial-gradient(50% 60% at 85% 15%, hsl(199 90% 60% / 0.1), transparent 70%);
+    --gradient-mesh: radial-gradient(60% 50% at 18% 8%, hsl(211 100% 60% / 0.14), transparent 70%),
+                     radial-gradient(50% 60% at 85% 12%, hsl(199 90% 60% / 0.12), transparent 70%),
+                     radial-gradient(45% 45% at 60% 80%, hsl(224 90% 64% / 0.07), transparent 70%);
+    --gradient-text: linear-gradient(100deg, hsl(211 100% 44%), hsl(199 90% 48%));
 
     /* Elevation scale + glass */
     --shadow-sm: 0 1px 2px hsl(222 32% 12% / 0.06);
@@ -107,8 +109,10 @@ All colors MUST be HSL.
 
     --gradient-primary: linear-gradient(135deg, hsl(211 100% 60%), hsl(199 90% 64%));
     --gradient-hero: radial-gradient(120% 120% at 50% 0%, hsl(214 60% 16%) 0%, hsl(222 24% 8%) 55%);
-    --gradient-mesh: radial-gradient(60% 50% at 20% 10%, hsl(211 100% 60% / 0.18), transparent 70%),
-                     radial-gradient(50% 60% at 85% 15%, hsl(199 90% 60% / 0.14), transparent 70%);
+    --gradient-mesh: radial-gradient(60% 50% at 18% 8%, hsl(211 100% 60% / 0.2), transparent 70%),
+                     radial-gradient(50% 60% at 85% 12%, hsl(199 90% 60% / 0.16), transparent 70%),
+                     radial-gradient(45% 45% at 60% 80%, hsl(224 90% 64% / 0.1), transparent 70%);
+    --gradient-text: linear-gradient(100deg, hsl(211 100% 66%), hsl(196 95% 62%));
 
     --shadow-sm: 0 1px 2px hsl(0 0% 0% / 0.3);
     --shadow-md: 0 4px 12px -2px hsl(0 0% 0% / 0.4);
@@ -232,6 +236,85 @@ All colors MUST be HSL.
     -webkit-overflow-scrolling: touch;
   }
 
+  /* Editorial display serif — marketing headlines only, never app chrome */
+  .font-display {
+    font-family: "Fraunces", "New York", Georgia, "Times New Roman", serif;
+    font-optical-sizing: auto;
+    letter-spacing: -0.02em;
+  }
+
+  /* Brand-blue gradient text for accent words */
+  .text-gradient {
+    background: var(--gradient-text);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  /* Film-grain overlay — kills flat-gradient banding, adds tactility.
+     Apply to a positioned parent; the grain never intercepts input. */
+  .grain::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.5;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.05'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* Soft conic "halo" ring for featured cards (recommended pricing, FAB) */
+  .ring-glow {
+    box-shadow: 0 0 0 1px hsl(var(--primary) / 0.35), 0 12px 40px -10px hsl(var(--primary) / 0.35);
+  }
+
+  /* Native-feeling press state for any tappable surface */
+  .pressable {
+    transition: var(--transition-smooth);
+  }
+  .pressable:active {
+    transform: scale(0.97);
+  }
+
+  /* Scroll-reveal: elements start hidden and animate in when .is-visible
+     lands (see src/hooks/useReveal.tsx). No-JS and reduced-motion safe. */
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: var(--reveal-delay, 0ms);
+    will-change: opacity, transform;
+  }
+  .reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
+
+  /* Gentle vertical float for hero ornaments */
+  .animate-float {
+    animation: float 7s ease-in-out infinite;
+  }
+  .animate-float-delayed {
+    animation: float 8s ease-in-out 1.2s infinite;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-float,
+    .animate-float-delayed {
+      animation: none;
+    }
+  }
+
   /* Despia-recommended scrollable container: hide scrollbar, flex-grow */
   .despia-scroll {
     flex: 1 1 auto;
@@ -280,3 +363,27 @@ body.keyboard-open .mobile-bottom-nav {
 }
 
 /* Improve touch targets on mobile - use min-h-11 (44px) for primary actions */
+
+/* Brand-tinted text selection */
+::selection {
+  background: hsl(var(--primary) / 0.25);
+}
+
+/* Slim, unobtrusive scrollbars on desktop web (overlay scrollbars stay native on iOS) */
+@media (pointer: fine) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 9999px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}

@@ -32,13 +32,20 @@ export const MobileBottomNav = () => {
     <button
       onClick={onClick}
       className={cn(
-        "flex flex-col items-center justify-center flex-1 min-h-[44px] gap-0.5 transition-colors touch-manipulation [&>svg]:transition-transform active:[&>svg]:scale-90",
+        "group flex flex-col items-center justify-center flex-1 min-h-[44px] gap-0.5 transition-colors touch-manipulation",
         active ? "text-primary" : "text-muted-foreground hover:text-foreground",
       )}
       aria-current={active ? "page" : undefined}
       aria-label={label}
     >
-      <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
+      <span
+        className={cn(
+          "flex items-center justify-center rounded-full px-3.5 py-0.5 transition-all duration-200 group-active:scale-90",
+          active ? "bg-primary/10" : "bg-transparent",
+        )}
+      >
+        <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
+      </span>
       <span className="text-[10px] font-medium">{label}</span>
     </button>
   );
@@ -68,7 +75,8 @@ export const MobileBottomNav = () => {
           <button
             onClick={() => goHomeWith({ action: "analyze" })}
             aria-label="Ask the advisor"
-            className="-mt-6 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 flex items-center justify-center ring-4 ring-background transition-transform active:scale-90 touch-manipulation"
+            className="-mt-6 h-14 w-14 rounded-full text-primary-foreground shadow-[inset_0_1px_0_0_hsl(0_0%_100%/0.25),0_8px_24px_-6px_hsl(var(--primary)/0.6)] flex items-center justify-center ring-4 ring-background transition-transform duration-200 active:scale-90 touch-manipulation"
+            style={{ background: "var(--gradient-primary)" }}
           >
             <Plus className="h-7 w-7" strokeWidth={2.5} />
           </button>

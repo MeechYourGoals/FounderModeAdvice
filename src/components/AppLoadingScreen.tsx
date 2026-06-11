@@ -14,15 +14,20 @@ export const AppLoadingScreen = ({
   return (
     <div
       className={cn(
-        "min-h-screen bg-gradient-to-b from-background via-background to-muted/20 flex items-center justify-center px-6 safe-area-inset",
+        "relative min-h-screen flex items-center justify-center px-6 safe-area-inset overflow-hidden",
         className,
       )}
+      style={{ background: "var(--gradient-hero)" }}
       role="status"
       aria-live="polite"
       aria-label={label}
     >
-      <div className="glass-strong shadow-lg rounded-3xl border border-border/60 px-8 py-7 text-center space-y-5 max-w-sm w-full">
-        <BrandLogo className="h-10 w-auto mx-auto" />
+      <div className="pointer-events-none absolute inset-0" style={{ background: "var(--gradient-mesh)" }} />
+      <div className="relative text-center space-y-6 animate-fade-in">
+        <div className="relative inline-block">
+          <div aria-hidden className="absolute -inset-8 rounded-full bg-primary/20 blur-2xl animate-pulse" />
+          <BrandLogo className="relative h-12 w-auto mx-auto" />
+        </div>
         <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden="true" />
           <span>{label}</span>

@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft, X } from "lucide-react";
+import { BrandLogo } from "@/components/BrandLogo";
 import { lovable } from "@/integrations/lovable/index";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 import { isLovablePreview, getOAuthRedirectUrl, shouldShowAppAuthFirst } from "@/lib/appMode";
@@ -221,9 +222,10 @@ const Auth = () => {
   };
 
   return (
-    <div className="relative h-screen flex items-center justify-center p-4" style={{ background: 'var(--gradient-hero)', paddingTop: 'calc(1rem + var(--safe-area-top))', paddingBottom: 'calc(1rem + var(--safe-area-bottom))' }}>
+    <div className="grain relative h-screen flex flex-col items-center justify-center gap-6 p-4" style={{ background: 'var(--gradient-hero)', paddingTop: 'calc(1rem + var(--safe-area-top))', paddingBottom: 'calc(1rem + var(--safe-area-bottom))' }}>
       <div className="pointer-events-none absolute inset-0" style={{ background: 'var(--gradient-mesh)' }} />
-      <Card className="glass-strong relative w-full max-w-md max-h-[calc(100vh-2rem-var(--safe-area-top)-var(--safe-area-bottom))] overflow-y-auto rounded-2xl shadow-glass">
+      <BrandLogo className="relative h-12 w-auto animate-fade-in" />
+      <Card className="glass-strong relative w-full max-w-md max-h-[calc(100vh-7rem-var(--safe-area-top)-var(--safe-area-bottom))] overflow-y-auto rounded-3xl shadow-glass animate-scale-in">
         {showClose && (
           <Button
             type="button"
@@ -237,7 +239,9 @@ const Auth = () => {
           </Button>
         )}
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Welcome</CardTitle>
+          <CardTitle className="text-2xl font-bold tracking-tight text-center">
+            <span className="font-display font-medium italic text-gradient">Welcome</span>
+          </CardTitle>
           <CardDescription className="text-center">
             Sign in to manage your bookmarks and profiles
           </CardDescription>
