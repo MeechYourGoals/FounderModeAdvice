@@ -403,7 +403,7 @@ const ComparisonItem = ({ positive, children }: { positive: boolean; children: R
   const Icon = positive ? Check : X;
   return (
     <li className="flex items-start gap-2">
-      <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${positive ? "text-primary" : "text-muted-foreground"}`} />
+      <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${positive ? "text-primary" : "text-foreground/60"}`} />
       <span>{children}</span>
     </li>
   );
