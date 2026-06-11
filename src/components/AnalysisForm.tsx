@@ -285,7 +285,9 @@ export const AnalysisForm = () => {
   const analysisCheck = canAnalyzeVideo();
 
   return (
-    <Card className="p-4 sm:p-8 shadow-lg border-primary/10 hover:shadow-xl transition-shadow">
+    <Card className="relative overflow-hidden p-4 sm:p-8 shadow-lg border-primary/10 hover:shadow-elegant transition-shadow duration-300">
+      {/* Brand accent hairline across the top of the analyze surface */}
+      <div aria-hidden className="absolute inset-x-0 top-0 h-[3px]" style={{ background: 'var(--gradient-primary)' }} />
       {!analysisCheck.allowed && (
         <div className="mb-6">
           <UpgradePrompt
@@ -296,8 +298,8 @@ export const AnalysisForm = () => {
       )}
 
       {analysisCheck.allowed && subscription && (
-        <div className="mb-2 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-          <span>
+        <div className="mb-3 flex items-center justify-center">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-3 py-1 text-xs font-medium text-muted-foreground">
             {isUnlimited(subscription.limits.analyses.max)
               ? `${subscription.limits.analyses.used} analyses this month · Unlimited`
               : `${subscription.limits.analyses.used}/${subscription.limits.analyses.max} analyses used this month`}
@@ -308,14 +310,17 @@ export const AnalysisForm = () => {
       {analysisCheck.allowed && (
         <p className="mb-4 text-center text-xs text-muted-foreground">
           {activeProfile ? (
-            <>Personalizing for <span className="font-medium text-foreground">{activeProfile.company_name}</span></>
+            <>
+              <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-success align-middle" aria-hidden />{" "}
+              Personalizing for <span className="font-medium text-foreground">{activeProfile.company_name}</span>
+            </>
           ) : (
             <>Universal mode (no business profile)</>
           )}{" "}
           ·{" "}
           <button
             type="button"
-            className="underline hover:text-primary"
+            className="font-medium text-primary underline-offset-2 hover:underline"
             onClick={() => window.dispatchEvent(new Event("openProfiles"))}
           >
             Change
@@ -325,8 +330,9 @@ export const AnalysisForm = () => {
 
       <form onSubmit={handleEpisodeSubmit} className="space-y-6">
         <div className="space-y-2 text-center">
-          <h2 className="text-2xl font-bold text-center">
-            Analyze New Video
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-center">
+            Analyze a{" "}
+            <span className="font-display font-medium italic text-gradient">new video</span>
           </h2>
           <p className="text-muted-foreground">
             Paste any video URL and let AI extract advice tailored to you
@@ -388,7 +394,7 @@ export const AnalysisForm = () => {
                 value={episodeUrl}
                 onChange={(e) => setEpisodeUrl(e.target.value)}
                 disabled={isAnalyzing}
-                className="text-center text-base sm:text-lg py-5 sm:py-6 min-h-[48px]"
+                className="rounded-full text-center text-base sm:text-lg py-5 sm:py-6 min-h-[48px] shadow-sm"
               />
               <p className="text-xs text-muted-foreground text-center">
                 Source will be auto-detected
@@ -402,7 +408,7 @@ export const AnalysisForm = () => {
             type="submit"
             disabled={isAnalyzing || !analysisCheck.allowed}
             size="lg"
-            className="min-w-[200px] min-h-[48px] sm:min-h-0"
+            className="min-w-[200px] min-h-[48px] sm:min-h-0 rounded-full"
           >
             {isAnalyzing ? (
               <>
@@ -427,7 +433,7 @@ export const AnalysisForm = () => {
               disabled={isAnalyzing}
               onClick={handleQuickImport}
               size="lg"
-              className="min-w-[150px] min-h-[48px] sm:min-h-0"
+              className="min-w-[150px] min-h-[48px] sm:min-h-0 rounded-full"
             >
               <FastForward className="mr-2 h-4 w-4" />
               Quick Import

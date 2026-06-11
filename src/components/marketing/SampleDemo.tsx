@@ -33,8 +33,9 @@ export const SampleDemo = () => {
           <div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
             Illustrative sample — not a real analysis
           </div>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">
-            See it in action
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
+            See it{" "}
+            <span className="font-display font-medium italic text-gradient">in action</span>
           </h2>
           <p className="text-sm sm:text-lg text-muted-foreground max-w-2xl mx-auto">
             Here's what an analysis looks like for a bootstrapped coffee roaster
