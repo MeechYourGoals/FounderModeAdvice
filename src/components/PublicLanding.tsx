@@ -1,4 +1,4 @@
-import { ArrowRight, MessageSquare, ShieldCheck, Check, X, Target, Lightbulb, Building2, Folder, Sparkles } from "lucide-react";
+import { ArrowRight, MessageSquare, ShieldCheck, Check, X, Target, Lightbulb, Building2, Folder } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -63,12 +63,12 @@ export const PublicLanding = () => {
         <div className="absolute inset-0" style={{ background: 'var(--gradient-hero)' }} />
         <div className="absolute inset-0" style={{ background: 'var(--gradient-mesh)' }} />
         <div className="container relative mx-auto px-4 pt-14 pb-16 sm:pt-24 sm:pb-24 lg:pt-28 lg:pb-32">
-          <div className="grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:items-center lg:gap-16">
+          <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:items-center lg:gap-16">
             {/* Left: copy */}
             <div>
               <Reveal>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3.5 py-1.5 text-xs font-medium text-primary shadow-sm">
-                  <Sparkles className="h-3 w-3" aria-hidden /> Personalized advice from any business video
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3.5 py-1.5 text-sm font-medium text-primary shadow-sm">
+                  Personalized advice from any business video
                 </span>
               </Reveal>
               <Reveal delay={80}>
@@ -79,7 +79,7 @@ export const PublicLanding = () => {
                 </h1>
               </Reveal>
               <Reveal delay={160}>
-                <p className="mt-6 max-w-xl text-base sm:text-lg text-muted-foreground leading-relaxed">
+                <p className="mt-6 max-w-xl text-lg sm:text-xl text-foreground/90 leading-relaxed">
                   Turn founder, operator, and business-building videos into personalized advice for your company,
                   industry, and stage — startup, agency, local shop, storefront, or side hustle.
                 </p>
@@ -95,7 +95,7 @@ export const PublicLanding = () => {
                 </div>
               </Reveal>
               <Reveal delay={320}>
-                <ul className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
+                <ul className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-base text-foreground/90">
                   <li className="flex items-center gap-1.5"><Check className="h-4 w-4 text-primary" /> Free forever tier</li>
                   <li className="flex items-center gap-1.5"><Check className="h-4 w-4 text-primary" /> No credit card</li>
                   <li className="flex items-center gap-1.5"><Check className="h-4 w-4 text-primary" /> iOS, Android, web</li>
@@ -121,7 +121,7 @@ export const PublicLanding = () => {
       <section className="container mx-auto px-4 pt-14 sm:pt-20 md:pt-28 pb-8 sm:pb-10 md:pb-12">
         <div className="max-w-5xl mx-auto">
           <Reveal>
-            <p className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-primary mb-3">How it works</p>
+            <p className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-primary mb-3">How it works</p>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-center mb-10 sm:mb-14">
               Turn expert content into{" "}
               <span className="font-display font-medium italic text-gradient">personalized strategy</span>
@@ -160,24 +160,24 @@ export const PublicLanding = () => {
       <section className="container mx-auto px-4 pb-12 sm:pb-16 md:pb-24">
         <Reveal>
           <div className="max-w-5xl mx-auto glass rounded-3xl p-5 sm:p-8 md:p-10 border-primary/15 shadow-card">
-            <div className="grid grid-cols-1 md:grid-cols-[1.1fr_0.9fr] gap-6 md:gap-10 items-start">
-              <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 md:items-stretch">
+              <div className="space-y-4 flex flex-col">
                 <BadgeLabel>Advice for every kind of builder</BadgeLabel>
                 <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
                   You do not need a boardroom of advisors to{" "}
                   <span className="font-display font-medium italic text-gradient">learn like you have one</span>.
                 </h2>
-                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                <p className="text-base sm:text-lg text-foreground/90 leading-relaxed">
                   The best founders, operators, and business owners have shared thousands of hours of hard-won lessons in public interviews, podcasts, and talks. Founder Mode Advice turns that content into structured guidance tailored to your business — without implying affiliation, endorsement, or replacing real advisors.
                 </p>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-3 flex flex-col">
                 <MiniFeature icon={<ShieldCheck className="w-4 h-4" />} title="Any public YouTube video in" description="Paste a business, founder, operator, investor, strategy, or leadership video from YouTube. Spotify and Apple Podcasts links are not supported because those platforms do not provide public transcripts." />
                 <MiniFeature icon={<Target className="w-4 h-4" />} title="Tailored advice out" description="Insight mapped to your industry, stage, customers, and constraints — not generic venture-scale playbooks." />
                 <MiniFeature icon={<MessageSquare className="w-4 h-4" />} title="Transcript-grounded Q&A" description="Ask follow-up questions directly against the video transcript and your business context after analysis." />
               </div>
             </div>
-            <p className="mt-6 text-[11px] sm:text-xs text-muted-foreground">
+            <p className="mt-6 text-sm text-foreground/80">
               Founder Mode Advice analyzes public content only. It is independent and does not provide private access, endorsement, or investment advice from any person or firm referenced in a video.
             </p>
           </div>
@@ -195,20 +195,20 @@ export const PublicLanding = () => {
                   Not another{" "}
                   <span className="font-display font-medium italic">locked-in</span> subscription
                 </h2>
-                <p className="text-sm sm:text-lg text-muted-foreground max-w-2xl mx-auto">
+                <p className="text-base sm:text-xl text-foreground/90 max-w-2xl mx-auto">
                   MasterClass, Augment, and Delphi cost a lot more and only give you the people on
                   their roster — and even then, you get the generic takes those people chose to share.
                   One clip, the same advice for thousands of different viewers.
                 </p>
               </div>
             </Reveal>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 sm:items-stretch">
               <Reveal delay={0}>
-                <div className="glass h-full rounded-2xl p-5 sm:p-6 space-y-3 opacity-90">
-                  <h3 className="font-semibold text-base sm:text-lg text-muted-foreground">
+                <div className="glass h-full rounded-2xl p-5 sm:p-6 space-y-3">
+                  <h3 className="font-semibold text-lg sm:text-xl text-foreground/85">
                     MasterClass · Augment · Delphi
                   </h3>
-                  <ul className="space-y-2 text-sm text-muted-foreground">
+                  <ul className="space-y-2 text-base text-foreground/85">
                     <ComparisonItem positive={false}>Locked to who they have on the platform</ComparisonItem>
                     <ComparisonItem positive={false}>One-size-fits-all insights for every viewer</ComparisonItem>
                     <ComparisonItem positive={false}>Premium price for a fixed library</ComparisonItem>
@@ -217,10 +217,10 @@ export const PublicLanding = () => {
               </Reveal>
               <Reveal delay={120}>
                 <div className="glass h-full rounded-2xl p-5 sm:p-6 space-y-3 ring-glow border border-primary/30">
-                  <h3 className="font-semibold text-base sm:text-lg text-primary">
+                  <h3 className="font-semibold text-lg sm:text-xl text-primary">
                     Founder Mode Advice
                   </h3>
-                  <ul className="space-y-2 text-sm">
+                  <ul className="space-y-2 text-base text-foreground">
                     <ComparisonItem positive>Learn from anyone with a video online</ComparisonItem>
                     <ComparisonItem positive>Every video tailored to your business and industry</ComparisonItem>
                     <ComparisonItem positive>One app, any source — at a fraction of the cost</ComparisonItem>
@@ -238,12 +238,12 @@ export const PublicLanding = () => {
         <div className="max-w-5xl mx-auto">
           <Reveal>
             <div className="text-center space-y-3 mb-10 sm:mb-14">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Pricing</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">Pricing</p>
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
                 Simple,{" "}
                 <span className="font-display font-medium italic text-gradient">honest</span> pricing
               </h2>
-              <p className="text-sm sm:text-lg text-muted-foreground max-w-2xl mx-auto">
+              <p className="text-base sm:text-xl text-foreground/90 max-w-2xl mx-auto">
                 Start free. Upgrade when you're ready. Cancel anytime.
               </p>
             </div>
@@ -255,7 +255,7 @@ export const PublicLanding = () => {
               </Reveal>
             ))}
           </div>
-          <p className="mt-6 text-center text-xs text-muted-foreground">
+          <p className="mt-6 text-center text-sm text-foreground/80">
             Prices in USD. Web subscriptions are billed via Stripe; in-app subscriptions via the App Store.
           </p>
         </div>
@@ -265,7 +265,7 @@ export const PublicLanding = () => {
       <section className="container mx-auto px-4 py-12 sm:py-16">
         <div className="max-w-5xl mx-auto">
           <Reveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary mb-3">FAQ</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary mb-3">FAQ</p>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
               Common{" "}
               <span className="font-display font-medium italic text-gradient">questions</span>.
@@ -276,8 +276,8 @@ export const PublicLanding = () => {
               <Reveal key={f.q} delay={(i % 2) * 80}>
                 <Card className="h-full bg-card/95 elevate-hover">
                   <CardContent className="p-5">
-                    <h3 className="text-base font-semibold">{f.q}</h3>
-                    <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{f.a}</p>
+                    <h3 className="text-lg font-semibold">{f.q}</h3>
+                    <p className="mt-2 text-base text-foreground/85 leading-relaxed">{f.a}</p>
                   </CardContent>
                 </Card>
               </Reveal>
@@ -303,7 +303,7 @@ export const PublicLanding = () => {
                 Ready to build your{" "}
                 <span className="font-display font-medium italic">boardroom</span>?
               </h2>
-              <p className="mx-auto mt-4 max-w-xl text-base text-primary-foreground/90">
+              <p className="mx-auto mt-4 max-w-xl text-lg text-primary-foreground/95">
                 Create your free account, paste a video, and get advice tailored to your business in minutes.
               </p>
               <div className="mt-7 flex flex-wrap justify-center gap-3">
@@ -332,18 +332,18 @@ export const PublicLanding = () => {
 };
 
 const BadgeLabel = ({ children }: { children: React.ReactNode }) => (
-  <div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+  <div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
     {children}
   </div>
 );
 
 const MiniFeature = ({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) => (
-  <div className="rounded-2xl bg-background/70 border border-border p-4 transition-colors hover:border-primary/30">
-    <div className="flex items-center gap-2 font-semibold text-sm sm:text-base mb-1">
+  <div className="flex-1 rounded-2xl bg-background/70 border border-border p-4 transition-colors hover:border-primary/30">
+    <div className="flex items-center gap-2 font-semibold text-base sm:text-lg mb-1">
       <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">{icon}</span>
       {title}
     </div>
-    <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">{description}</p>
+    <p className="text-sm sm:text-base text-foreground/85 leading-relaxed">{description}</p>
   </div>
 );
 
@@ -353,8 +353,8 @@ const FeatureCard = ({ step, title, description }: { step: string; title: string
       <span aria-hidden className="font-display block text-4xl sm:text-5xl font-medium italic leading-none text-primary/25">
         {step}
       </span>
-      <h3 className="font-semibold text-base sm:text-lg mt-4 mb-1 sm:mb-2">{title}</h3>
-      <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">{description}</p>
+      <h3 className="font-semibold text-lg sm:text-xl mt-4 mb-1 sm:mb-2">{title}</h3>
+      <p className="text-sm sm:text-base text-foreground/85 leading-relaxed">{description}</p>
     </div>
   );
 };
@@ -369,18 +369,18 @@ const PricingCard = ({ tier, onSelect }: { tier: SubscriptionTier; onSelect: () 
       }`}
     >
       {plan.recommended && (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3.5 py-1 text-xs font-semibold text-primary-foreground shadow-md">
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3.5 py-1 text-sm font-semibold text-primary-foreground shadow-md">
           Most Popular
         </span>
       )}
-      <h3 className="text-lg font-bold">{plan.displayName}</h3>
+      <h3 className="text-xl font-bold">{plan.displayName}</h3>
       <div className="mt-2 mb-4 flex items-baseline gap-1">
         <span className="text-4xl font-bold tracking-tight">{isFree ? "Free" : `$${plan.price}`}</span>
-        {!isFree && <span className="text-sm text-muted-foreground">/month</span>}
+        {!isFree && <span className="text-base text-foreground/80">/month</span>}
       </div>
       <ul className="space-y-2.5 flex-1">
         {plan.features.map((feature, i) => (
-          <li key={i} className="flex items-start gap-2 text-sm">
+          <li key={i} className="flex items-start gap-2 text-base">
             <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary/10">
               <Check className="h-3 w-3 text-primary" />
             </span>
@@ -403,7 +403,7 @@ const ComparisonItem = ({ positive, children }: { positive: boolean; children: R
   const Icon = positive ? Check : X;
   return (
     <li className="flex items-start gap-2">
-      <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${positive ? "text-primary" : "text-muted-foreground"}`} />
+      <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${positive ? "text-primary" : "text-foreground/60"}`} />
       <span>{children}</span>
     </li>
   );
@@ -442,7 +442,7 @@ const HeroPreview = () => (
       <span className="h-2.5 w-2.5 rounded-full bg-destructive/60" />
       <span className="h-2.5 w-2.5 rounded-full bg-yellow-500/60" />
       <span className="h-2.5 w-2.5 rounded-full bg-success/60" />
-      <span className="ml-3 text-[10px] uppercase tracking-wider text-muted-foreground">foundermodeadvice.com</span>
+      <span className="ml-3 text-xs uppercase tracking-wider text-foreground/70">foundermodeadvice.com</span>
     </div>
 
     <div className="flex items-center gap-3 rounded-2xl border border-border/60 bg-background/60 p-3 mb-3">
@@ -450,10 +450,10 @@ const HeroPreview = () => (
         <MessageSquare className="h-4 w-4" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold truncate">How we bootstrapped a 7-figure coffee roaster</p>
-        <p className="text-[11px] text-muted-foreground truncate">YouTube · The Founder Podcast</p>
+        <p className="text-base font-semibold truncate">How we bootstrapped a 7-figure coffee roaster</p>
+        <p className="text-sm text-foreground/75 truncate">YouTube · The Founder Podcast</p>
       </div>
-      <span className="hidden sm:inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+      <span className="hidden sm:inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
         <Building2 className="mr-1 h-3 w-3" /> Maple &amp; Oak
       </span>
     </div>
@@ -467,19 +467,19 @@ const HeroPreview = () => (
         <div key={c.tag} className="rounded-xl border border-border/60 bg-background/70 p-3 transition-colors hover:border-primary/30">
           <div className="flex items-center gap-2 mb-1">
             <Lightbulb className="h-3.5 w-3.5 text-primary" />
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-primary">{c.tag}</span>
-            <span className="ml-auto text-[10px] text-muted-foreground">Tailored</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-primary">{c.tag}</span>
+            <span className="ml-auto text-xs text-foreground/70">Tailored</span>
           </div>
-          <p className="text-xs text-foreground/85 leading-relaxed">{c.text}</p>
+          <p className="text-sm text-foreground/90 leading-relaxed">{c.text}</p>
         </div>
       ))}
     </div>
 
     <div className="mt-3 flex items-center justify-between rounded-xl bg-muted/40 px-3 py-2">
-      <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+      <span className="inline-flex items-center gap-1.5 text-xs text-foreground/80">
         <Folder className="h-3 w-3" /> Saved to · Coffee playbook
       </span>
-      <span className="text-[11px] font-medium text-primary">12 insights</span>
+      <span className="text-xs font-medium text-primary">12 insights</span>
     </div>
   </div>
 );
