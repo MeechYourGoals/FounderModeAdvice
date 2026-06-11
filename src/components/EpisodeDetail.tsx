@@ -394,8 +394,11 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
 
   if (loading) {
     return (
-      <Card className="p-6 sm:p-8">
-        <div className="text-center text-muted-foreground">Loading episode details...</div>
+      <Card className="p-6 sm:p-8" role="status" aria-live="polite" aria-label="Loading episode details">
+        <div className="flex items-center justify-center gap-3 py-10 text-muted-foreground">
+          <Loader2 className="w-5 h-5 animate-spin text-primary" aria-hidden />
+          <span>Loading episode details...</span>
+        </div>
       </Card>
     );
   }
@@ -403,26 +406,27 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
   if (!episode) {
     return (
       <Card className="p-6 sm:p-8">
-        <div className="text-center text-muted-foreground">Episode not found</div>
+        <div className="text-center text-muted-foreground py-10">Episode not found</div>
       </Card>
     );
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
       <Button variant="ghost" onClick={onBack} className="mb-2 sm:mb-4 min-h-[44px] sm:min-h-0 -ml-2">
         <ArrowLeft className="w-4 h-4 mr-2" />
         Back to All Episodes
       </Button>
 
-      <Card className="p-4 sm:p-8">
+      <Card className="relative overflow-hidden p-4 sm:p-8">
+        <div aria-hidden className="absolute inset-x-0 top-0 h-[3px]" style={{ background: 'var(--gradient-primary)' }} />
         <div className="space-y-4 sm:space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl sm:text-3xl font-bold mb-2 sm:mb-4">{episode.title}</h1>
+              <h1 className="text-xl sm:text-3xl font-bold tracking-tight mb-2 sm:mb-3">{episode.title}</h1>
               {episode.founder_names && (
                 <p className="text-base sm:text-lg text-muted-foreground mb-1 sm:mb-2">
-                  with {episode.founder_names}
+                  with <span className="font-display font-medium italic text-foreground/90">{episode.founder_names}</span>
                 </p>
               )}
               {episode.release_date && (
@@ -488,8 +492,8 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
               <Separator />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div>
-                  <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Company Snapshot</h3>
-                  <div className="space-y-2">
+                  <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground/70 mb-3 sm:mb-4">Company Snapshot</h3>
+                  <div className="space-y-0.5">
                     <InfoRow label="Company" value={episode.companies.name} />
                     <InfoRow label="Founded" value={episode.companies.founding_year?.toString()} />
                     <InfoRow label="Stage" value={episode.companies.current_stage} />
@@ -498,8 +502,8 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Metrics</h3>
-                  <div className="space-y-2">
+                  <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground/70 mb-3 sm:mb-4">Metrics</h3>
+                  <div className="space-y-0.5">
                     <InfoRow label="Funding Raised" value={episode.companies.funding_raised} />
                     <InfoRow label="Valuation" value={episode.companies.valuation} />
                     <InfoRow label="Employees" value={episode.companies.employee_count?.toString()} />
@@ -522,26 +526,34 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
 
       {lessons.length > 0 && (
         <Card className="p-4 sm:p-8">
-          <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
-            Top Lessons ({lessons.length})
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-4 sm:mb-6 flex items-center gap-2.5">
+            <span className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
+            </span>
+            Top Lessons <span className="text-muted-foreground font-normal">({lessons.length})</span>
           </h2>
-          <div className="space-y-4 sm:space-y-6">
+          <div className="space-y-4 sm:space-y-5">
             {lessons.map((lesson, index) => (
-              <div key={lesson.id} className="border-l-4 border-primary pl-4 sm:pl-6 py-2">
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-2 gap-2">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary">#{index + 1}</Badge>
+              <div
+                key={lesson.id}
+                className="group relative rounded-2xl border border-border/70 bg-background/40 p-4 sm:p-5 pl-5 sm:pl-6 transition-colors hover:border-primary/30"
+              >
+                <div aria-hidden className="absolute left-0 top-4 bottom-4 w-[3px] rounded-full bg-primary/60 transition-colors group-hover:bg-primary" />
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-2.5 gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <span aria-hidden className="font-display text-2xl sm:text-3xl font-medium italic leading-none text-primary/30">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
                     {lesson.category && <Badge variant="outline">{lesson.category}</Badge>}
                   </div>
                   <div className="flex gap-2 text-xs sm:text-sm">
-                    <Badge>Impact: {lesson.impact_score}/10</Badge>
-                    <Badge>Action: {lesson.actionability_score}/10</Badge>
+                    <ScorePill label="Impact" score={lesson.impact_score} />
+                    <ScorePill label="Action" score={lesson.actionability_score} />
                   </div>
                 </div>
                 <p className="text-sm sm:text-base text-foreground leading-relaxed mb-2">{lesson.lesson_text}</p>
                 {lesson.founder_attribution && (
-                  <p className="text-xs sm:text-sm text-muted-foreground italic">
+                  <p className="font-display text-xs sm:text-sm text-muted-foreground italic">
                     — {lesson.founder_attribution}
                   </p>
                 )}
@@ -557,49 +569,59 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
       )}
 
       {personalizedInsights.length > 0 && (
-        <Card className="glass p-4 sm:p-8 border-primary/15">
-          <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 flex items-center gap-2">
-            <Target className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
-            Personalized for Your Startup ({personalizedInsights.length})
+        <Card className="glass relative overflow-hidden p-4 sm:p-8 border-primary/15">
+          <div aria-hidden className="absolute inset-x-0 top-0 h-[3px]" style={{ background: 'var(--gradient-primary)' }} />
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-4 sm:mb-6 flex items-center gap-2.5">
+            <span className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Target className="w-4 h-4 sm:w-5 sm:h-5" />
+            </span>
+            Personalized for Your Startup <span className="text-muted-foreground font-normal">({personalizedInsights.length})</span>
           </h2>
           <div className="space-y-4 sm:space-y-6">
             {lessons.map((lesson) => {
               const insight = personalizedInsights.find(i => i.lesson_id === lesson.id);
               if (!insight) return null;
-              
+
               return (
                 <div key={lesson.id} className="space-y-3 sm:space-y-4">
-                  <div className="p-3 sm:p-5 bg-card rounded-xl border border-primary/15 shadow-sm">
+                  <div className="p-3 sm:p-5 bg-card rounded-2xl border border-primary/15 shadow-sm">
                     <div className="flex-1 mb-3">
-                      <h3 className="font-semibold text-sm sm:text-lg mb-2">{lesson.lesson_text}</h3>
+                      <h3 className="font-semibold text-sm sm:text-lg mb-2 leading-snug">{lesson.lesson_text}</h3>
                       <div className="flex gap-2 mb-3 flex-wrap">
-                        <Badge className="text-xs">Impact: {lesson.impact_score}/10</Badge>
-                        <Badge className="text-xs">Action: {lesson.actionability_score}/10</Badge>
+                        <ScorePill label="Impact" score={lesson.impact_score} />
+                        <ScorePill label="Action" score={lesson.actionability_score} />
                       </div>
                     </div>
-                    
+
                     <div className="bg-primary/8 border border-primary/15 p-3 sm:p-4 rounded-xl">
-                      <div className="flex items-start gap-2 mb-3">
-                        <Lightbulb className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0 mt-1" />
+                      <div className="flex items-start gap-2.5 mb-3">
+                        <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                          <Lightbulb className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        </span>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-primary mb-1 text-sm">For Your Startup:</p>
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-primary mb-1">For Your Startup</p>
                           <p className="text-sm sm:text-base text-foreground leading-relaxed">{insight.personalized_text}</p>
                         </div>
                       </div>
-                      
+
                       {insight.action_items && insight.action_items.length > 0 && (
                         <div className="mt-3 sm:mt-4">
-                          <p className="font-medium text-xs sm:text-sm mb-2">✅ Action Items:</p>
-                          <ol className="list-decimal list-inside space-y-1 text-xs sm:text-sm">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-foreground/80 mb-2">Action Items</p>
+                          <ol className="space-y-1.5 text-xs sm:text-sm">
                             {insight.action_items.map((item, idx) => (
-                              <li key={idx} className="text-muted-foreground">{item}</li>
+                              <li key={idx} className="flex items-start gap-2 text-muted-foreground">
+                                <span className="mt-px flex h-[1.125rem] w-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">
+                                  {idx + 1}
+                                </span>
+                                <span className="leading-relaxed">{item}</span>
+                              </li>
                             ))}
                           </ol>
                         </div>
                       )}
-                      
+
                       <div className="mt-3">
-                        <Badge variant="outline" className="text-xs">Relevance: {insight.relevance_score}/10</Badge>
+                        <ScorePill label="Relevance" score={insight.relevance_score} />
                       </div>
                     </div>
                   </div>
@@ -612,18 +634,22 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
 
       {callouts.length > 0 && (
         <Card className="p-4 sm:p-8 bg-accent/5">
-          <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 flex items-center gap-2">
-            <Target className="w-5 h-5 sm:w-6 sm:h-6 text-accent" />
-            Relevant for You ({callouts.length})
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-4 sm:mb-6 flex items-center gap-2.5">
+            <span className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+              <Target className="w-4 h-4 sm:w-5 sm:h-5" />
+            </span>
+            Relevant for You <span className="text-muted-foreground font-normal">({callouts.length})</span>
           </h2>
           <div className="space-y-3 sm:space-y-4">
             {callouts.map((callout) => (
-              <div key={callout.id} className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 bg-card rounded-lg border">
-                <Lightbulb className="w-4 h-4 sm:w-5 sm:h-5 text-accent flex-shrink-0 mt-1" />
+              <div key={callout.id} className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 bg-card rounded-2xl border border-border/70 transition-colors hover:border-accent/30">
+                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent">
+                  <Lightbulb className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm sm:text-base text-foreground leading-relaxed">{callout.callout_text}</p>
                   <div className="mt-2">
-                    <Badge variant="outline" className="text-xs">Relevance: {callout.relevance_score}/10</Badge>
+                    <ScorePill label="Relevance" score={callout.relevance_score} />
                   </div>
                 </div>
               </div>
@@ -637,12 +663,20 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
   );
 };
 
+/* Soft metric chip — replaces solid badges so scores read as data, not buttons */
+const ScorePill = ({ label, score }: { label: string; score: number }) => (
+  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary">
+    {label}
+    <span className="font-semibold">{score}/10</span>
+  </span>
+);
+
 const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => {
   if (!value) return null;
   return (
-    <div className="flex justify-between py-1 text-sm">
-      <span className="text-muted-foreground">{label}:</span>
-      <span className="font-medium">{value}</span>
+    <div className="flex justify-between gap-3 border-b border-border/40 py-1.5 text-sm last:border-b-0">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium text-right">{value}</span>
     </div>
   );
 };
