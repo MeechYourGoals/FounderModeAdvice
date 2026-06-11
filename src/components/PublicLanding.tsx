@@ -332,18 +332,18 @@ export const PublicLanding = () => {
 };
 
 const BadgeLabel = ({ children }: { children: React.ReactNode }) => (
-  <div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+  <div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
     {children}
   </div>
 );
 
 const MiniFeature = ({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) => (
-  <div className="rounded-2xl bg-background/70 border border-border p-4 transition-colors hover:border-primary/30">
-    <div className="flex items-center gap-2 font-semibold text-sm sm:text-base mb-1">
+  <div className="flex-1 rounded-2xl bg-background/70 border border-border p-4 transition-colors hover:border-primary/30">
+    <div className="flex items-center gap-2 font-semibold text-base sm:text-lg mb-1">
       <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">{icon}</span>
       {title}
     </div>
-    <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">{description}</p>
+    <p className="text-sm sm:text-base text-foreground/85 leading-relaxed">{description}</p>
   </div>
 );
 
@@ -353,8 +353,8 @@ const FeatureCard = ({ step, title, description }: { step: string; title: string
       <span aria-hidden className="font-display block text-4xl sm:text-5xl font-medium italic leading-none text-primary/25">
         {step}
       </span>
-      <h3 className="font-semibold text-base sm:text-lg mt-4 mb-1 sm:mb-2">{title}</h3>
-      <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">{description}</p>
+      <h3 className="font-semibold text-lg sm:text-xl mt-4 mb-1 sm:mb-2">{title}</h3>
+      <p className="text-sm sm:text-base text-foreground/85 leading-relaxed">{description}</p>
     </div>
   );
 };
@@ -369,18 +369,18 @@ const PricingCard = ({ tier, onSelect }: { tier: SubscriptionTier; onSelect: () 
       }`}
     >
       {plan.recommended && (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3.5 py-1 text-xs font-semibold text-primary-foreground shadow-md">
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3.5 py-1 text-sm font-semibold text-primary-foreground shadow-md">
           Most Popular
         </span>
       )}
-      <h3 className="text-lg font-bold">{plan.displayName}</h3>
+      <h3 className="text-xl font-bold">{plan.displayName}</h3>
       <div className="mt-2 mb-4 flex items-baseline gap-1">
         <span className="text-4xl font-bold tracking-tight">{isFree ? "Free" : `$${plan.price}`}</span>
-        {!isFree && <span className="text-sm text-muted-foreground">/month</span>}
+        {!isFree && <span className="text-base text-foreground/80">/month</span>}
       </div>
       <ul className="space-y-2.5 flex-1">
         {plan.features.map((feature, i) => (
-          <li key={i} className="flex items-start gap-2 text-sm">
+          <li key={i} className="flex items-start gap-2 text-base">
             <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary/10">
               <Check className="h-3 w-3 text-primary" />
             </span>
