@@ -18,6 +18,8 @@
     "cap:build:ios": "npm run build && cap sync ios",
     "cap:build:android": "npm run build && cap sync android",
     "test:subscription-mapping": "node scripts/verify-subscription-mapping.mjs",
+    "verify:deploy": "node scripts/verify-deploy.mjs",
+    "build:verify": "vite build && node scripts/verify-deploy.mjs",
     "screenshots": "npx --yes @playwright/test@1.56.1 test scripts/generate-screenshots.spec.ts"
   },
   "dependencies": {
