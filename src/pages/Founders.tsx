@@ -16,8 +16,10 @@ export default function Founders() {
              <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="md:hidden">
                <ArrowLeft className="w-5 h-5" />
              </Button>
-             <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
-               <Users className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2.5">
+               <span className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                 <Users className="w-5 h-5 sm:w-6 sm:h-6" />
+               </span>
                Speakers
              </h1>
            </div>

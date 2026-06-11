@@ -96,10 +96,15 @@ export const OnboardingDialog = ({ open, onClose }: OnboardingDialogProps) => {
     >
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <Icon className="h-7 w-7" />
+          <div key={step} className="mx-auto mb-2 animate-scale-in">
+            <div className="relative">
+              <div aria-hidden className="absolute -inset-3 rounded-full bg-primary/15 blur-xl" />
+              <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-[inset_0_1px_0_0_hsl(var(--primary)/0.2)]">
+                <Icon className="h-7 w-7" />
+              </div>
+            </div>
           </div>
-          <DialogTitle className="text-center text-xl">{current.title}</DialogTitle>
+          <DialogTitle className="text-center text-xl tracking-tight">{current.title}</DialogTitle>
           <DialogDescription className="text-center leading-relaxed">
             {current.body}
           </DialogDescription>

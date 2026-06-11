@@ -21,10 +21,16 @@ export const LibraryEmptyState = () => {
   return (
     <Card className="p-6 sm:p-10 text-center space-y-6">
       <div>
-        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <Play className="h-6 w-6" />
+        <div className="relative mx-auto mb-4 w-fit">
+          <div aria-hidden className="absolute -inset-3 rounded-full bg-primary/15 blur-xl" />
+          <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-[inset_0_1px_0_0_hsl(var(--primary)/0.2)]">
+            <Play className="h-6 w-6" />
+          </div>
         </div>
-        <h3 className="text-lg sm:text-xl font-semibold">Analyze your first video</h3>
+        <h3 className="text-lg sm:text-xl font-semibold tracking-tight">
+          Analyze your{" "}
+          <span className="font-display font-medium italic text-gradient">first video</span>
+        </h3>
         <p className="text-sm text-muted-foreground max-w-md mx-auto mt-1">
           Paste any business, founder, or leadership video above — or start with one of these.
           {activeProfile
@@ -59,7 +65,7 @@ export const LibraryEmptyState = () => {
           <button
             key={video.url}
             onClick={() => analyzeStarter(video.url)}
-            className="group flex items-start gap-3 rounded-xl border bg-card p-3 hover:border-primary/40 hover:bg-primary/5 transition-colors"
+            className="group flex items-start gap-3 rounded-xl border border-border/70 bg-card p-3 transition-all hover:border-primary/40 hover:bg-primary/5 hover:shadow-md active:scale-[0.99]"
           >
             <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
               <Play className="h-4 w-4" />

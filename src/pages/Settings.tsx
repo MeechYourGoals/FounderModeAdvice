@@ -97,7 +97,7 @@ const Settings = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5 text-primary" />
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Building2 className="h-4 w-4" /></span>
                   Default business profile
                 </CardTitle>
                 <CardDescription>
@@ -137,7 +137,7 @@ const Settings = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <SlidersHorizontal className="h-5 w-5 text-primary" />
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><SlidersHorizontal className="h-4 w-4" /></span>
                   Library defaults
                 </CardTitle>
                 <CardDescription>How your analyzed videos are sorted and grouped by default.</CardDescription>
@@ -197,7 +197,7 @@ const Settings = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Trash2 className="h-5 w-5 text-primary" />
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Trash2 className="h-4 w-4" /></span>
                   Offline & storage
                 </CardTitle>
                 <CardDescription>
@@ -232,7 +232,7 @@ const Settings = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Info className="h-5 w-5 text-primary" />
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Info className="h-4 w-4" /></span>
                   About
                 </CardTitle>
               </CardHeader>

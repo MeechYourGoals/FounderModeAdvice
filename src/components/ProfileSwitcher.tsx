@@ -33,7 +33,7 @@ export const ProfileSwitcher = ({ compact = false, className }: ProfileSwitcherP
         <Button
           variant="outline"
           size="sm"
-          className={cn("max-w-[180px] justify-between gap-1.5", compact && "max-w-[140px] h-8", className)}
+          className={cn("max-w-[180px] justify-between gap-1.5 rounded-full", compact && "max-w-[140px] h-8", className)}
           onClick={() => triggerHapticFeedback("light")}
         >
           {activeProfile ? (

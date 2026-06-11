@@ -246,9 +246,11 @@ export const VideoChatSheet = ({ videoId, videoTitle }: VideoChatSheetProps) => 
         </Button>
       </SheetTrigger>
       <SheetContent className="w-full sm:max-w-xl p-0 flex flex-col h-dvh" side="right">
-        <SheetHeader className="px-4 sm:px-6 py-4 border-b text-left pr-14">
-          <SheetTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-primary" />
+        <SheetHeader className="glass-nav px-4 sm:px-6 py-4 border-b text-left pr-14">
+          <SheetTitle className="flex items-center gap-2.5 tracking-tight">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <MessageSquare className="h-4 w-4" />
+            </span>
             Ask this video
           </SheetTitle>
           <SheetDescription className="line-clamp-2">
@@ -319,16 +321,17 @@ export const VideoChatSheet = ({ videoId, videoTitle }: VideoChatSheetProps) => 
                 </div>
               </Card>
               <div className="space-y-2">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Try asking</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground/70">Try asking</p>
                 {SUGGESTED_QUESTIONS.map((question) => (
                   <button
                     key={question}
                     type="button"
-                    className="w-full text-left rounded-lg border bg-card p-3 text-sm hover:bg-primary/5 hover:border-primary/30 transition-colors"
+                    className="group flex w-full items-center justify-between gap-3 text-left rounded-xl border border-border/70 bg-card p-3 text-sm transition-all hover:border-primary/30 hover:bg-primary/5 active:scale-[0.99] disabled:opacity-50"
                     onClick={() => void sendQuestion(question)}
                     disabled={sending || hasTranscript === false}
                   >
-                    {question}
+                    <span>{question}</span>
+                    <Send className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50 transition-colors group-hover:text-primary" aria-hidden />
                   </button>
                 ))}
               </div>
@@ -337,7 +340,7 @@ export const VideoChatSheet = ({ videoId, videoTitle }: VideoChatSheetProps) => 
             messages.map((message, index) => (
               <div
                 key={message.id || `${message.role}-${index}`}
-                className={cn("flex gap-3", message.role === "user" ? "justify-end" : "justify-start")}
+                className={cn("flex gap-3 animate-slide-up", message.role === "user" ? "justify-end" : "justify-start")}
               >
                 {message.role === "assistant" && (
                   <div className="mt-1 h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
@@ -348,9 +351,10 @@ export const VideoChatSheet = ({ videoId, videoTitle }: VideoChatSheetProps) => 
                   className={cn(
                     "max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap",
                     message.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-card border shadow-sm",
+                      ? "rounded-br-md text-primary-foreground shadow-[inset_0_1px_0_0_hsl(0_0%_100%/0.15)]"
+                      : "rounded-bl-md bg-card border border-border/70 shadow-sm",
                   )}
+                  style={message.role === "user" ? { background: "var(--gradient-primary)" } : undefined}
                 >
                   {message.content}
                 </div>
@@ -368,8 +372,8 @@ export const VideoChatSheet = ({ videoId, videoTitle }: VideoChatSheetProps) => 
               <div className="mt-1 h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
                 <Bot className="h-4 w-4" />
               </div>
-              <div className="bg-card border shadow-sm rounded-2xl px-4 py-3 text-sm text-muted-foreground flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
+              <div className="bg-card border border-border/70 shadow-sm rounded-2xl rounded-bl-md px-4 py-3 text-sm text-muted-foreground flex items-center gap-2 animate-fade-in">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
                 Reading the transcript...
               </div>
             </div>
@@ -410,7 +414,7 @@ export const VideoChatSheet = ({ videoId, videoTitle }: VideoChatSheetProps) => 
                 }
               }}
             />
-            <Button type="submit" size="icon" disabled={!draft.trim() || sending || loadingHistory || hasTranscript === false}>
+            <Button type="submit" size="icon" className="rounded-full" disabled={!draft.trim() || sending || loadingHistory || hasTranscript === false}>
               {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
           </div>
