@@ -328,7 +328,7 @@ export const VideoChatSheet = ({ videoId, videoTitle }: VideoChatSheetProps) => 
                     type="button"
                     className="group flex w-full items-center justify-between gap-3 text-left rounded-xl border border-border/70 bg-card p-3 text-sm transition-all hover:border-primary/30 hover:bg-primary/5 active:scale-[0.99] disabled:opacity-50"
                     onClick={() => void sendQuestion(question)}
-                    disabled={sending || hasTranscript === false}
+                    disabled={sending}
                   >
                     <span>{question}</span>
                     <Send className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50 transition-colors group-hover:text-primary" aria-hidden />
