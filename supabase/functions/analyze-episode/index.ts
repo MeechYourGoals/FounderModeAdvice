@@ -129,31 +129,24 @@ serve(async (req) => {
       }
     }
 
-    // Extract video ID for YouTube URLs
-    let videoId = '';
-    let videoTitle = '';
-    const isYouTube = parsedUrl.hostname.includes('youtube.com') || parsedUrl.hostname === 'youtu.be';
-    if (isYouTube) {
-      if (parsedUrl.hostname === 'youtu.be') {
-        videoId = parsedUrl.pathname.slice(1).split('/')[0];
-      } else if (parsedUrl.pathname.startsWith('/shorts/')) {
-        videoId = parsedUrl.pathname.split('/shorts/')[1]?.split('/')[0] || '';
-      } else {
-        videoId = parsedUrl.searchParams.get('v') || '';
-      }
-
-      try {
-        const ytResponse = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(episodeUrl)}&format=json`);
-        if (ytResponse.ok) {
-          const ytData = await ytResponse.json();
-          videoTitle = ytData.title || '';
+    // Unified multi-platform context: metadata + transcript (when obtainable).
+    const videoContext = await getVideoContext(episodeUrl);
+    const videoTitle = videoContext.metadata.title || '';
+    const videoAuthor = videoContext.metadata.author || '';
+    const transcript = videoContext.transcript
+      ? {
+          transcriptText: videoContext.transcript.transcriptText,
+          language: videoContext.transcript.language,
+          source: videoContext.transcript.source,
         }
-      } catch (e) {
-        console.log('Could not fetch YouTube metadata:', e);
-      }
-    }
+      : null;
+    console.log('Video context:', {
+      platform: videoContext.platform,
+      hasTitle: Boolean(videoTitle),
+      hasTranscript: Boolean(transcript),
+      transcriptChars: transcript?.transcriptText.length || 0,
+    });
 
-    const transcript = isYouTube ? await extractYouTubeTranscript(videoId) : null;
 
     // Optional context about the viewer's own business, used to bias examples/jargon.
     const viewerBusiness = startupProfile && (startupProfile.company_name || startupProfile.industry || startupProfile.stage)
