@@ -374,7 +374,7 @@ export const VideoChatSheet = ({ videoId, videoTitle }: VideoChatSheetProps) => 
               </div>
               <div className="bg-card border border-border/70 shadow-sm rounded-2xl rounded-bl-md px-4 py-3 text-sm text-muted-foreground flex items-center gap-2 animate-fade-in">
                 <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                Reading the transcript...
+                Thinking through this video...
               </div>
             </div>
           )}
