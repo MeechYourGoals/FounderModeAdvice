@@ -172,10 +172,14 @@ CRITICAL REQUIREMENTS:
 
     const userPrompt = `Analyze this episode/video:
 URL: ${episodeUrl}
+Platform: ${videoContext.platform}
 ${videoTitle ? `Title: ${videoTitle}` : ''}
+${videoAuthor ? `Creator/Channel: ${videoAuthor}` : ''}
+${videoContext.metadata.description ? `Description: ${videoContext.metadata.description.slice(0, 1200)}` : ''}
 ${podcastName ? `Source: ${podcastName}` : 'Source: Please extract from the episode'}
 ${transcript?.transcriptText ? `Transcript excerpt for grounding:
-${transcript.transcriptText.slice(0, 30000)}` : 'Transcript excerpt: Not available; analyze only if the model can access the public episode content.'}${viewerBusiness}
+${transcript.transcriptText.slice(0, 30000)}` : 'Transcript excerpt: Not available. Use the title, creator, description, and any public knowledge of this URL to extract the most useful business lessons you can. If there truly is nothing to work with, return an error rather than mock data.'}${viewerBusiness}
+
 
 INSTRUCTIONS:
 1. Watch/listen to the episode and extract real insights from the actual content
