@@ -451,7 +451,7 @@ ${trimmedMessage}`;
         content: assistantContent,
         metadata: {
           grounding_mode: groundingMode,
-          transcript_source: context.transcript?.source || null,
+          transcript_source: transcriptSource,
           transcript_chars_used: transcriptContext.length,
         },
       })
