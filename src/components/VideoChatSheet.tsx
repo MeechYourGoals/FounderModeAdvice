@@ -404,9 +404,9 @@ export const VideoChatSheet = ({ videoId, videoTitle }: VideoChatSheetProps) => 
             <Textarea
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
-              placeholder={hasTranscript === false ? "Transcript unavailable for this video" : "Ask a follow-up grounded in this video..."}
+              placeholder="Ask a follow-up grounded in this video..."
               className="min-h-[48px] max-h-32 resize-none"
-              disabled={sending || loadingHistory || hasTranscript === false}
+              disabled={sending || loadingHistory}
               onKeyDown={(event) => {
                 if (event.key === "Enter" && !event.shiftKey) {
                   event.preventDefault();
@@ -414,7 +414,7 @@ export const VideoChatSheet = ({ videoId, videoTitle }: VideoChatSheetProps) => 
                 }
               }}
             />
-            <Button type="submit" size="icon" className="rounded-full" disabled={!draft.trim() || sending || loadingHistory || hasTranscript === false}>
+            <Button type="submit" size="icon" className="rounded-full" disabled={!draft.trim() || sending || loadingHistory}>
               {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
           </div>
