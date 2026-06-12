@@ -309,11 +309,15 @@ ${conversation}`;
     }
 
     const transcriptText = context.transcript?.transcript_text?.trim();
-    if (!transcriptText) {
+    const insightsContext = buildInsightsContext(context.lessons, context.callouts, context.insights);
+    const hasAnyInsights =
+      (context.lessons?.length || 0) + (context.callouts?.length || 0) + (context.insights?.length || 0) > 0;
+
+    if (!transcriptText && !hasAnyInsights) {
       return jsonResponse(
         {
           error:
-            "This video does not have an available transcript yet, so Ask this video cannot provide source-grounded answers.",
+            "This video hasn't been analyzed yet. Re-run the analysis from the episode page, then retry Ask this video.",
         },
         409,
       );
@@ -330,30 +334,46 @@ ${conversation}`;
       content: trimmedMessage,
     });
 
-    const transcriptContext = selectTranscriptContext(transcriptText, trimmedMessage);
-    const insightsContext = buildInsightsContext(context.lessons, context.callouts, context.insights);
+    const groundingMode: "transcript" | "insights" = transcriptText ? "transcript" : "insights";
+    const transcriptContext = transcriptText ? selectTranscriptContext(transcriptText, trimmedMessage) : "";
 
-    const systemPrompt = `You are a transcript-grounded business analyst for Founder Mode Advice.
-Answer only from the selected video's transcript and extracted app insights. Do not claim the investor, founder, operator, or expert personally reviewed the user's business. Do not imply endorsement, affiliation, partnership, cap-table access, or private network access.
-
-SCOPE — this is critical:
+    const baseScope = `SCOPE — this is critical:
 - Only answer questions about THIS video's content and how it applies to the user's business, company, product, strategy, operations, marketing, hiring, finance, leadership, or growth.
-- If the user asks about anything unrelated to the video or to building/running a business (for example: sports scores, recipes, celebrity gossip, general trivia, homework, coding help unrelated to their business, medical, legal, or other random topics), politely decline in one sentence and steer them back to the video or their business. Do not answer the off-topic question, even partially.
+- If the user asks about anything unrelated to the video or to building/running a business (sports, recipes, gossip, trivia, homework, unrelated coding/medical/legal questions), politely decline in one sentence and steer them back to the video or their business.
 
 For every in-scope answer:
-- Separate what the video explicitly says from your interpretation and business-specific application when useful.
+- Separate what the source explicitly says from your interpretation and business-specific application when useful.
 - Adapt to the user's industry and stage; do not assume they are a venture-backed tech startup unless their context says so.
-- If the transcript does not support an answer, say that clearly and ask for the missing business context or a different source.
-- Avoid inventing names, facts, metrics, quotes, or advice not grounded in the provided transcript/context.
-- Keep answers concise, tactical, and useful to a business builder.`;
+- Avoid inventing names, facts, metrics, quotes, or advice not grounded in the provided context.
+- Keep answers concise, tactical, and useful to a business builder.
+- Do not claim the speaker personally reviewed the user's business; no endorsement, partnership, or private access language.`;
+
+    const systemPrompt =
+      groundingMode === "transcript"
+        ? `You are a transcript-grounded business analyst for Founder Mode Advice. Answer only from the selected video's transcript and extracted app insights.
+
+${baseScope}
+
+- If the transcript does not support an answer, say that clearly.`
+        : `You are an insights-grounded business analyst for Founder Mode Advice. A raw transcript is NOT available for this video, but the app has already extracted lessons, startup callouts, and personalized insights from it during analysis. Treat those as your source of truth.
+
+${baseScope}
+
+- If the extracted insights don't cover the question, say so plainly (e.g. "The extracted insights for this video don't cover that — re-run analysis or pick a more specific question").
+- Do not invent quotes or claim to be quoting the speaker directly.`;
+
+    const sourceBlock =
+      groundingMode === "transcript"
+        ? `Transcript context selected for this question:
+${transcriptContext}`
+        : `No raw transcript is available for this video. Use only the extracted insights below as your grounding.`;
 
     const userPrompt = `Video metadata:
 Title: ${context.episode.title}
 People/companies listed by the app: ${context.episode.founder_names || "Not specified"}
 URL: ${context.episode.url}
 
-${insightsContext ? `${insightsContext}\n\n` : ""}Transcript context selected for this question:
-${transcriptContext}
+${insightsContext ? `${insightsContext}\n\n` : ""}${sourceBlock}
 
 Recent conversation:
 ${priorMessages.map((msg) => `${msg.role}: ${msg.content}`).join("\n") || "No prior messages."}
@@ -399,6 +419,7 @@ ${trimmedMessage}`;
         role: "assistant",
         content: assistantContent,
         metadata: {
+          grounding_mode: groundingMode,
           transcript_source: context.transcript?.source || null,
           transcript_chars_used: transcriptContext.length,
         },
@@ -408,7 +429,7 @@ ${trimmedMessage}`;
 
     if (insertError) throw insertError;
 
-    return jsonResponse({ sessionId, message: assistantMessage });
+    return jsonResponse({ sessionId, message: assistantMessage, groundingMode });
   } catch (error) {
     console.error("Error in video-chat:", error);
     return jsonResponse(

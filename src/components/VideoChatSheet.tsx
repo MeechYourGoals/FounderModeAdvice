@@ -191,9 +191,6 @@ export const VideoChatSheet = ({ videoId, videoTitle }: VideoChatSheetProps) => 
     } catch (sendError: any) {
       console.error("Video chat send error:", sendError);
       const message = sendError.message || "Ask this video failed. Please retry.";
-      if (message.toLowerCase().includes("transcript")) {
-        setHasTranscript(false);
-      }
       setError(message);
     } finally {
       setSending(false);
@@ -308,13 +305,13 @@ export const VideoChatSheet = ({ videoId, videoTitle }: VideoChatSheetProps) => 
                 <div className="flex gap-3">
                   <ShieldCheck className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                   <div className="space-y-2">
-                    <p className="font-medium text-sm">Grounded in this video transcript</p>
+                    <p className="font-medium text-sm">Grounded in this video</p>
                     <p className="text-sm text-muted-foreground">
-                      Ask follow-up questions about the selected video. If the transcript does not support an answer, the assistant is instructed to say so.
+                      Ask follow-up questions about the selected video. Answers are grounded in the transcript when available, otherwise in the lessons, callouts, and personalized insights already extracted for this video.
                     </p>
                     {hasTranscript === false && (
-                      <p className="text-sm text-destructive">
-                        No transcript is available for this video yet. Re-analyze a YouTube video with captions, then retry Ask this video.
+                      <p className="text-xs text-muted-foreground/80">
+                        No captions were found for this video — answers are grounded in the extracted insights instead of a raw transcript.
                       </p>
                     )}
                   </div>
@@ -328,7 +325,7 @@ export const VideoChatSheet = ({ videoId, videoTitle }: VideoChatSheetProps) => 
                     type="button"
                     className="group flex w-full items-center justify-between gap-3 text-left rounded-xl border border-border/70 bg-card p-3 text-sm transition-all hover:border-primary/30 hover:bg-primary/5 active:scale-[0.99] disabled:opacity-50"
                     onClick={() => void sendQuestion(question)}
-                    disabled={sending || hasTranscript === false}
+                    disabled={sending}
                   >
                     <span>{question}</span>
                     <Send className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50 transition-colors group-hover:text-primary" aria-hidden />
@@ -374,7 +371,7 @@ export const VideoChatSheet = ({ videoId, videoTitle }: VideoChatSheetProps) => 
               </div>
               <div className="bg-card border border-border/70 shadow-sm rounded-2xl rounded-bl-md px-4 py-3 text-sm text-muted-foreground flex items-center gap-2 animate-fade-in">
                 <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                Reading the transcript...
+                Thinking through this video...
               </div>
             </div>
           )}
@@ -404,9 +401,9 @@ export const VideoChatSheet = ({ videoId, videoTitle }: VideoChatSheetProps) => 
             <Textarea
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
-              placeholder={hasTranscript === false ? "Transcript unavailable for this video" : "Ask a follow-up grounded in this video..."}
+              placeholder="Ask a follow-up grounded in this video..."
               className="min-h-[48px] max-h-32 resize-none"
-              disabled={sending || loadingHistory || hasTranscript === false}
+              disabled={sending || loadingHistory}
               onKeyDown={(event) => {
                 if (event.key === "Enter" && !event.shiftKey) {
                   event.preventDefault();
@@ -414,7 +411,7 @@ export const VideoChatSheet = ({ videoId, videoTitle }: VideoChatSheetProps) => 
                 }
               }}
             />
-            <Button type="submit" size="icon" className="rounded-full" disabled={!draft.trim() || sending || loadingHistory || hasTranscript === false}>
+            <Button type="submit" size="icon" className="rounded-full" disabled={!draft.trim() || sending || loadingHistory}>
               {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
           </div>
