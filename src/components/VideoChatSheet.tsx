@@ -308,13 +308,13 @@ export const VideoChatSheet = ({ videoId, videoTitle }: VideoChatSheetProps) => 
                 <div className="flex gap-3">
                   <ShieldCheck className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                   <div className="space-y-2">
-                    <p className="font-medium text-sm">Grounded in this video transcript</p>
+                    <p className="font-medium text-sm">Grounded in this video</p>
                     <p className="text-sm text-muted-foreground">
-                      Ask follow-up questions about the selected video. If the transcript does not support an answer, the assistant is instructed to say so.
+                      Ask follow-up questions about the selected video. Answers are grounded in the transcript when available, otherwise in the lessons, callouts, and personalized insights already extracted for this video.
                     </p>
                     {hasTranscript === false && (
-                      <p className="text-sm text-destructive">
-                        No transcript is available for this video yet. Re-analyze a YouTube video with captions, then retry Ask this video.
+                      <p className="text-xs text-muted-foreground/80">
+                        No captions were found for this video — answers are grounded in the extracted insights instead of a raw transcript.
                       </p>
                     )}
                   </div>
