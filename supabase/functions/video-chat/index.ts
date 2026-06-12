@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { getVideoContext } from "../_shared/transcript.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -308,7 +309,36 @@ ${conversation}`;
       return jsonResponse({ error: "A question is required." }, 400);
     }
 
-    const transcriptText = context.transcript?.transcript_text?.trim();
+    let transcriptText = context.transcript?.transcript_text?.trim() || "";
+    let transcriptSource = context.transcript?.source || null;
+
+    // Backfill: if this video was analyzed before we supported non-YouTube transcripts
+    // (or YouTube captions were briefly unavailable), try to fetch a transcript now and
+    // cache it so the next question is instant.
+    if (!transcriptText && context.episode.url) {
+      try {
+        const refreshed = await getVideoContext(context.episode.url);
+        if (refreshed.transcript?.transcriptText) {
+          transcriptText = refreshed.transcript.transcriptText;
+          transcriptSource = refreshed.transcript.source;
+          await supabase
+            .from("episode_transcripts")
+            .upsert(
+              {
+                episode_id: videoId,
+                transcript_text: transcriptText,
+                language: refreshed.transcript.language,
+                source: transcriptSource,
+                fetched_at: new Date().toISOString(),
+              },
+              { onConflict: "episode_id" },
+            );
+        }
+      } catch (e) {
+        console.warn("Transcript backfill failed:", e);
+      }
+    }
+
     const insightsContext = buildInsightsContext(context.lessons, context.callouts, context.insights);
     const hasAnyInsights =
       (context.lessons?.length || 0) + (context.callouts?.length || 0) + (context.insights?.length || 0) > 0;
@@ -322,6 +352,7 @@ ${conversation}`;
         409,
       );
     }
+
 
     const trimmedMessage = message.trim().slice(0, 2000);
     const priorMessages = (await fetchMessages(supabase, sessionId)).slice(-8);
@@ -420,7 +451,7 @@ ${trimmedMessage}`;
         content: assistantContent,
         metadata: {
           grounding_mode: groundingMode,
-          transcript_source: context.transcript?.source || null,
+          transcript_source: transcriptSource,
           transcript_chars_used: transcriptContext.length,
         },
       })

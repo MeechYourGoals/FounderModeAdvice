@@ -1,80 +1,17 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { getVideoContext } from "../_shared/transcript.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const decodeHtml = (value: string) =>
-  value
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
+// YouTube caption extraction and other-platform transcript fetching now live in
+// supabase/functions/_shared/transcript.ts via getVideoContext().
 
-const extractYouTubeTranscript = async (videoId: string) => {
-  if (!videoId) return null;
 
-  try {
-    const watchResponse = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
-      headers: { 'Accept-Language': 'en-US,en;q=0.9' },
-    });
-
-    if (!watchResponse.ok) return null;
-
-    const watchHtml = await watchResponse.text();
-    const playerMatch = watchHtml.match(/ytInitialPlayerResponse\s*=\s*(\{.+?\});/s);
-    if (!playerMatch?.[1]) return null;
-
-    const playerResponse = JSON.parse(playerMatch[1]);
-    const tracks = playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
-    if (!Array.isArray(tracks) || tracks.length === 0) return null;
-
-    const preferredTrack =
-      tracks.find((track: any) => track.languageCode?.toLowerCase().startsWith('en')) || tracks[0];
-
-    const transcriptUrl = preferredTrack.baseUrl;
-    if (!transcriptUrl) return null;
-
-    const transcriptResponse = await fetch(`${transcriptUrl}&fmt=json3`);
-    if (!transcriptResponse.ok) return null;
-
-    const rawTranscript = await transcriptResponse.text();
-    let transcriptText = '';
-
-    try {
-      const json = JSON.parse(rawTranscript);
-      transcriptText = (json.events || [])
-        .flatMap((event: any) => event.segs || [])
-        .map((segment: any) => segment.utf8 || '')
-        .join(' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-    } catch {
-      transcriptText = rawTranscript
-        .replace(/<text[^>]*>/g, ' ')
-        .replace(/<\/text>/g, ' ')
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-      transcriptText = decodeHtml(transcriptText);
-    }
-
-    if (!transcriptText || transcriptText.length < 200) return null;
-
-    return {
-      transcriptText,
-      language: preferredTrack.languageCode || null,
-      source: preferredTrack.kind === 'asr' ? 'youtube_auto_captions' : 'youtube_captions',
-    };
-  } catch (error) {
-    console.warn('Could not extract YouTube transcript:', error);
-    return null;
-  }
-};
 
 // Tier limits configuration (keep in sync with src/types/subscription.ts)
 // free = 3/mo, seed = "The C-Suite" 20/mo, series_z = "The Boardroom" unlimited.
@@ -139,22 +76,16 @@ serve(async (req) => {
     try {
       parsedUrl = new URL(episodeUrl);
     } catch {
-      throw new Error('Invalid URL format. Please provide a valid YouTube or Spotify link.');
+      throw new Error('Invalid URL format. Please provide a valid video link.');
     }
     if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
-      throw new Error('Invalid URL protocol');
+      throw new Error('Invalid URL protocol — must be http or https.');
     }
+    // Multi-platform: any public http(s) video URL is accepted. The shared adapter
+    // detects the platform (YouTube, TikTok, Instagram, X, Vimeo, LinkedIn, podcast, generic)
+    // and pulls a transcript via free YouTube captions or Supadata for everything else.
 
-    const allowedHosts = [
-      'youtube.com', 'www.youtube.com', 'm.youtube.com', 'music.youtube.com',
-      'youtu.be',
-      'open.spotify.com', 'spotify.com',
-      'podcasts.apple.com',
-    ];
-    const isAllowed = allowedHosts.some(host => parsedUrl.hostname === host || parsedUrl.hostname.endsWith('.' + host));
-    if (!isAllowed) {
-      throw new Error('Unsupported URL. Please provide a YouTube, Spotify, or Apple Podcasts link.');
-    }
+
 
     // Check subscription limits if we have a user (skip for Founder/Super Admin)
     if (authenticatedUserId) {
@@ -198,31 +129,24 @@ serve(async (req) => {
       }
     }
 
-    // Extract video ID for YouTube URLs
-    let videoId = '';
-    let videoTitle = '';
-    const isYouTube = parsedUrl.hostname.includes('youtube.com') || parsedUrl.hostname === 'youtu.be';
-    if (isYouTube) {
-      if (parsedUrl.hostname === 'youtu.be') {
-        videoId = parsedUrl.pathname.slice(1).split('/')[0];
-      } else if (parsedUrl.pathname.startsWith('/shorts/')) {
-        videoId = parsedUrl.pathname.split('/shorts/')[1]?.split('/')[0] || '';
-      } else {
-        videoId = parsedUrl.searchParams.get('v') || '';
-      }
-
-      try {
-        const ytResponse = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(episodeUrl)}&format=json`);
-        if (ytResponse.ok) {
-          const ytData = await ytResponse.json();
-          videoTitle = ytData.title || '';
+    // Unified multi-platform context: metadata + transcript (when obtainable).
+    const videoContext = await getVideoContext(episodeUrl);
+    const videoTitle = videoContext.metadata.title || '';
+    const videoAuthor = videoContext.metadata.author || '';
+    const transcript = videoContext.transcript
+      ? {
+          transcriptText: videoContext.transcript.transcriptText,
+          language: videoContext.transcript.language,
+          source: videoContext.transcript.source,
         }
-      } catch (e) {
-        console.log('Could not fetch YouTube metadata:', e);
-      }
-    }
+      : null;
+    console.log('Video context:', {
+      platform: videoContext.platform,
+      hasTitle: Boolean(videoTitle),
+      hasTranscript: Boolean(transcript),
+      transcriptChars: transcript?.transcriptText.length || 0,
+    });
 
-    const transcript = isYouTube ? await extractYouTubeTranscript(videoId) : null;
 
     // Optional context about the viewer's own business, used to bias examples/jargon.
     const viewerBusiness = startupProfile && (startupProfile.company_name || startupProfile.industry || startupProfile.stage)
@@ -248,10 +172,14 @@ CRITICAL REQUIREMENTS:
 
     const userPrompt = `Analyze this episode/video:
 URL: ${episodeUrl}
+Platform: ${videoContext.platform}
 ${videoTitle ? `Title: ${videoTitle}` : ''}
+${videoAuthor ? `Creator/Channel: ${videoAuthor}` : ''}
+${videoContext.metadata.description ? `Description: ${videoContext.metadata.description.slice(0, 1200)}` : ''}
 ${podcastName ? `Source: ${podcastName}` : 'Source: Please extract from the episode'}
 ${transcript?.transcriptText ? `Transcript excerpt for grounding:
-${transcript.transcriptText.slice(0, 30000)}` : 'Transcript excerpt: Not available; analyze only if the model can access the public episode content.'}${viewerBusiness}
+${transcript.transcriptText.slice(0, 30000)}` : 'Transcript excerpt: Not available. Use the title, creator, description, and any public knowledge of this URL to extract the most useful business lessons you can. If there truly is nothing to work with, return an error rather than mock data.'}${viewerBusiness}
+
 
 INSTRUCTIONS:
 1. Watch/listen to the episode and extract real insights from the actual content
