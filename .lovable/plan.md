@@ -1,43 +1,69 @@
-# Remove the transcript hard-block on "Ask this video"
+# Extend video analysis beyond YouTube
 
-## Problem
-`supabase/functions/video-chat/index.ts` returns 409 "no transcript available" whenever `episode_transcripts` is empty. But most YouTube videos don't expose captions, so users see a dead end — even though `analyze-episode` already produced lessons, callouts, and personalized insights for the same video, and Gemini can ingest the YouTube URL directly as a video.
+## Goal
+Accept any public video URL — YouTube, TikTok, Instagram Reels, X/Twitter video, Vimeo, podcast MP3, LinkedIn, generic — and produce the same transcript-grounded insights + Ask-this-video chat we ship today.
 
-## Approach
-Tiered grounding inside `video-chat`. Whichever sources exist, use them; only refuse if literally nothing is available.
+## Provider choice
+Use **Supadata** as the transcription provider. It's the cleanest fit for this app: one HTTP call (`GET /v1/transcript?url=...&text=true`) returns plain-text transcripts for YouTube, TikTok, Instagram, X, and Vimeo with no per-platform plumbing. Async jobs (`/transcript/{id}`) cover anything that requires audio download + ASR. Pricing is per-minute, cheaper than AssemblyAI/Deepgram for short-form social video, and there's a free tier for dev.
 
-Source priority per question:
-1. **Stored transcript** (today's path) — best fidelity, free.
-2. **YouTube native video input to Gemini** — for any YouTube URL, send the URL as a `file_data`/`fileUri` part to `google/gemini-2.5-flash` (the Gateway forwards to Google, which natively ingests YouTube videos). This replaces the missing transcript with the model watching the video itself.
-3. **Extracted insights fallback** — lessons + callouts + personalized insights + episode metadata, which `analyze-episode` already produced and saved. This guarantees a useful answer even if (2) fails or the video isn't YouTube.
+User provides `SUPADATA_API_KEY` as a Supabase secret.
 
-## Changes
+## Server: new shared transcript adapter
 
-### `supabase/functions/video-chat/index.ts`
-- Detect YouTube URL from `episode.url` (reuse the id-extraction pattern used in `analyze-episode`).
-- Replace the `if (!transcriptText) return 409` block with a strategy picker:
-  - If transcript present → current path (unchanged).
-  - Else if YouTube → build a multimodal `messages` body with a `file_data` part pointing at the YouTube watch URL, plus the insights context and the user question. Adjust system prompt: "You can watch the linked YouTube video directly. Ground answers in what the video actually says; if a claim isn't supported by the video or the extracted insights, say so."
-  - Else → insights-only path with a system prompt that says answers are grounded in the app's extracted insights for this video (not the full transcript), and to flag uncertainty.
-- On (2) failure (provider rejects video, 4xx/5xx), automatically retry with the insights-only path instead of bubbling the error.
-- Opportunistically persist any transcript-equivalent text we manage to derive (skip for now — keep change small).
-- Return a new `groundingMode: "transcript" | "video" | "insights"` field alongside `sessionId`/`message` so the UI can label the source.
+New file `supabase/functions/_shared/transcript.ts`:
+- `detectPlatform(url)` → `"youtube" | "tiktok" | "instagram" | "x" | "vimeo" | "linkedin" | "podcast" | "generic"`.
+- `fetchOEmbedOrOg(url)` → `{ title, author, thumbnail, description }` using YouTube/Vimeo/TikTok oEmbed where available, OpenGraph scrape otherwise.
+- `fetchTranscriptViaSupadata(url, { lang? })` → `{ text, language, source }` or `null`. Hits `https://api.supadata.ai/v1/transcript?url=...&text=true`. Polls the async job endpoint when the sync call returns `jobId`. 30s overall timeout, retry once on 5xx.
+- `getVideoContext(url)` → orchestrates: detect → call Supadata → on success return transcript + metadata; on failure return metadata-only with `transcript: null`. Keep existing free YouTube-captions path as a fast first try for `youtube` to save Supadata credits.
 
-### `src/components/VideoChatSheet.tsx`
-- Remove the `hasTranscript === false` disabled states on the textarea, suggested-question buttons, and submit button.
-- Replace the red "No transcript available… re-analyze with captions" warning with a neutral info line: "No captions found for this video — answers are grounded in the video itself (when available) and the insights already extracted." Keep the shield card.
-- When a response comes back, show a small chip under the assistant bubble reflecting `groundingMode` ("From transcript" / "From video" / "From extracted insights").
-- Update the history fetch to read `groundingMode` if present; otherwise default to "transcript".
+## `supabase/functions/analyze-episode/index.ts`
+- Remove `isYouTube` branching. Always run through the new `getVideoContext(url)`.
+- Drop `videoId`/`videoTitle` YouTube-only logic; use the metadata returned by the adapter (title/author/thumbnail) to populate `episodes` row, including a new `platform` column.
+- Pass the unified `transcript` (when present) to the existing Gemini prompt; when absent, keep today's "Transcript excerpt: Not available" branch so analysis still produces lessons from the title/description/profile (already supported).
+- Persist into `episode_transcripts` for every platform, not just YouTube.
+- Save `platform` on the episode row for UI badges.
 
-### No DB / schema changes
-Nothing new to migrate. `episode_transcripts` stays optional.
+## `supabase/functions/video-chat/index.ts`
+- Already platform-agnostic after the last change. Add the same `getVideoContext` fallback inside the `hasTranscript` check: if the episode has no stored transcript yet, attempt one Supadata fetch on first chat to backfill `episode_transcripts`, then proceed. One-time cost per video.
 
-## Out of scope
-- Server-side Whisper/yt-dlp transcription fallback. Worth doing later if Gemini's direct YouTube ingest proves unreliable, but it adds infra and cost; not needed to unblock the user-reported error.
-- Non-YouTube providers (Vimeo, podcast audio). Those still fall to the insights-only path.
+## Database
+New migration:
+```sql
+ALTER TABLE public.episodes
+  ADD COLUMN IF NOT EXISTS platform text;
+```
+No new tables, no RLS changes (column on existing table inherits policies). Backfill is unnecessary; existing rows stay `null` and default to "youtube" in the UI.
+
+## Frontend
+
+### `src/components/AnalysisForm.tsx`
+- `normalizeUrl`: stop forcing YouTube canonicalization for non-YouTube hosts. Lowercase host only; keep path/query for TikTok/Instagram/X share links (their IDs are case-sensitive).
+- Update placeholder to "Paste any public video link — YouTube, TikTok, Instagram, X, Vimeo, podcast MP3..."
+- Add lightweight client-side URL sanity check (must parse, must be http/https). Real platform detection happens server-side.
+- Update duplicate-check `eq('url', url)` lookup so it still matches after the normalization change (uses the same `normalizeUrl` output already).
+
+### `src/components/EpisodesTable.tsx` + `EpisodeDetail.tsx`
+- Show a small platform chip using the new `episodes.platform` value (YouTube / TikTok / Instagram / X / Vimeo / Web). Default chip "Web" when null.
+
+### Copy updates
+- Hero subhead, onboarding, and the `VideoChatSheet` empty-state copy: drop "YouTube" exclusivity language ("Paste any public video link..." everywhere).
+
+## Secrets
+Add `SUPADATA_API_KEY` via the secrets tool. Surface a clear server error if missing: "Transcript provider not configured — paste a YouTube link with captions or contact the admin."
+
+## Out of scope (state explicitly)
+- Private/auth-walled posts (private TikToks, locked Instagram, protected tweets). Supadata can't reach those either.
+- Long-form podcast files >2h: still work but cost more Supadata credits; no special chunking yet.
+- Speaker diarization (who said what) — Supadata returns plain text in `text=true` mode, which is what the current Gemini prompt expects.
+- Replacing existing YouTube caption extractor; we keep it as the free fast-path for YouTube.
 
 ## Verification
-1. Open a YouTube episode whose `episode_transcripts` row is empty → Ask a question → expect an answer with a "From video" chip, no red error.
-2. Open an episode with a stored transcript → unchanged behavior, "From transcript" chip.
-3. Force the YouTube ingest to fail (e.g., malformed url) → expect graceful fallback to "From extracted insights" answer.
-4. Re-check the screenshotted episode — the red warning is gone and the composer is enabled.
+1. Paste a TikTok URL → expect a successful analysis with title, author, lessons, and a "TikTok" chip.
+2. Paste an Instagram Reel URL → same.
+3. Paste an X video tweet URL → same.
+4. Paste a Vimeo URL with captions → transcript-grounded lessons.
+5. Paste a generic blog video / MP3 → metadata-only analysis succeeds (no red error).
+6. Paste a YouTube URL with captions → unchanged behavior; Supadata not called (cost check via logs).
+7. Open "Ask this video" on a freshly analyzed TikTok → answer cites transcript; subsequent questions reuse cached transcript row.
+8. Paste a malformed URL → client-side rejection before any server call.
+9. Temporarily unset `SUPADATA_API_KEY` and analyze a TikTok → clear error toast, no crash.
