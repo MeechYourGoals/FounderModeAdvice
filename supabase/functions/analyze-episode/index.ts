@@ -76,22 +76,16 @@ serve(async (req) => {
     try {
       parsedUrl = new URL(episodeUrl);
     } catch {
-      throw new Error('Invalid URL format. Please provide a valid YouTube or Spotify link.');
+      throw new Error('Invalid URL format. Please provide a valid video link.');
     }
     if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
-      throw new Error('Invalid URL protocol');
+      throw new Error('Invalid URL protocol — must be http or https.');
     }
+    // Multi-platform: any public http(s) video URL is accepted. The shared adapter
+    // detects the platform (YouTube, TikTok, Instagram, X, Vimeo, LinkedIn, podcast, generic)
+    // and pulls a transcript via free YouTube captions or Supadata for everything else.
 
-    const allowedHosts = [
-      'youtube.com', 'www.youtube.com', 'm.youtube.com', 'music.youtube.com',
-      'youtu.be',
-      'open.spotify.com', 'spotify.com',
-      'podcasts.apple.com',
-    ];
-    const isAllowed = allowedHosts.some(host => parsedUrl.hostname === host || parsedUrl.hostname.endsWith('.' + host));
-    if (!isAllowed) {
-      throw new Error('Unsupported URL. Please provide a YouTube, Spotify, or Apple Podcasts link.');
-    }
+
 
     // Check subscription limits if we have a user (skip for Founder/Super Admin)
     if (authenticatedUserId) {
