@@ -309,7 +309,36 @@ ${conversation}`;
       return jsonResponse({ error: "A question is required." }, 400);
     }
 
-    const transcriptText = context.transcript?.transcript_text?.trim();
+    let transcriptText = context.transcript?.transcript_text?.trim() || "";
+    let transcriptSource = context.transcript?.source || null;
+
+    // Backfill: if this video was analyzed before we supported non-YouTube transcripts
+    // (or YouTube captions were briefly unavailable), try to fetch a transcript now and
+    // cache it so the next question is instant.
+    if (!transcriptText && context.episode.url) {
+      try {
+        const refreshed = await getVideoContext(context.episode.url);
+        if (refreshed.transcript?.transcriptText) {
+          transcriptText = refreshed.transcript.transcriptText;
+          transcriptSource = refreshed.transcript.source;
+          await supabase
+            .from("episode_transcripts")
+            .upsert(
+              {
+                episode_id: videoId,
+                transcript_text: transcriptText,
+                language: refreshed.transcript.language,
+                source: transcriptSource,
+                fetched_at: new Date().toISOString(),
+              },
+              { onConflict: "episode_id" },
+            );
+        }
+      } catch (e) {
+        console.warn("Transcript backfill failed:", e);
+      }
+    }
+
     const insightsContext = buildInsightsContext(context.lessons, context.callouts, context.insights);
     const hasAnyInsights =
       (context.lessons?.length || 0) + (context.callouts?.length || 0) + (context.insights?.length || 0) > 0;
@@ -323,6 +352,7 @@ ${conversation}`;
         409,
       );
     }
+
 
     const trimmedMessage = message.trim().slice(0, 2000);
     const priorMessages = (await fetchMessages(supabase, sessionId)).slice(-8);
