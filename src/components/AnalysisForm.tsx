@@ -373,7 +373,7 @@ export const AnalysisForm = () => {
               <Input
                 id="episodeUrlSeries"
                 type="url"
-                placeholder="https://youtube.com/watch?v=..."
+                placeholder="YouTube, TikTok, Instagram, X, Vimeo, or any public video link"
                 value={episodeUrl}
                 onChange={(e) => setEpisodeUrl(e.target.value)}
                 disabled={isAnalyzing}
