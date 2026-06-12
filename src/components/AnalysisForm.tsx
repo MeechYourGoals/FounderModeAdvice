@@ -390,7 +390,7 @@ export const AnalysisForm = () => {
               <Input
                 id="episodeUrlDirect"
                 type="url"
-                placeholder="https://youtube.com/watch?v=... or any video link"
+                placeholder="Paste a YouTube, TikTok, Instagram, X, Vimeo, or any public video link"
                 value={episodeUrl}
                 onChange={(e) => setEpisodeUrl(e.target.value)}
                 disabled={isAnalyzing}
