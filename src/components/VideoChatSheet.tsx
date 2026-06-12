@@ -191,9 +191,6 @@ export const VideoChatSheet = ({ videoId, videoTitle }: VideoChatSheetProps) => 
     } catch (sendError: any) {
       console.error("Video chat send error:", sendError);
       const message = sendError.message || "Ask this video failed. Please retry.";
-      if (message.toLowerCase().includes("transcript")) {
-        setHasTranscript(false);
-      }
       setError(message);
     } finally {
       setSending(false);
