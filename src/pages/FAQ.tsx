@@ -17,7 +17,7 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
   },
   {
     q: "What kinds of videos can I analyze?",
-    a: "Public YouTube links work. Spotify and Apple Podcasts are not supported because those platforms do not expose public transcripts. You're responsible for ensuring you have the right to submit a given link.",
+    a: "Any public video URL — YouTube, TikTok, Instagram Reels, X / Twitter video, Vimeo, LinkedIn, and most podcast MP3s. Private or login-gated posts aren't supported. You're responsible for ensuring you have the right to submit a given link.",
   },
   {
     q: "How do business profiles work?",

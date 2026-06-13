@@ -172,7 +172,7 @@ export const PublicLanding = () => {
                 </p>
               </div>
               <div className="space-y-3 flex flex-col">
-                <MiniFeature icon={<ShieldCheck className="w-4 h-4" />} title="Any public YouTube video in" description="Paste a business, founder, operator, investor, strategy, or leadership video from YouTube. Spotify and Apple Podcasts links are not supported because those platforms do not provide public transcripts." />
+                <MiniFeature icon={<ShieldCheck className="w-4 h-4" />} title="Any public video in" description="Paste a business, founder, operator, investor, strategy, or leadership video from YouTube, TikTok, Instagram, X, Vimeo, LinkedIn, or any public podcast or web video URL." />
                 <MiniFeature icon={<Target className="w-4 h-4" />} title="Tailored advice out" description="Insight mapped to your industry, stage, customers, and constraints — not generic venture-scale playbooks." />
                 <MiniFeature icon={<MessageSquare className="w-4 h-4" />} title="Transcript-grounded Q&A" description="Ask follow-up questions directly against the video transcript and your business context after analysis." />
               </div>
@@ -412,7 +412,7 @@ const ComparisonItem = ({ positive, children }: { positive: boolean; children: R
 const FAQS = [
   {
     q: "What kinds of videos work?",
-    a: "Any public YouTube video — founder interviews, podcasts, talks, operator deep-dives. Spotify and Apple Podcasts aren't supported because they don't expose public transcripts.",
+    a: "Any public video link — YouTube, TikTok, Instagram Reels, X / Twitter video, Vimeo, LinkedIn, or a podcast MP3. Founder interviews, talks, operator deep-dives, short-form clips. Private or login-gated posts aren't supported.",
   },
   {
     q: "How is this different from MasterClass or Augment?",
