@@ -76,15 +76,17 @@ const Auth = () => {
     setAppleLoading(true);
     try {
       if (isLovablePreview()) {
-        const { error } = await lovable.auth.signInWithOAuth("apple", {
+        const result = await lovable.auth.signInWithOAuth("apple", {
           redirect_uri: window.location.origin,
         });
-        if (error) {
+        if (result.error) {
           toast({
             title: "Apple sign-in failed",
-            description: error.message,
+            description: result.error.message,
             variant: "destructive",
           });
+        } else if (!result.redirected) {
+          navigate("/", { replace: true });
         }
       } else {
         const { data, error } = await supabase.auth.signInWithOAuth({
