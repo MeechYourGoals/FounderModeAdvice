@@ -35,7 +35,7 @@ const STEPS: OnboardingStep[] = [
   {
     icon: Video,
     title: "Analyze a video",
-    body: "Paste a public YouTube link and we extract the takeaways, risks, opportunities, and action items — adapted to your business.",
+    body: "Paste any public video link — YouTube, TikTok, Instagram, X, Vimeo, or a podcast — and we extract the takeaways, risks, opportunities, and action items, adapted to your business.",
   },
   {
     icon: Building2,
