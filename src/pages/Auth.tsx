@@ -33,15 +33,18 @@ const Auth = () => {
       if (isLovablePreview()) {
         // Lovable sandbox/preview hosts can't be added to the OAuth allow-list,
         // so go through the Lovable managed auth bridge.
-        const { error } = await lovable.auth.signInWithOAuth("google", {
+        const result = await lovable.auth.signInWithOAuth("google", {
           redirect_uri: window.location.origin,
         });
-        if (error) {
+        if (result.error) {
           toast({
             title: "Google sign-in failed",
-            description: error.message,
+            description: result.error.message,
             variant: "destructive",
           });
+        } else if (!result.redirected) {
+          // Session was set by the lovable bridge — navigate into the app.
+          navigate("/", { replace: true });
         }
       } else {
         // Published domain, custom domain, native, and localhost use Supabase directly.
