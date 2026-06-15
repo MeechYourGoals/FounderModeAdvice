@@ -325,6 +325,16 @@ All colors MUST be HSL.
   .despia-scroll::-webkit-scrollbar {
     display: none;
   }
+
+  /* Long-list rendering containment. Off-screen rows skip layout + paint, so the
+     ungated grouped library views (By Tag / By Folder) stay fast on mobile
+     without changing the DOM, markup, or scroll behavior. Cheap, drift-free
+     "virtualization" — iOS WKWebView 16.4+ / Android WebView; older engines
+     simply render normally. `auto` lets the engine remember measured heights. */
+  .cv-row {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 72px;
+  }
 }
 
 /* PWA standalone & Despia native mode adjustments */

@@ -4,6 +4,8 @@ import "./index.css";
 import { initializeNativePlugins, handleBackButton, initKeyboardViewportWatcher } from "./lib/capacitor";
 import { isDespia } from "./services/despiaService";
 import { isNativeWrapper, isStandalonePWA } from "./lib/appMode";
+import { initPushNotifications } from "./services/pushService";
+import { initAnalytics, captureEvent } from "./services/analytics";
 import { Capacitor } from "@capacitor/core";
 
 // Initialize native plugins (Capacitor)
@@ -22,22 +24,22 @@ if (isNativeWrapper() || isStandalonePWA()) {
     );
 }
 
-// OneSignal push notifications — only initialize inside an installed-app
-// runtime. Skipping in Lovable preview / dev / plain browser avoids polluting
-// those origins with a service worker and a SDK init they can't use.
+// Push notifications — registers the OneSignal web SDK inside Capacitor builds.
+// Despia bridges native OneSignal natively; both paths get mapped to the
+// signed-in user via syncPushUser() in AppChrome so server-side sends can reach
+// this device. No-op in Lovable preview / dev / plain browser.
+initPushNotifications();
+
+// Product analytics (PostHog) — native bridge in Despia, web SDK in Capacitor /
+// installed PWA, gated to installed-app runtimes. No-op until configured.
+initAnalytics();
+
 const inInstalledApp = isDespia() || Capacitor.isNativePlatform();
 if (inInstalledApp) {
-  const oneSignalAppId = import.meta.env.VITE_ONESIGNAL_APP_ID as string | undefined;
-  if (oneSignalAppId) {
-    import("react-onesignal")
-      .then(({ default: OneSignal }) => OneSignal.init({ appId: oneSignalAppId }))
-      .then(() => console.log("OneSignal: initialized"))
-      .catch((err) => console.warn("OneSignal init failed", err));
-  } else {
-    console.log("OneSignal: VITE_ONESIGNAL_APP_ID not set — skipping push init");
-  }
-} else {
-  console.log("Push init skipped: not running in installed app");
+  captureEvent("native_app_opened", {
+    runtime: isDespia() ? "despia" : "capacitor",
+    platform: Capacitor.getPlatform(),
+  });
 }
 
 if (isDespia()) {

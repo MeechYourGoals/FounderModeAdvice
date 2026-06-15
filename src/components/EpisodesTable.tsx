@@ -620,7 +620,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
 
     return (
       <div
-        className="group p-4 min-h-[72px] border-b border-border/60 last:border-b-0 transition-all hover:bg-primary/[0.03] active:bg-primary/5 active:scale-[0.995] cursor-pointer touch-manipulation"
+        className="cv-row group p-4 min-h-[72px] border-b border-border/60 last:border-b-0 transition-all hover:bg-primary/[0.03] active:bg-primary/5 active:scale-[0.995] cursor-pointer touch-manipulation"
         onClick={() => onSelectEpisode(episode.id)}
         role="button"
         tabIndex={0}
