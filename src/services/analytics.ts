@@ -89,8 +89,14 @@ export function captureScreen(screen: string, properties?: Props): void {
   if (mode === "despia") {
     bridge(`posthog://screen?screen=${encodeURIComponent(screen)}`);
   } else if (mode === "web") {
+    // origin + pathname only — never window.location.href, which would leak
+    // query/hash secrets (e.g. the Supabase PKCE `?code=` on /auth/callback) to PostHog.
+    const url =
+      typeof window !== "undefined"
+        ? window.location.origin + window.location.pathname
+        : undefined;
     web()?.capture("$pageview", {
-      $current_url: typeof window !== "undefined" ? window.location.href : undefined,
+      $current_url: url,
       screen,
       ...properties,
     });
