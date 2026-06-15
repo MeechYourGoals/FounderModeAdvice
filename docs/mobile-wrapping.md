@@ -19,7 +19,8 @@ detection in `src/lib/appMode.ts`, not a specific vendor):
 | Status bar style + color follows dark/light theme | `src/lib/capacitor.ts` |
 | Auth-first launch for installed apps; marketing homepage stays web-only | `src/lib/appMode.ts` (`shouldShowAppAuthFirst`) |
 | Android hardware back button → history back / exit | `src/lib/capacitor.ts` |
-| Push (OneSignal) initialized only inside installed apps | `src/main.tsx` |
+| Push (OneSignal) initialized inside installed apps; signed-in user mapped to the OneSignal external id so server sends can target the device | `src/services/pushService.ts`, `src/components/AppChrome.tsx` |
+| Product analytics (PostHog) — native `posthog://` bridge in Despia, web SDK in Capacitor/PWA, gated to installed apps; screen + identify/reset wired | `src/services/analytics.ts`, `src/components/AppChrome.tsx` |
 | 16px inputs on mobile (no iOS auto-zoom on focus) | `src/components/ui/input.tsx` |
 
 ## Option A — Despia (fastest, recommended for first launch)
@@ -31,10 +32,13 @@ Despia wraps the deployed web URL; no native projects live in this repo.
 3. Despia-specific hooks already in the code:
    - safe-area CSS variables (injected by the Despia runtime)
    - `haptics://`, `deeplink://`, `push://register` bridges in `src/services/despiaService.ts`
+   - `push://register` is called per-user from `src/services/pushService.ts` (mapped on login in `AppChrome`)
+   - `posthog://` analytics bridge in `src/services/analytics.ts`
    - RevenueCat paywall bridge (`revenuecat://launchPaywall`) for IAP
    - runtime detection via the `Despia` user-agent token
 4. Configure in the Despia dashboard: app icons, splash, OneSignal app ID,
-   RevenueCat keys, and the `com.foundermodeadvice.app` bundle id.
+   PostHog (enable the integration + native rebuild), RevenueCat keys, and the
+   `com.foundermodeadvice.app` bundle id.
 
 ## Option B — Capacitor (native projects, full control)
 
