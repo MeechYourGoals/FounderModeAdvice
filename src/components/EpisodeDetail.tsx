@@ -524,113 +524,115 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
         </Card>
       )}
 
-      {lessons.length > 0 && (
-        <Card className="p-4 sm:p-8">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-4 sm:mb-6 flex items-center gap-2.5">
-            <span className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
-            </span>
-            Top Lessons <span className="text-muted-foreground font-normal">({lessons.length})</span>
-          </h2>
-          <div className="space-y-4 sm:space-y-5">
-            {lessons.map((lesson, index) => (
-              <div
-                key={lesson.id}
-                className="group relative rounded-2xl border border-border/70 bg-background/40 p-4 sm:p-5 pl-5 sm:pl-6 transition-colors hover:border-primary/30"
-              >
-                <div aria-hidden className="absolute left-0 top-4 bottom-4 w-[3px] rounded-full bg-primary/60 transition-colors group-hover:bg-primary" />
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-2.5 gap-2">
-                  <div className="flex items-center gap-2.5">
-                    <span aria-hidden className="font-display text-2xl sm:text-3xl font-medium italic leading-none text-primary/30">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    {lesson.category && <Badge variant="outline">{lesson.category}</Badge>}
-                  </div>
-                  <div className="flex gap-2 text-xs sm:text-sm">
-                    <ScorePill label="Impact" score={lesson.impact_score} />
-                    <ScorePill label="Action" score={lesson.actionability_score} />
-                  </div>
-                </div>
-                <p className="text-sm sm:text-base text-foreground leading-relaxed mb-2">{lesson.lesson_text}</p>
-                {lesson.founder_attribution && (
-                  <p className="font-display text-xs sm:text-sm text-muted-foreground italic">
-                    — {lesson.founder_attribution}
-                  </p>
-                )}
-                <LessonTags
-                   lessonId={lesson.id}
-                   initialTags={lesson.lesson_tags?.map(lt => lt.tags).filter(Boolean) as {id: string, name: string}[] || []}
-                   onUpdate={fetchEpisodeDetails}
-                />
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
-
-      {personalizedInsights.length > 0 && (
-        <Card className="glass relative overflow-hidden p-4 sm:p-8 border-primary/15">
-          <div aria-hidden className="absolute inset-x-0 top-0 h-[3px]" style={{ background: 'var(--gradient-primary)' }} />
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-4 sm:mb-6 flex items-center gap-2.5">
-            <span className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <Target className="w-4 h-4 sm:w-5 sm:h-5" />
-            </span>
-            Personalized for Your Startup <span className="text-muted-foreground font-normal">({personalizedInsights.length})</span>
-          </h2>
-          <div className="space-y-4 sm:space-y-6">
-            {lessons.map((lesson) => {
-              const insight = personalizedInsights.find(i => i.lesson_id === lesson.id);
-              if (!insight) return null;
-
-              return (
-                <div key={lesson.id} className="space-y-3 sm:space-y-4">
-                  <div className="p-3 sm:p-5 bg-card rounded-2xl border border-primary/15 shadow-sm">
-                    <div className="flex-1 mb-3">
-                      <h3 className="font-semibold text-sm sm:text-lg mb-2 leading-snug">{lesson.lesson_text}</h3>
-                      <div className="flex gap-2 mb-3 flex-wrap">
-                        <ScorePill label="Impact" score={lesson.impact_score} />
-                        <ScorePill label="Action" score={lesson.actionability_score} />
-                      </div>
+      <div className="grid gap-4 sm:gap-6 xl:grid-cols-2 xl:items-start">
+        {lessons.length > 0 && (
+          <Card className="min-w-0 p-4 sm:p-8">
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-4 sm:mb-6 flex items-center gap-2.5">
+              <span className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
+              </span>
+              Top Lessons <span className="text-muted-foreground font-normal">({lessons.length})</span>
+            </h2>
+            <div className="space-y-4 sm:space-y-5">
+              {lessons.map((lesson, index) => (
+                <div
+                  key={lesson.id}
+                  className="group relative rounded-2xl border border-border/70 bg-background/40 p-4 sm:p-5 pl-5 sm:pl-6 transition-colors hover:border-primary/30"
+                >
+                  <div aria-hidden className="absolute left-0 top-4 bottom-4 w-[3px] rounded-full bg-primary/60 transition-colors group-hover:bg-primary" />
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-2.5 gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <span aria-hidden className="font-display text-2xl sm:text-3xl font-medium italic leading-none text-primary/30">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      {lesson.category && <Badge variant="outline">{lesson.category}</Badge>}
                     </div>
+                    <div className="flex gap-2 text-xs sm:text-sm">
+                      <ScorePill label="Impact" score={lesson.impact_score} />
+                      <ScorePill label="Action" score={lesson.actionability_score} />
+                    </div>
+                  </div>
+                  <p className="text-sm sm:text-base text-foreground leading-relaxed mb-2">{lesson.lesson_text}</p>
+                  {lesson.founder_attribution && (
+                    <p className="font-display text-xs sm:text-sm text-muted-foreground italic">
+                      — {lesson.founder_attribution}
+                    </p>
+                  )}
+                  <LessonTags
+                     lessonId={lesson.id}
+                     initialTags={lesson.lesson_tags?.map(lt => lt.tags).filter(Boolean) as {id: string, name: string}[] || []}
+                     onUpdate={fetchEpisodeDetails}
+                  />
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
 
-                    <div className="bg-primary/8 border border-primary/15 p-3 sm:p-4 rounded-xl">
-                      <div className="flex items-start gap-2.5 mb-3">
-                        <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                          <Lightbulb className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[11px] font-semibold uppercase tracking-wide text-primary mb-1">For Your Startup</p>
-                          <p className="text-sm sm:text-base text-foreground leading-relaxed">{insight.personalized_text}</p>
+        {personalizedInsights.length > 0 && (
+          <Card className="glass relative min-w-0 overflow-hidden p-4 sm:p-8 border-primary/15">
+            <div aria-hidden className="absolute inset-x-0 top-0 h-[3px]" style={{ background: 'var(--gradient-primary)' }} />
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-4 sm:mb-6 flex items-center gap-2.5">
+              <span className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Target className="w-4 h-4 sm:w-5 sm:h-5" />
+              </span>
+              Personalized for Your Startup <span className="text-muted-foreground font-normal">({personalizedInsights.length})</span>
+            </h2>
+            <div className="space-y-4 sm:space-y-6">
+              {lessons.map((lesson) => {
+                const insight = personalizedInsights.find(i => i.lesson_id === lesson.id);
+                if (!insight) return null;
+
+                return (
+                  <div key={lesson.id} className="space-y-3 sm:space-y-4">
+                    <div className="p-3 sm:p-5 bg-card rounded-2xl border border-primary/15 shadow-sm">
+                      <div className="flex-1 mb-3">
+                        <h3 className="font-semibold text-sm sm:text-lg mb-2 leading-snug">{lesson.lesson_text}</h3>
+                        <div className="flex gap-2 mb-3 flex-wrap">
+                          <ScorePill label="Impact" score={lesson.impact_score} />
+                          <ScorePill label="Action" score={lesson.actionability_score} />
                         </div>
                       </div>
 
-                      {insight.action_items && insight.action_items.length > 0 && (
-                        <div className="mt-3 sm:mt-4">
-                          <p className="text-[11px] font-semibold uppercase tracking-wide text-foreground/80 mb-2">Action Items</p>
-                          <ol className="space-y-1.5 text-xs sm:text-sm">
-                            {insight.action_items.map((item, idx) => (
-                              <li key={idx} className="flex items-start gap-2 text-muted-foreground">
-                                <span className="mt-px flex h-[1.125rem] w-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">
-                                  {idx + 1}
-                                </span>
-                                <span className="leading-relaxed">{item}</span>
-                              </li>
-                            ))}
-                          </ol>
+                      <div className="bg-primary/8 border border-primary/15 p-3 sm:p-4 rounded-xl">
+                        <div className="flex items-start gap-2.5 mb-3">
+                          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                            <Lightbulb className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-primary mb-1">For Your Startup</p>
+                            <p className="text-sm sm:text-base text-foreground leading-relaxed">{insight.personalized_text}</p>
+                          </div>
                         </div>
-                      )}
 
-                      <div className="mt-3">
-                        <ScorePill label="Relevance" score={insight.relevance_score} />
+                        {insight.action_items && insight.action_items.length > 0 && (
+                          <div className="mt-3 sm:mt-4">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-foreground/80 mb-2">Action Items</p>
+                            <ol className="space-y-1.5 text-xs sm:text-sm">
+                              {insight.action_items.map((item, idx) => (
+                                <li key={idx} className="flex items-start gap-2 text-muted-foreground">
+                                  <span className="mt-px flex h-[1.125rem] w-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">
+                                    {idx + 1}
+                                  </span>
+                                  <span className="leading-relaxed">{item}</span>
+                                </li>
+                              ))}
+                            </ol>
+                          </div>
+                        )}
+
+                        <div className="mt-3">
+                          <ScorePill label="Relevance" score={insight.relevance_score} />
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
-      )}
+                );
+              })}
+            </div>
+          </Card>
+        )}
+      </div>
 
       {callouts.length > 0 && (
         <Card className="p-4 sm:p-8 bg-accent/5">
