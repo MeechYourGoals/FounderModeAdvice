@@ -585,11 +585,14 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
               return (
                 <div key={lesson.id} className="space-y-3 sm:space-y-4">
                   <div className="p-3 sm:p-5 bg-card rounded-2xl border border-primary/15 shadow-sm">
-                    <div className="flex-1 mb-3">
-                      <h3 className="font-semibold text-sm sm:text-lg mb-2 leading-snug">{lesson.lesson_text}</h3>
-                      <div className="flex gap-2 mb-3 flex-wrap">
+                    <div className="mb-3 space-y-2">
+                      <p className="text-xs sm:text-sm text-muted-foreground leading-snug line-clamp-2">
+                        Lesson context: {lesson.lesson_text}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
                         <ScorePill label="Impact" score={lesson.impact_score} />
                         <ScorePill label="Action" score={lesson.actionability_score} />
+                        <ScorePill label="Relevance" score={insight.relevance_score} />
                       </div>
                     </div>
 
@@ -619,10 +622,6 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
                           </ol>
                         </div>
                       )}
-
-                      <div className="mt-3">
-                        <ScorePill label="Relevance" score={insight.relevance_score} />
-                      </div>
                     </div>
                   </div>
                 </div>
