@@ -189,6 +189,7 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
   const [reanalyzing, setReanalyzing] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
+  const [mobileInsightTab, setMobileInsightTab] = useState<"lessons" | "personalized">("lessons");
   const { toast } = useToast();
   const { canAnalyzeVideo, refreshSubscription } = useSubscription();
 
@@ -304,6 +305,12 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
   useEffect(() => {
     fetchEpisodeDetails();
   }, [episodeId]);
+
+  useEffect(() => {
+    if (personalizedInsights.length === 0 && mobileInsightTab === "personalized") {
+      setMobileInsightTab("lessons");
+    }
+  }, [mobileInsightTab, personalizedInsights.length]);
 
   const handleReanalyze = async () => {
     if (!episode) return;
