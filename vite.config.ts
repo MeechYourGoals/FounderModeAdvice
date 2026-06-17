@@ -90,6 +90,7 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,ico,png,svg,jpg,jpeg,webp,woff,woff2}"],
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         navigateFallbackDenylist: [/^\/~oauth/],
         // Do not runtime-cache Supabase REST/Auth/Functions/Storage responses here.
         // Authenticated offline data is intentionally scoped in src/lib/offlineCache.ts
