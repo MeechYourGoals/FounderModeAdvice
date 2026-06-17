@@ -1,28 +1,35 @@
-import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/integrations/supabase/types";
+import { supabase as supabaseTyped } from "@/integrations/supabase/client";
 
-/**
- * Folder-level sharing (v1).
- *
- * Owners invite collaborators to a single `episode_folders` folder. Invites are
- * link-based: a high-entropy token is generated client-side, only its SHA-256
- * hash is stored in the database, and the raw token lives in the invite URL.
- * Collaborators get read-only access to that one folder via additive RLS
- * policies (see the migration). Email delivery is deliberately left behind the
- * `sendInviteEmail` abstraction so a provider can be wired in without touching
- * the rest of the flow.
- */
+// The base folder-sharing migration (folder_invites, folder_members,
+// episode_folders, folder_role enum, accept_folder_invite RPC) is not yet
+// applied to this project, so the generated Database types don't know about
+// these objects. Until the migration ships, we treat the client as untyped in
+// this file only — every other module keeps its full type safety.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const supabase = supabaseTyped as any;
 
-/**
- * localStorage key used to carry an invite token across an auth round-trip
- * (an unauthenticated visitor opens an invite link, signs in/up, and is
- * returned to finish accepting). Cleared once the invite is resolved.
- */
 export const PENDING_INVITE_KEY = "fma_pending_invite";
 
-export type FolderRole = Database["public"]["Enums"]["folder_role"];
-export type FolderInvite = Database["public"]["Tables"]["folder_invites"]["Row"];
-export type FolderMember = Database["public"]["Tables"]["folder_members"]["Row"];
+export type FolderRole = "viewer" | "editor";
+export interface FolderInvite {
+  id: string;
+  folder_id: string;
+  invited_email: string;
+  invited_by_user_id: string;
+  accepted_by_user_id: string | null;
+  role: FolderRole;
+  status: string;
+  token_hash: string;
+  created_at: string;
+  expires_at?: string | null;
+}
+export interface FolderMember {
+  id: string;
+  folder_id: string;
+  user_id: string;
+  role: FolderRole;
+  created_at: string;
+}
 
 const INVITE_TOKEN_BYTES = 32;
 
