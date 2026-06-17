@@ -363,91 +363,6 @@ export type Database = {
           },
         ]
       }
-      folder_invites: {
-        Row: {
-          accepted_at: string | null
-          accepted_by_user_id: string | null
-          created_at: string
-          expires_at: string
-          folder_id: string
-          id: string
-          invited_by_user_id: string
-          invited_email: string
-          role: Database["public"]["Enums"]["folder_role"]
-          status: string
-          token_hash: string
-        }
-        Insert: {
-          accepted_at?: string | null
-          accepted_by_user_id?: string | null
-          created_at?: string
-          expires_at?: string
-          folder_id: string
-          id?: string
-          invited_by_user_id: string
-          invited_email: string
-          role?: Database["public"]["Enums"]["folder_role"]
-          status?: string
-          token_hash: string
-        }
-        Update: {
-          accepted_at?: string | null
-          accepted_by_user_id?: string | null
-          created_at?: string
-          expires_at?: string
-          folder_id?: string
-          id?: string
-          invited_by_user_id?: string
-          invited_email?: string
-          role?: Database["public"]["Enums"]["folder_role"]
-          status?: string
-          token_hash?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "folder_invites_folder_id_fkey"
-            columns: ["folder_id"]
-            isOneToOne: false
-            referencedRelation: "episode_folders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      folder_members: {
-        Row: {
-          created_at: string
-          folder_id: string
-          id: string
-          invited_by_user_id: string | null
-          role: Database["public"]["Enums"]["folder_role"]
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          folder_id: string
-          id?: string
-          invited_by_user_id?: string | null
-          role?: Database["public"]["Enums"]["folder_role"]
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          folder_id?: string
-          id?: string
-          invited_by_user_id?: string | null
-          role?: Database["public"]["Enums"]["folder_role"]
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "folder_members_folder_id_fkey"
-            columns: ["folder_id"]
-            isOneToOne: false
-            referencedRelation: "episode_folders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       lesson_tags: {
         Row: {
           created_at: string
@@ -949,10 +864,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      accept_folder_invite: {
-        Args: { p_token_hash: string }
-        Returns: string
-      }
       check_tier_limits: {
         Args: { p_user_id: string }
         Returns: {
@@ -987,30 +898,9 @@ export type Database = {
         Returns: boolean
       }
       increment_analysis_count: { Args: { p_user_id: string }; Returns: number }
-      is_folder_member: {
-        Args: { _folder_id: string; _user_id: string }
-        Returns: boolean
-      }
-      is_folder_owner: {
-        Args: { _folder_id: string; _user_id: string }
-        Returns: boolean
-      }
-      user_can_view_episode: {
-        Args: { _episode_id: string; _user_id: string }
-        Returns: boolean
-      }
-      user_can_view_lesson: {
-        Args: { _lesson_id: string; _user_id: string }
-        Returns: boolean
-      }
-      user_has_paid_plan: {
-        Args: { _user_id: string }
-        Returns: boolean
-      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
-      folder_role: "viewer" | "editor" | "owner"
       startup_stage:
         | "pre_seed"
         | "seed"
@@ -1147,7 +1037,6 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
-      folder_role: ["viewer", "editor", "owner"],
       startup_stage: [
         "pre_seed",
         "seed",
