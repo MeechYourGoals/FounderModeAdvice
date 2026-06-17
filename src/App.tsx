@@ -23,6 +23,7 @@ import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 import { OfflineBadge } from "@/components/OfflineBadge";
 import { AppChrome } from "@/components/AppChrome";
+import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 
 const queryClient = new QueryClient();
 
@@ -62,8 +63,10 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <PaymentTestModeBanner />
             <SubscriptionCallback />
             <OfflineBadge />
+
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
