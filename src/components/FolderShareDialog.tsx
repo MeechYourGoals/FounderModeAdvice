@@ -12,6 +12,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Check, Copy, Loader2, Trash2, UserPlus, Users } from "lucide-react";
+import { useSubscription } from "@/contexts/SubscriptionContext";
+import { hasSharing } from "@/types/subscription";
+import { UpgradePrompt } from "@/components/subscription";
 import {
   createFolderInvite,
   listFolderCollaborators,
@@ -40,6 +43,8 @@ export const FolderShareDialog = ({
   onOpenChange,
 }: FolderShareDialogProps) => {
   const { toast } = useToast();
+  const { subscription } = useSubscription();
+  const canShare = subscription ? hasSharing(subscription.tier) : false;
   const [email, setEmail] = useState("");
   const [inviting, setInviting] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -48,7 +53,7 @@ export const FolderShareDialog = ({
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (!open || !folderId) return;
+    if (!open || !folderId || !canShare) return;
     setLatestLink(null);
     setCopied(false);
     setLoading(true);
@@ -63,7 +68,7 @@ export const FolderShareDialog = ({
         });
       })
       .finally(() => setLoading(false));
-  }, [open, folderId, toast]);
+  }, [open, folderId, toast, canShare]);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,6 +154,15 @@ export const FolderShareDialog = ({
           </DialogDescription>
         </DialogHeader>
 
+        {!canShare ? (
+          <div className="pt-1">
+            <UpgradePrompt
+              feature="sharing"
+              message="Inviting collaborators to a folder is part of The C-Suite and The Boardroom plans. On the free plan your folders stay private to you."
+            />
+          </div>
+        ) : (
+          <>
         <form onSubmit={handleInvite} className="space-y-3">
           <div className="space-y-1.5">
             <Label htmlFor="invite-email">Invite by email</Label>
@@ -236,6 +250,8 @@ export const FolderShareDialog = ({
             </div>
           )}
         </div>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

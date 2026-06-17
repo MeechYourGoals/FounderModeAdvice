@@ -126,16 +126,38 @@ AS $$
   );
 $$;
 
+-- True when the user is on a paid plan. Sharing (inviting collaborators) is a
+-- paid feature; viewing your own insights is free. user_subscriptions.tier is
+-- the gating source of truth — the Paddle webhook and RevenueCat/Despia sync
+-- both mirror the active tier into it.
+CREATE OR REPLACE FUNCTION public.user_has_paid_plan(_user_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_subscriptions s
+    WHERE s.user_id = _user_id
+      AND s.tier IN ('seed', 'series_z')
+  );
+$$;
+
 -- ---------- RLS: folder_members ----------
 DROP POLICY IF EXISTS "Owners and members can view membership" ON public.folder_members;
 CREATE POLICY "Owners and members can view membership"
 ON public.folder_members FOR SELECT TO authenticated
 USING (public.is_folder_owner(folder_id, auth.uid()) OR user_id = auth.uid());
 
+-- Adding members directly is a paid (sharing) action.
 DROP POLICY IF EXISTS "Owners can add members" ON public.folder_members;
 CREATE POLICY "Owners can add members"
 ON public.folder_members FOR INSERT TO authenticated
-WITH CHECK (public.is_folder_owner(folder_id, auth.uid()));
+WITH CHECK (
+  public.is_folder_owner(folder_id, auth.uid())
+  AND public.user_has_paid_plan(auth.uid())
+);
 
 DROP POLICY IF EXISTS "Owners can remove members, members can leave" ON public.folder_members;
 CREATE POLICY "Owners can remove members, members can leave"
@@ -148,12 +170,14 @@ CREATE POLICY "Owners can view their folder invites"
 ON public.folder_invites FOR SELECT TO authenticated
 USING (public.is_folder_owner(folder_id, auth.uid()));
 
+-- Creating invites requires a paid plan (sharing is gated; viewing is free).
 DROP POLICY IF EXISTS "Owners can create folder invites" ON public.folder_invites;
 CREATE POLICY "Owners can create folder invites"
 ON public.folder_invites FOR INSERT TO authenticated
 WITH CHECK (
   public.is_folder_owner(folder_id, auth.uid())
   AND invited_by_user_id = auth.uid()
+  AND public.user_has_paid_plan(auth.uid())
 );
 
 DROP POLICY IF EXISTS "Owners can update (revoke) folder invites" ON public.folder_invites;
@@ -265,4 +289,5 @@ GRANT EXECUTE ON FUNCTION public.is_folder_owner(uuid, uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.is_folder_member(uuid, uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.user_can_view_episode(uuid, uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.user_can_view_lesson(uuid, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.user_has_paid_plan(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.accept_folder_invite(text) TO authenticated;

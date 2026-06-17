@@ -199,7 +199,8 @@ export const PublicLanding = () => {
               <ValueCard
                 icon={<Users className="w-4 h-4" />}
                 title="Invite the right people"
-                description="Share a single folder with a teammate, advisor, or new hire. They see only those insights — not your entire workspace."
+                badge="Paid plans"
+                description="On a paid plan, share a single folder with a teammate, advisor, or new hire — they see only those insights, never your entire workspace. On the free plan your folders stay private to you."
               />
             </Reveal>
           </div>
@@ -214,6 +215,9 @@ export const PublicLanding = () => {
                 <p className="mt-1 text-base text-foreground/85 leading-relaxed">
                   Onboarding a marketing hire or briefing an HR leader? Invite them to the relevant folder so the
                   playbook is already waiting — instead of re-explaining the same hard-won lessons every time.
+                </p>
+                <p className="mt-2 text-sm font-medium text-primary">
+                  Folder sharing is included on The C-Suite and The Boardroom plans.
                 </p>
               </div>
             </div>
@@ -402,11 +406,16 @@ const BadgeLabel = ({ children }: { children: React.ReactNode }) => (
   </div>
 );
 
-const ValueCard = ({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) => (
+const ValueCard = ({ icon, title, description, badge }: { icon: React.ReactNode; title: string; description: string; badge?: string }) => (
   <div className="glass elevate-hover h-full rounded-2xl p-5 sm:p-6 hover:border-primary/30">
     <div className="flex items-center gap-2.5 mb-2">
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">{icon}</span>
       <h3 className="font-semibold text-base sm:text-lg">{title}</h3>
+      {badge && (
+        <span className="ml-auto shrink-0 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+          {badge}
+        </span>
+      )}
     </div>
     <p className="text-sm sm:text-base text-foreground/85 leading-relaxed">{description}</p>
   </div>

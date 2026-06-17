@@ -6,7 +6,7 @@ import { TIER_PRICING } from '@/types/subscription';
 
 interface UpgradePromptProps {
   message: string;
-  feature?: 'profile' | 'bookmark' | 'analysis' | 'videoChat' | 'export';
+  feature?: 'profile' | 'bookmark' | 'analysis' | 'videoChat' | 'export' | 'sharing';
   onUpgrade?: () => void;
   compact?: boolean;
 }
