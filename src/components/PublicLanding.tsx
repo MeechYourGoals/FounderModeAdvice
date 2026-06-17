@@ -240,8 +240,10 @@ export const PublicLanding = () => {
             <div className="text-center space-y-3 mb-10 sm:mb-14">
               <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">Pricing</p>
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
-                Simple,{" "}
-                <span className="font-display font-medium italic text-gradient">honest</span> pricing
+                Straightforward&nbsp;{" "}
+                <span className="font-display font-medium italic text-gradient">optimized for ROI</span> pricing
+
+
               </h2>
               <p className="text-base sm:text-xl text-foreground/90 max-w-2xl mx-auto">
                 Start free. Upgrade when you're ready. Cancel anytime.
