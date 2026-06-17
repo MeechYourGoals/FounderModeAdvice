@@ -155,24 +155,30 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     if (tier === 'free') return;
 
     if (isDespiaApp || isNative) {
-      // On native / Despia — present the RevenueCat paywall.
-      // The paywall shows all available packages and handles purchase natively.
+      // Native: RevenueCat paywall.
       const result = await presentPaywallService(REVENUECAT_ENTITLEMENTS.PRO);
       if (result === 'PURCHASED' || result === 'RESTORED') {
         await refreshSubscription();
       }
     } else {
-      // Use Stripe for web purchases
-      const priceId = tier === 'seed'
-        ? STRIPE_PRICE_IDS.SEED_MONTHLY
-        : STRIPE_PRICE_IDS.SERIES_Z_MONTHLY;
-
-      const checkoutUrl = await getStripeCheckoutUrl(priceId);
-      if (checkoutUrl) {
-        window.location.href = checkoutUrl;
-      }
+      // Web: Paddle overlay checkout.
+      const { initializePaddle, getPaddlePriceId } = await import('@/lib/paddle');
+      await initializePaddle();
+      const priceId = tier === 'seed' ? 'c_suite_monthly' : 'boardroom_monthly';
+      const paddlePriceId = await getPaddlePriceId(priceId);
+      window.Paddle.Checkout.open({
+        items: [{ priceId: paddlePriceId, quantity: 1 }],
+        customer: user?.email ? { email: user.email } : undefined,
+        customData: { userId: user?.id ?? '' },
+        settings: {
+          displayMode: 'overlay',
+          successUrl: `${window.location.origin}/?checkout=success`,
+          allowLogout: false,
+          variant: 'one-page',
+        },
+      });
     }
-  }, [isNative, isDespiaApp, refreshSubscription]);
+  }, [isNative, isDespiaApp, refreshSubscription, user]);
 
   const manageSubscription = useCallback(async () => {
     if (isDespiaApp || isNative) {
