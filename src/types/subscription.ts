@@ -60,6 +60,11 @@ export function hasExport(tier: SubscriptionTier): boolean {
   return TIER_LIMITS[tier].exports;
 }
 
+/** Tiers that can invite collaborators to share insight folders. */
+export function hasSharing(tier: SubscriptionTier): boolean {
+  return TIER_LIMITS[tier].sharing;
+}
+
 export const TIER_LIMITS: Record<SubscriptionTier, Omit<TierLimits, 'profiles' | 'bookmarks' | 'analyses'> & {
   profiles: { max: number };
   bookmarks: { max: number };
@@ -69,6 +74,8 @@ export const TIER_LIMITS: Record<SubscriptionTier, Omit<TierLimits, 'profiles' |
   videoChat: boolean;
   /** Whether the plan unlocks exporting analyses and chat summaries. */
   exports: boolean;
+  /** Whether the plan unlocks inviting collaborators to insight folders. */
+  sharing: boolean;
 }> = {
   free: {
     profiles: { max: 1 },
@@ -77,6 +84,7 @@ export const TIER_LIMITS: Record<SubscriptionTier, Omit<TierLimits, 'profiles' |
     analyses: { max: 3 },
     videoChat: false,
     exports: false,
+    sharing: false,
   },
   // "The C-Suite" — entry paid plan.
   seed: {
@@ -86,6 +94,7 @@ export const TIER_LIMITS: Record<SubscriptionTier, Omit<TierLimits, 'profiles' |
     analyses: { max: 20 },
     videoChat: false,
     exports: false,
+    sharing: true,
   },
   // "The Boardroom" — power plan. Everything unlimited + Ask-the-video AI chat + export.
   series_z: {
@@ -95,6 +104,7 @@ export const TIER_LIMITS: Record<SubscriptionTier, Omit<TierLimits, 'profiles' |
     analyses: { max: UNLIMITED },
     videoChat: true,
     exports: true,
+    sharing: true,
   },
 };
 
@@ -121,7 +131,7 @@ export const TIER_PRICING: Record<SubscriptionTier, TierPricing> = {
       '1 business profile',
       '3 video analyses per month',
       'Universal, industry-aware insights',
-      'Organize analyses into folders',
+      'Organize analyses into private folders',
     ],
   },
   seed: {
@@ -133,8 +143,8 @@ export const TIER_PRICING: Record<SubscriptionTier, TierPricing> = {
       '20 video analyses per month',
       'Up to 3 business profiles',
       'Personalized insights by industry & stage',
-      'Folder organization',
-      'Standard analysis speed',
+      'Organize & share insight folders',
+      'Invite teammates & advisors to folders',
     ],
     recommended: true,
   },
@@ -148,6 +158,7 @@ export const TIER_PRICING: Record<SubscriptionTier, TierPricing> = {
       'Unlimited business profiles',
       'Ask-the-video AI chat (unlimited)',
       'Personalized insights by industry & stage',
+      'Share insight folders with your team',
       'Priority feature access',
       'Best for multiple ventures & clients',
     ],

@@ -12,6 +12,10 @@ const USER_OWNED_TABLES = [
   "bookmarked_lessons",
   "bookmarked_episodes",
   "episode_folder_assignments",
+  // Remove the user's collaborator access (their memberships in any folder,
+  // including ones owned by others). Memberships on their own folders also
+  // cascade when episode_folders is removed below.
+  "folder_members",
   "bookmark_folders",
   "episode_folders",
   "personalized_insights",
@@ -25,6 +29,8 @@ const USER_OWNED_TABLES = [
 
 const USER_ANALYSIS_TABLES = [
   { table: "episodes", column: "analyzed_by" },
+  // Invites the user sent (invites on their own folders also cascade above).
+  { table: "folder_invites", column: "invited_by_user_id" },
 ] as const;
 
 const USER_STORAGE_BUCKETS = ["startup-decks", "exports"] as const;

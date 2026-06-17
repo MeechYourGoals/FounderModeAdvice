@@ -20,6 +20,9 @@ import CookiePolicy from "./pages/CookiePolicy";
 import FAQ from "./pages/FAQ";
 import AccountDeletion from "./pages/AccountDeletion";
 import Contact from "./pages/Contact";
+import AcceptInvite from "./pages/AcceptInvite";
+import SharedWithMe from "./pages/SharedWithMe";
+import SharedFolder from "./pages/SharedFolder";
 import NotFound from "./pages/NotFound";
 import { OfflineBadge } from "@/components/OfflineBadge";
 import { AppChrome } from "@/components/AppChrome";
@@ -80,6 +83,9 @@ const App = () => (
               <Route path="/faq" element={<FAQ />} />
               <Route path="/account-deletion" element={<AccountDeletion />} />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/invite/:token" element={<AcceptInvite />} />
+              <Route path="/shared" element={<SharedWithMe />} />
+              <Route path="/shared/:folderId" element={<SharedFolder />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
