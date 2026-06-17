@@ -1,4 +1,4 @@
-import { ArrowRight, MessageSquare, ShieldCheck, Check, X, Target, Lightbulb, Building2, Folder } from "lucide-react";
+import { ArrowRight, MessageSquare, ShieldCheck, Check, X, Target, Lightbulb, Building2, Folder, FolderKanban, Cloud, Download, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -155,6 +155,71 @@ export const PublicLanding = () => {
 
       {/* Interactive sample demo */}
       <SampleDemo />
+
+      {/* Value prop — capture, organize, and share insights */}
+      <section className="container mx-auto px-4 py-12 sm:py-16 md:py-24">
+        <div className="max-w-5xl mx-auto">
+          <Reveal>
+            <p className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-primary mb-3">Your insight library</p>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-center">
+              Stop losing your best insights in{" "}
+              <span className="font-display font-medium italic text-gradient">notebooks and Apple Notes</span>
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-center text-base sm:text-lg text-foreground/90 leading-relaxed">
+              Founders watch hundreds of hours of podcasts, interviews, and tactical videos — and the insights
+              usually end up scattered across notebooks, Apple Notes, screenshots, or half-remembered episodes.
+              Founder Mode Advice turns the content you study into organized, cloud-accessible insight folders
+              you can revisit, export, and share with the exact people who need them.
+            </p>
+          </Reveal>
+
+          <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            <Reveal delay={0}>
+              <ValueCard
+                icon={<FolderKanban className="w-4 h-4" />}
+                title="Organized insight folders"
+                description="Build a folder for each startup, function, or initiative — Marketing, Hiring, Fundraising, Product, HR — and save every analyzed video into the right one."
+              />
+            </Reveal>
+            <Reveal delay={80}>
+              <ValueCard
+                icon={<Cloud className="w-4 h-4" />}
+                title="Cloud-accessible anywhere"
+                description="Your library lives in the cloud, not on a single device. Pick up your insights on web, iOS, or Android — right where you left off."
+              />
+            </Reveal>
+            <Reveal delay={160}>
+              <ValueCard
+                icon={<Download className="w-4 h-4" />}
+                title="Export when you need it"
+                description="Download an analysis or a whole folder as PDF, CSV, Markdown, or JSON — ready for decks, docs, and team wikis."
+              />
+            </Reveal>
+            <Reveal delay={240}>
+              <ValueCard
+                icon={<Users className="w-4 h-4" />}
+                title="Invite the right people"
+                description="Share a single folder with a teammate, advisor, or new hire. They see only those insights — not your entire workspace."
+              />
+            </Reveal>
+          </div>
+
+          <Reveal delay={120}>
+            <div className="mt-6 glass rounded-3xl border-primary/15 p-5 sm:p-8 flex flex-col sm:flex-row sm:items-center gap-4">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <Users className="h-5 w-5" />
+              </span>
+              <div>
+                <h3 className="font-semibold text-lg sm:text-xl">Knowledge transfer without repeating yourself</h3>
+                <p className="mt-1 text-base text-foreground/85 leading-relaxed">
+                  Onboarding a marketing hire or briefing an HR leader? Invite them to the relevant folder so the
+                  playbook is already waiting — instead of re-explaining the same hard-won lessons every time.
+                </p>
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </section>
 
       {/* Positioning */}
       <section className="container mx-auto px-4 pb-12 sm:pb-16 md:pb-24">
@@ -334,6 +399,16 @@ export const PublicLanding = () => {
 const BadgeLabel = ({ children }: { children: React.ReactNode }) => (
   <div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
     {children}
+  </div>
+);
+
+const ValueCard = ({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) => (
+  <div className="glass elevate-hover h-full rounded-2xl p-5 sm:p-6 hover:border-primary/30">
+    <div className="flex items-center gap-2.5 mb-2">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">{icon}</span>
+      <h3 className="font-semibold text-base sm:text-lg">{title}</h3>
+    </div>
+    <p className="text-sm sm:text-base text-foreground/85 leading-relaxed">{description}</p>
   </div>
 );
 

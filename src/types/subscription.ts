@@ -122,6 +122,7 @@ export const TIER_PRICING: Record<SubscriptionTier, TierPricing> = {
       '3 video analyses per month',
       'Universal, industry-aware insights',
       'Organize analyses into folders',
+      'Share folders with collaborators',
     ],
   },
   seed: {

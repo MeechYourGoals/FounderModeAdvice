@@ -11,7 +11,8 @@ import { AppLoadingScreen } from "@/components/AppLoadingScreen";
 import { PublicLanding } from "@/components/PublicLanding";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/contexts/SubscriptionContext";
-import { Bookmark, LogOut, Briefcase, Menu, User, Settings } from "lucide-react";
+import { Bookmark, LogOut, Briefcase, Menu, User, Settings, Users } from "lucide-react";
+import { PENDING_INVITE_KEY } from "@/services/folderSharing";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -95,6 +96,15 @@ const Index = () => {
     };
   }, []);
 
+  // Finish accepting a folder invite if the user arrived via a link before signing in.
+  useEffect(() => {
+    if (loading || !user) return;
+    const pendingInvite = localStorage.getItem(PENDING_INVITE_KEY);
+    if (pendingInvite) {
+      navigate(`/invite/${pendingInvite}`, { replace: true });
+    }
+  }, [user, loading, navigate]);
+
   // Unauthenticated: installed app/PWA/native users go straight to the auth screen,
   // while regular browser visitors still see the marketing homepage.
   if (!loading && !user) {
@@ -147,6 +157,10 @@ const Index = () => {
                   <DropdownMenuItem onClick={() => { triggerHapticFeedback('light'); handleToggle("bookmarks"); }}>
                     <Bookmark className="h-4 w-4 mr-2" />
                     Bookmarks
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { triggerHapticFeedback('light'); setProfileOpen(false); navigate("/shared"); }}>
+                    <Users className="h-4 w-4 mr-2" />
+                    Shared with me
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => { triggerHapticFeedback('light'); setProfileOpen(false); navigate("/account"); }}>
                     <User className="h-4 w-4 mr-2" />
@@ -236,6 +250,11 @@ const Index = () => {
               </div>
             </PopoverContent>
           </Popover>
+
+          <Button variant="outline" size="sm" onClick={() => navigate("/shared")}>
+            <Users className="h-4 w-4 mr-2" />
+            Shared
+          </Button>
 
           <Button variant="outline" size="sm" onClick={() => signOut()}>
             <LogOut className="h-4 w-4 mr-2" />

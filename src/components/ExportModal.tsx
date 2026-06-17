@@ -14,16 +14,45 @@ import { UpgradePrompt } from "@/components/subscription";
 
 interface ExportModalProps {
   episodeId?: string;
+  /** When provided, export exactly these episodes (e.g. a single folder). */
+  episodeIds?: string[];
+  /** Optional label used in the generated filename (e.g. a folder name). */
+  scopeLabel?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export const ExportModal = ({ episodeId, open, onOpenChange }: ExportModalProps) => {
+export const ExportModal = ({ episodeId, episodeIds, scopeLabel, open, onOpenChange }: ExportModalProps) => {
   const [exporting, setExporting] = useState(false);
   const { toast } = useToast();
   const { isDespia } = useDespia();
   const { subscription } = useSubscription();
   const canExport = subscription ? hasExport(subscription.tier) : false;
+
+  const slug = (scopeLabel || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  const scope = episodeId ? "episode" : episodeIds ? (slug || "folder") : "all";
+
+  const fetchEpisodesByIds = async (ids: string[]) => {
+    if (!ids.length) return [];
+    const { data } = await supabase
+      .from("episodes")
+      .select(`
+        *,
+        companies(*),
+        lessons(*, personalized_insights(*)),
+        chavel_callouts(*)
+      `)
+      .in("id", ids)
+      .order("created_at", { ascending: false });
+    return data || [];
+  };
+
+  // Resolve the set of episodes to export, as an array, for the current scope.
+  const getExportArray = async () => {
+    if (episodeId) return [await fetchEpisodeData(episodeId)];
+    if (episodeIds) return await fetchEpisodesByIds(episodeIds);
+    return (await fetchAllData()) || [];
+  };
 
   const fetchEpisodeData = async (id: string) => {
     const { data: episode } = await supabase
@@ -84,9 +113,9 @@ export const ExportModal = ({ episodeId, open, onOpenChange }: ExportModalProps)
   const exportJSON = async () => {
     setExporting(true);
     try {
-      const data = episodeId ? await fetchEpisodeData(episodeId) : await fetchAllData();
+      const data = episodeId ? await fetchEpisodeData(episodeId) : await getExportArray();
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const filename = `founder-lessons-${episodeId ? 'episode' : 'all'}-${new Date().toISOString().split('T')[0]}.json`;
+      const filename = `founder-lessons-${scope}-${new Date().toISOString().split('T')[0]}.json`;
 
       await handleExport(blob, filename, 'application/json');
     } catch (error) {
@@ -99,8 +128,8 @@ export const ExportModal = ({ episodeId, open, onOpenChange }: ExportModalProps)
   const exportCSV = async () => {
     setExporting(true);
     try {
-      const data = episodeId ? [await fetchEpisodeData(episodeId)] : await fetchAllData();
-      
+      const data = await getExportArray();
+
       const csvRows = [];
       csvRows.push(['Episode Title', 'Company', 'Founders', 'Release Date', 'Lesson', 'Category', 'Impact', 'Actionability', 'Personalized Insight', 'Action Items', 'Insight Relevance', 'URL']);
       
@@ -129,7 +158,7 @@ export const ExportModal = ({ episodeId, open, onOpenChange }: ExportModalProps)
 
       const csv = csvRows.map(row => row.join(',')).join('\n');
       const blob = new Blob([csv], { type: 'text/csv' });
-      const filename = `founder-lessons-${episodeId ? 'episode' : 'all'}-${new Date().toISOString().split('T')[0]}.csv`;
+      const filename = `founder-lessons-${scope}-${new Date().toISOString().split('T')[0]}.csv`;
       
       await handleExport(blob, filename, 'text/csv');
     } catch (error) {
@@ -142,8 +171,8 @@ export const ExportModal = ({ episodeId, open, onOpenChange }: ExportModalProps)
   const exportMarkdown = async () => {
     setExporting(true);
     try {
-      const data = episodeId ? [await fetchEpisodeData(episodeId)] : await fetchAllData();
-      
+      const data = await getExportArray();
+
       let markdown = '# Founder Mode Advice\n\n';
       
       data?.forEach((episode: any) => {
@@ -185,7 +214,7 @@ export const ExportModal = ({ episodeId, open, onOpenChange }: ExportModalProps)
       });
 
       const blob = new Blob([markdown], { type: 'text/markdown' });
-      const filename = `founder-mode-advice-${episodeId ? 'episode' : 'all'}-${new Date().toISOString().split('T')[0]}.md`;
+      const filename = `founder-mode-advice-${scope}-${new Date().toISOString().split('T')[0]}.md`;
       
       await handleExport(blob, filename, 'text/markdown');
     } catch (error) {
@@ -198,7 +227,7 @@ export const ExportModal = ({ episodeId, open, onOpenChange }: ExportModalProps)
   const exportPDF = async () => {
     setExporting(true);
     try {
-      const data = episodeId ? [await fetchEpisodeData(episodeId)] : await fetchAllData();
+      const data = await getExportArray();
       const doc = new jsPDF();
       let y = 20;
 
@@ -276,7 +305,7 @@ export const ExportModal = ({ episodeId, open, onOpenChange }: ExportModalProps)
       });
 
       const blob = doc.output('blob');
-      const filename = `executive-summary-${episodeId ? "episode" : "all"}-${new Date().toISOString().split("T")[0]}.pdf`;
+      const filename = `executive-summary-${scope}-${new Date().toISOString().split("T")[0]}.pdf`;
 
       await handleExport(blob, filename, 'application/pdf');
     } catch (error) {

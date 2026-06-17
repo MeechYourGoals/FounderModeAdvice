@@ -10,7 +10,7 @@ import {
   ExternalLink, TrendingUp, MoreVertical, Eye, Bookmark, Download, Copy,
   Youtube, Headphones, Trash2, X, ArrowUpDown, ArrowUp, ArrowDown,
   FolderPlus, Folder, ChevronLeft, ChevronRight, Filter, Search,
-  Tag, LayoutList, Plus
+  Tag, LayoutList, Plus, Share2
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -28,6 +28,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ExportModal } from "@/components/ExportModal";
+import { FolderShareDialog } from "@/components/FolderShareDialog";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { useToast } from "@/hooks/use-toast";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
@@ -113,6 +114,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
   const [bulkFolderNames, setBulkFolderNames] = useState<string[]>([""]);
   const [creatingFolders, setCreatingFolders] = useState(false);
   const [folderPendingDelete, setFolderPendingDelete] = useState<EpisodeFolder | null>(null);
+  const [shareFolder, setShareFolder] = useState<EpisodeFolder | null>(null);
   const [deleteMoveTarget, setDeleteMoveTarget] = useState<string>("none");
 
   // Tags & view mode
@@ -756,7 +758,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
               </Button>
               <Button variant="outline" size="sm" className="text-xs sm:text-sm" onClick={() => { setSelectedExportId(undefined); setExportModalOpen(true); }}>
                 <Download className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Export All</span>
+                <span className="hidden sm:inline">{selectedFolderId ? "Export Folder" : "Export All"}</span>
               </Button>
             </div>
           </div>
@@ -1184,7 +1186,9 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
         <DialogContent className="max-w-sm mx-4">
           <DialogHeader>
             <DialogTitle>Manage Folders</DialogTitle>
-            <DialogDescription>Create folders to organize your episodes.</DialogDescription>
+            <DialogDescription>
+              Organize your analyses into folders — then share any folder with a teammate or advisor.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -1252,20 +1256,32 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
               <div className="space-y-2">
                 {folders.map(folder => (
                   <div key={folder.id} className="flex items-center justify-between p-2 rounded-md border">
-                    <div className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full" style={{ backgroundColor: folder.color }} />
-                      <span className="text-sm">{folder.name}</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: folder.color }} />
+                      <span className="text-sm truncate">{folder.name}</span>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setDeleteMoveTarget("none");
-                        setFolderPendingDelete(folder);
-                      }}
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        aria-label={`Share ${folder.name}`}
+                        title="Invite collaborators"
+                        onClick={() => setShareFolder(folder)}
+                      >
+                        <Share2 className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        aria-label={`Delete ${folder.name}`}
+                        onClick={() => {
+                          setDeleteMoveTarget("none");
+                          setFolderPendingDelete(folder);
+                        }}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1342,7 +1358,24 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
         </AlertDialogContent>
       </AlertDialog>
 
-      <ExportModal episodeId={selectedExportId} open={exportModalOpen} onOpenChange={setExportModalOpen} />
+      <ExportModal
+        episodeId={selectedExportId}
+        episodeIds={!selectedExportId && selectedFolderId
+          ? Object.entries(folderAssignments)
+              .filter(([, ids]) => ids.includes(selectedFolderId))
+              .map(([epId]) => epId)
+          : undefined}
+        scopeLabel={selectedFolderId ? folders.find(f => f.id === selectedFolderId)?.name : undefined}
+        open={exportModalOpen}
+        onOpenChange={setExportModalOpen}
+      />
+
+      <FolderShareDialog
+        folderId={shareFolder?.id ?? null}
+        folderName={shareFolder?.name ?? ""}
+        open={!!shareFolder}
+        onOpenChange={(open) => { if (!open) setShareFolder(null); }}
+      />
     </>
   );
 };
