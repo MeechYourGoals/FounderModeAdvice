@@ -331,11 +331,11 @@ export const AnalysisForm = () => {
       <form onSubmit={handleEpisodeSubmit} className="space-y-6">
         <div className="space-y-2 text-center">
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-center">
-            Analyze a{" "}
-            <span className="font-display font-medium italic text-gradient">new video</span>
+            New{" "}
+            <span className="font-display font-medium italic text-gradient">analysis</span>
           </h2>
           <p className="text-muted-foreground">
-            Paste any video URL and let AI extract advice tailored to you
+            Paste a founder, operator, or investor video — get a transcript-grounded memo tailored to your company
           </p>
         </div>
 
@@ -422,7 +422,7 @@ export const AnalysisForm = () => {
             ) : activeProfile ? (
               <>Analyze for {activeProfile.company_name}</>
             ) : (
-              <>Analyze (Personalized)</>
+              <>Add context &amp; analyze</>
             )}
           </Button>
 
@@ -436,7 +436,7 @@ export const AnalysisForm = () => {
               className="min-w-[150px] min-h-[48px] sm:min-h-0 rounded-full"
             >
               <FastForward className="mr-2 h-4 w-4" />
-              Quick Import
+              Quick analyze
             </Button>
           )}
         </div>

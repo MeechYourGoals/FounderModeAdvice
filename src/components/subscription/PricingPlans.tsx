@@ -101,7 +101,7 @@ export function PricingPlans({ onSelect, showCurrentPlan = true }: PricingPlansP
                   </Button>
                 ) : tierKey === 'free' ? (
                   <Button variant="outline" className="w-full" disabled>
-                    Free Forever
+                    Free plan
                   </Button>
                 ) : (
                   <Button
