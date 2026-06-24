@@ -28,6 +28,7 @@ import NotFound from "./pages/NotFound";
 import { OfflineBadge } from "@/components/OfflineBadge";
 import { AppChrome } from "@/components/AppChrome";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
+import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 
 const queryClient = new QueryClient();
 
@@ -92,6 +93,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
             <AppChrome />
+            <PWAInstallPrompt />
           </BrowserRouter>
         </TooltipProvider>
         </ActiveProfileProvider>
