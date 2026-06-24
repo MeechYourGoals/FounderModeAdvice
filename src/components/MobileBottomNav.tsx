@@ -1,22 +1,38 @@
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { LayoutGrid, Bookmark, Plus, Building2, User } from "lucide-react";
+import { Building2, Bookmark, Users, Settings as SettingsIcon, Check, Globe, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { triggerHapticFeedback } from "@/lib/capacitor";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { useActiveProfile } from "@/contexts/ActiveProfileContext";
 
 /**
- * Five-slot bottom navigation with a raised center "Analyze" FAB — the standard
- * native/app pattern. Library and Account are routes; Bookmarks, Profiles, and
- * Analyze open panels on the home screen via router state (see Index.tsx).
+ * Five-slot bottom nav for the mobile/PWA/native app shell:
+ *   Profiles · Bookmarks · [Analyzing As] · Shared · Settings
+ *
+ * The raised center button surfaces the active "analyzing as" profile — the
+ * lens that personalizes every analysis. Tapping it opens a sheet to switch
+ * profiles without leaving the current screen.
  */
 export const MobileBottomNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const onHome = location.pathname === "/";
+  const { profiles, activeProfile, activeProfileId, setActiveProfileId } = useActiveProfile();
+  const [lensOpen, setLensOpen] = useState(false);
 
   const goHomeWith = (state: Record<string, unknown>) => {
     triggerHapticFeedback("light");
     navigate("/", { state: { ...state, ts: Date.now() } });
   };
+
+  const isActive = (predicate: boolean) => predicate;
 
   const SideItem = ({
     icon: Icon,
@@ -24,7 +40,7 @@ export const MobileBottomNav = () => {
     active,
     onClick,
   }: {
-    icon: typeof LayoutGrid;
+    icon: typeof Building2;
     label: string;
     active: boolean;
     onClick: () => void;
@@ -46,9 +62,15 @@ export const MobileBottomNav = () => {
       >
         <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
       </span>
-      <span className="text-[10px] font-medium">{label}</span>
+      <span className="text-[10px] font-medium leading-tight">{label}</span>
     </button>
   );
+
+  const lensLabel = activeProfile ? activeProfile.company_name : "Universal";
+  const lensInitial = activeProfile ? activeProfile.company_name.charAt(0).toUpperCase() : null;
+
+  const onSharedRoute = location.pathname.startsWith("/shared");
+  const onSettingsRoute = location.pathname.startsWith("/settings") || location.pathname.startsWith("/account");
 
   return (
     <nav
@@ -58,41 +80,125 @@ export const MobileBottomNav = () => {
     >
       <div className="relative flex items-center justify-around h-14 max-h-[calc(3.5rem+var(--safe-area-bottom))]">
         <SideItem
-          icon={LayoutGrid}
-          label="Home"
-          active={onHome}
-          onClick={() => { triggerHapticFeedback("light"); navigate("/"); }}
+          icon={Building2}
+          label="Profiles"
+          active={isActive(false)}
+          onClick={() => goHomeWith({ panel: "profiles" })}
         />
         <SideItem
           icon={Bookmark}
           label="Saved"
-          active={false}
+          active={isActive(false)}
           onClick={() => goHomeWith({ panel: "bookmarks" })}
         />
 
-        {/* Center Ask FAB */}
+        {/* Center: Analyzing-As lens */}
         <div className="flex-1 flex justify-center">
-          <button
-            onClick={() => goHomeWith({ action: "analyze" })}
-            aria-label="Ask the advisor"
-            className="-mt-6 h-14 w-14 rounded-full text-primary-foreground shadow-[inset_0_1px_0_0_hsl(0_0%_100%/0.25),0_8px_24px_-6px_hsl(var(--primary)/0.6)] flex items-center justify-center ring-4 ring-background transition-transform duration-200 active:scale-90 touch-manipulation"
-            style={{ background: "var(--gradient-primary)" }}
-          >
-            <Plus className="h-7 w-7" strokeWidth={2.5} />
-          </button>
+          <Sheet open={lensOpen} onOpenChange={setLensOpen}>
+            <SheetTrigger asChild>
+              <button
+                aria-label={`Analyzing as ${lensLabel}. Tap to switch.`}
+                onClick={() => triggerHapticFeedback("light")}
+                className="-mt-6 h-14 w-14 rounded-full text-primary-foreground shadow-[inset_0_1px_0_0_hsl(0_0%_100%/0.25),0_8px_24px_-6px_hsl(var(--primary)/0.6)] flex items-center justify-center ring-4 ring-background transition-transform duration-200 active:scale-90 touch-manipulation"
+                style={{ background: "var(--gradient-primary)" }}
+              >
+                {lensInitial ? (
+                  <span className="text-lg font-bold tracking-tight">{lensInitial}</span>
+                ) : (
+                  <Sparkles className="h-6 w-6" strokeWidth={2.5} />
+                )}
+              </button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="rounded-t-2xl border-t pb-[calc(1rem+var(--safe-area-bottom))]">
+              <SheetHeader className="text-left">
+                <SheetTitle>Analyzing as</SheetTitle>
+                <SheetDescription>
+                  Pick the lens used to personalize every insight, chat, and recommendation.
+                </SheetDescription>
+              </SheetHeader>
+              <div className="mt-4 space-y-1">
+                <button
+                  onClick={() => {
+                    triggerHapticFeedback("light");
+                    setActiveProfileId(null);
+                    setLensOpen(false);
+                  }}
+                  className={cn(
+                    "w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors min-h-[56px]",
+                    activeProfileId === null ? "bg-primary/10" : "hover:bg-muted active:bg-muted",
+                  )}
+                >
+                  <span className="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+                    <Globe className="h-5 w-5 text-muted-foreground" />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium">Universal</div>
+                    <div className="text-xs text-muted-foreground">No specific business context</div>
+                  </div>
+                  {activeProfileId === null && <Check className="h-5 w-5 text-primary shrink-0" />}
+                </button>
+
+                {profiles.map((profile) => {
+                  const selected = activeProfileId === profile.id;
+                  return (
+                    <button
+                      key={profile.id}
+                      onClick={() => {
+                        triggerHapticFeedback("light");
+                        setActiveProfileId(profile.id);
+                        setLensOpen(false);
+                      }}
+                      className={cn(
+                        "w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors min-h-[56px]",
+                        selected ? "bg-primary/10" : "hover:bg-muted active:bg-muted",
+                      )}
+                    >
+                      <span
+                        className="h-10 w-10 rounded-full flex items-center justify-center shrink-0 text-primary-foreground font-bold"
+                        style={{ background: "var(--gradient-primary)" }}
+                      >
+                        {profile.company_name.charAt(0).toUpperCase()}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate">{profile.company_name}</div>
+                        {profile.industry && (
+                          <div className="text-xs text-muted-foreground truncate">{profile.industry}</div>
+                        )}
+                      </div>
+                      {selected && <Check className="h-5 w-5 text-primary shrink-0" />}
+                    </button>
+                  );
+                })}
+
+                <button
+                  onClick={() => {
+                    triggerHapticFeedback("light");
+                    setLensOpen(false);
+                    goHomeWith({ panel: "profiles" });
+                  }}
+                  className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-muted-foreground hover:bg-muted active:bg-muted min-h-[56px]"
+                >
+                  <span className="h-10 w-10 rounded-full border border-dashed border-border flex items-center justify-center shrink-0">
+                    <Building2 className="h-5 w-5" />
+                  </span>
+                  <div className="flex-1 text-sm font-medium">Manage business profiles</div>
+                </button>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
 
         <SideItem
-          icon={Building2}
-          label="Profiles"
-          active={false}
-          onClick={() => goHomeWith({ panel: "profiles" })}
+          icon={Users}
+          label="Shared"
+          active={onSharedRoute}
+          onClick={() => { triggerHapticFeedback("light"); navigate("/shared"); }}
         />
         <SideItem
-          icon={User}
-          label="Account"
-          active={location.pathname.startsWith("/account")}
-          onClick={() => { triggerHapticFeedback("light"); navigate("/account"); }}
+          icon={SettingsIcon}
+          label="Settings"
+          active={onSettingsRoute}
+          onClick={() => { triggerHapticFeedback("light"); navigate("/settings"); }}
         />
       </div>
     </nav>
