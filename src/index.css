@@ -398,7 +398,7 @@ All colors MUST be HSL.
 .pb-nav {
   padding-bottom: calc(1.5rem + var(--safe-area-bottom));
 }
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   .pb-nav {
     padding-bottom: calc(5.5rem + var(--safe-area-bottom));
   }
