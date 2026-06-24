@@ -74,7 +74,7 @@ export const MobileBottomNav = () => {
 
   return (
     <nav
-      className="mobile-bottom-nav glass-nav fixed bottom-0 left-0 right-0 z-50 border-t border-border safe-bottom md:hidden"
+      className="mobile-bottom-nav glass-nav fixed bottom-0 left-0 right-0 z-50 border-t border-border safe-bottom lg:hidden"
       role="navigation"
       aria-label="Main navigation"
     >
