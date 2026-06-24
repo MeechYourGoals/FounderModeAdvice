@@ -30,22 +30,22 @@ const STEPS: OnboardingStep[] = [
   {
     icon: Rocket,
     title: "Welcome to Founder Mode Advice",
-    body: "Turn any business, founder, operator, investor, or leadership video into practical, personalized advice for your company — whatever kind of business you run.",
+    body: "Turn founder, investor, and operator videos into transcript-grounded operating memos — lessons, risks, and action items tailored to your company, stage, and next decision.",
   },
   {
     icon: Video,
     title: "Analyze a video",
-    body: "Paste any public video link — YouTube, TikTok, Instagram, X, Vimeo, or a podcast — and we extract the takeaways, risks, opportunities, and action items, adapted to your business.",
+    body: "Paste any public video link — YouTube, Vimeo, LinkedIn, X, or a podcast — and we extract lessons, risks, and action items, each grounded in the transcript and adapted to your company.",
   },
   {
     icon: Building2,
-    title: "Create business profiles",
-    body: "Add profiles for your companies, side hustles, stores, agencies, or projects. The selected profile personalizes every analysis to your context.",
+    title: "Create company profiles",
+    body: "Add a profile for each company, venture, or project. The selected profile tailors every analysis to your stage, industry, and context.",
   },
   {
     icon: Briefcase,
-    title: "Pick your industry",
-    body: "Each profile has an industry. We use it to tune the language, examples, KPIs, risks, and recommendations — no assuming everyone is a VC-backed tech startup.",
+    title: "Set your stage and industry",
+    body: "Each profile carries a stage and industry. We use them to tune the language, examples, KPIs, risks, and recommendations to your company — not a generic playbook.",
   },
   {
     icon: FolderOpen,

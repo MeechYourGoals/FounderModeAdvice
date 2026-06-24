@@ -1,6 +1,6 @@
 // Fictional, illustrative content for the marketing "See it in action" demo.
-// Deliberately a non-tech, bootstrapped local business to showcase that the
-// product adapts beyond venture-backed startups. No real video or person.
+// Anchored on a seed-stage B2B SaaS founder to match the product's positioning.
+// No real video, person, or company.
 
 export interface SampleInsightGroup {
   title: string;
@@ -20,116 +20,108 @@ export interface DemoBusinessProfile {
   }[];
 }
 
+/** The company the primary demo analysis is tailored to. */
+export const SAMPLE_PRIMARY_NAME = "Northwind";
+
 export const SAMPLE_BUSINESS_PROFILES: DemoBusinessProfile[] = [
   {
-    id: "maple-oak-coffee",
-    name: "Maple & Oak Coffee Roasters",
-    stageOrType: ["Food / Beverage / Hospitality", "Bootstrapped"],
+    id: "northwind-saas",
+    name: "Northwind",
+    stageOrType: ["Seed", "B2B SaaS"],
     description:
-      "A neighborhood coffee roaster with one cafe and a small wholesale route, looking to grow without raising money. We're a husband-and-wife team who poured our savings into this place because we believe a great cup of coffee can anchor a whole neighborhood — and we want to build something our kids can be proud of.",
+      "A seed-stage B2B SaaS company building revenue-operations software for mid-market sales teams. Two technical co-founders, eight people, roughly $40k MRR and growing. Currently deciding when to hire a first salesperson, how to price, and what narrative to take into a Series A next year.",
     folders: [
-      { id: "growth-ideas", title: "Growth ideas", color: "#16a34a" },
-      { id: "hiring", title: "Hiring", color: "#a855f7" },
-      { id: "margins", title: "Margins", color: "#f59e0b" },
+      { id: "fundraising", title: "Fundraising", color: "#2563eb" },
+      { id: "gtm", title: "GTM", color: "#14b8a6" },
+      { id: "hiring", title: "Hiring", color: "#8b5cf6" },
     ],
   },
   {
     id: "series-b-ai",
     name: "HelixMind AI",
-    stageOrType: ["AI / Enterprise Software", "Series B"],
+    stageOrType: ["Series B", "AI / Enterprise Software"],
     description:
       "A fast-growing AI infrastructure company helping enterprise teams deploy, evaluate, and govern frontier models across internal workflows. The team is scaling GTM, sharpening positioning, and deciding which model stack best supports reliability, cost, and customer trust.",
     folders: [
-      { id: "marketing", title: "Marketing", color: "#2563eb" },
-      {
-        id: "competitor-analysis",
-        title: "Competitor Analysis",
-        color: "#14b8a6",
-      },
-      {
-        id: "frontier-model-choice",
-        title: "Which Frontier Model to Choose",
-        color: "#e11d48",
-      },
+      { id: "positioning", title: "Positioning", color: "#2563eb" },
+      { id: "competitor-analysis", title: "Competitive Strategy", color: "#14b8a6" },
+      { id: "frontier-model-choice", title: "Model Stack Decision", color: "#e11d48" },
     ],
   },
   {
-    id: "nuclear-drones",
+    id: "aegis-atomics",
     name: "Aegis Atomics",
-    stageOrType: ["Aerospace / Defense", "Seed Stage"],
+    stageOrType: ["Seed", "Aerospace / Defense"],
     description:
-      "A seed-stage company developing long-endurance nuclear-powered drone systems for remote sensing, disaster response, and defense logistics. The team is balancing technical validation, regulatory strategy, capital planning, and early government partnership development.",
+      "A seed-stage company developing long-endurance unmanned systems for remote sensing, disaster response, and defense logistics. The team is balancing technical validation, regulatory strategy, capital planning, and early government partnership development.",
     folders: [
-      {
-        id: "defense-partnerships",
-        title: "Defense Partnerships",
-        color: "#22c55e",
-      },
+      { id: "defense-partnerships", title: "Defense Partnerships", color: "#22c55e" },
       { id: "regulatory-path", title: "Regulatory Path", color: "#f97316" },
       { id: "prototype-roadmap", title: "Prototype Roadmap", color: "#8b5cf6" },
     ],
   },
 ];
+
 export const SAMPLE_VIDEO = {
-  title: "Scaling a Neighborhood Business: An Operator's Playbook",
+  title: "Scaling a Seed-Stage GTM Motion: An Operator's Playbook",
   source: "Sample analysis · illustrative only",
 };
+
 export const SAMPLE_INSIGHT_GROUPS: SampleInsightGroup[] = [
   {
-    title: "Expansion timing",
+    title: "Founder-led sales",
     general:
-      "Before opening a second location, the speaker emphasizes proving that the first location can generate repeatable cash flow without founder heroics. Expansion should come after the operating system is stable: demand is predictable, peak-hour throughput is measured, management can run without constant intervention, and the next lease does not depend on optimistic revenue assumptions.",
+      "The speaker argues that founders should not hand off sales until the motion is genuinely repeatable. Repeatable means the founder can articulate the ideal customer, the trigger that creates urgency, and the objection sequence that recurs across deals — and can close without improvising each time. Hiring a salesperson to escape selling, rather than to scale a proven motion, almost always fails.",
     tailored:
-      "For Maple & Oak, the better next move is not a second café yet. The morning rush constraint suggests demand exists, but the bottleneck is throughput, not location count. Test mobile pre-orders, a dedicated pickup shelf, and tighter barista station sequencing for 30 days. If peak-hour revenue rises without labor growing at the same rate, the business gets a cleaner expansion signal and a stronger cash-flow base.",
+      "For Northwind, the signal to watch isn't MRR — it's whether both founders can close inbound the same way twice. Before adding a salesperson, run ten founder-led closes and write down every objection verbatim. If the same three or four objections drive most of the losses and you have a repeatable answer, the motion is ready to hand off. If every deal still feels bespoke, hiring sales now just buys an expensive search for product-market fit.",
   },
   {
-    title: "Margin leverage",
+    title: "First GTM hire",
     general:
-      "The speaker frames margin improvement as a sequence of operational fixes before pricing moves. Small waste reductions, tighter purchasing, and better labor allocation can improve profit without risking customer churn. Price increases should come after the business has removed avoidable leakage from the model.",
+      "The speaker frames the first go-to-market hire as a decision about what the founders most need to stop doing — not about adding firepower. The right first hire removes the highest-frequency, most teachable work from the founders, so they can stay on the parts of the motion that still require their judgment. Hiring for strategy too early creates overhead; hiring for execution too late caps the company at the founders' personal throughput.",
     tailored:
-      "For Maple & Oak, daily waste tracking and green-bean purchasing discipline are the highest-leverage first moves. A 3% spoilage reduction can outperform a 3% menu price increase because it protects customer trust while improving gross margin. Pair this with weekly batch-size reviews and quarterly supplier pricing locks before testing selective price changes.",
+      "For Northwind at ~$40k MRR, the first GTM hire is more likely a strong SDR or a founder-associate who can run qualification and demos, not a VP of Sales. That keeps both technical co-founders on closing and product while removing the top-of-funnel grind. Document the qualification checklist and demo script first, so the role is teachable in two weeks instead of dependent on a co-founder shadowing every call.",
   },
   {
-    title: "Hiring",
+    title: "Pricing & packaging",
     general:
-      "The speaker argues that the first non-founder hire should remove the founder from the most repeatable, highest-frequency work — not the most complex work. Hiring too early for strategy creates overhead; hiring too late for operations burns the founders out and caps the business at their personal throughput. Write the role around the tasks that happen every single day.",
+      "The speaker treats pricing as a positioning decision, not a spreadsheet exercise. Early-stage teams tend to under-price because they anchor on cost and fear losing deals, when the real risk is signaling low value and attracting price-sensitive customers who churn. The recommendation is to price against the value of the problem solved and to revisit packaging as the ideal customer sharpens.",
     tailored:
-      "For Maple & Oak, the first real hire is a lead barista or shift lead who can open, close, and run the bar during morning rush without either of you behind the counter. That frees one founder for wholesale accounts and one for sourcing and books. Document the open/close checklist and drink specs first so the role is teachable in two weeks, not dependent on tribal knowledge.",
+      "For Northwind, anchor pricing to the revenue leakage your software recovers for a mid-market sales team, not to your AWS bill. Test a higher entry tier with annual billing on the next ten deals; if win rates hold, you were leaving money and positioning on the table. Keep packaging simple — one core plan plus an obvious upgrade path — until the Series A motion makes a third tier worth the complexity.",
   },
   {
-    title: "Influencer marketing",
+    title: "Fundraising narrative",
     general:
-      "The speaker is skeptical of paid reach for local businesses and favors small, credible voices with real audience trust. A handful of micro-creators who actually live in the neighborhood will outperform a larger paid campaign because the recommendation reads as a friend's tip, not an ad. The goal is repeat foot traffic, not impressions.",
+      "The speaker stresses that a fundable narrative is built from operating evidence, not ambition. Investors discount the story and re-underwrite the proof: retention, efficient growth, and a credible wedge into a large market. The strongest narratives show that the team has earned the right to the next milestone by hitting the last one with discipline.",
     tailored:
-      "For Maple & Oak, partner with five to ten local food, parenting, and neighborhood creators for in-store visits, a named drink, or a small-batch single-origin drop. Skip paid social entirely for the first 90 days. Track redemptions with a simple code at the register so you can see which creators actually drive return visits, then double down on the two or three that do.",
+      "For Northwind's Series A next year, the narrative isn't 'RevOps is a huge market' — it's that you turned founder-led sales into a repeatable motion with strong net revenue retention and a clear wedge. Start instrumenting that proof now: cohort retention, payback period, and the specific segment where you win. The cleaner that evidence, the less the raise depends on a great pitch.",
   },
   {
-    title: "Competitor analysis",
+    title: "Focus & sequencing",
     general:
-      "The speaker frames competitor analysis as a search for unowned positions, not a checklist to copy. Studying competitors should reveal what they are structurally unwilling or unable to do — speed, seating, hours, sourcing, service model — and your strategy lives in those gaps. Copying their menu just turns you into a slower version of them.",
+      "The speaker argues that a seed-stage company's scarcest resource is focus, and that most strategic mistakes are sequencing mistakes — doing the right thing at the wrong time. The discipline is to name the one constraint that, if solved, unlocks the next stage, and to defend that priority against the constant pull of plausible-but-premature opportunities.",
     tailored:
-      "For Maple & Oak, map every café within a 15-minute walk on four axes: speed at peak, seating and laptop policy, wholesale presence, and bean transparency. You'll likely find no one owns 'fastest morning cup with single-origin transparency.' That becomes your wedge — and it tells you which of pre-orders, seating changes, or origin storytelling to invest in first.",
+      "For Northwind, the binding constraint is a repeatable sales motion — not a second product line, not partnerships, not a brand refresh. Until founder-led sales is proven and handed off cleanly, treat those as deliberate 'not yet' decisions. Write the one constraint on the wall so the team can use it to say no, and revisit it only when the metric that defines it actually moves.",
   },
 ];
 
 export const SAMPLE_CHAT: { role: "user" | "assistant"; content: string }[] = [
   {
     role: "user",
-    content:
-      "We're at capacity during morning rush. Should I open a second location?",
+    content: "We're drowning in inbound demos. Should I hire a salesperson now?",
   },
   {
     role: "assistant",
     content:
-      "Based on the video, not yet. The speaker argues that a second location should be cash-flowed by a stable first location, not used to solve an operations bottleneck. For Maple & Oak, the constraint looks like peak-hour throughput. Test pre-orders, a pickup shelf, and station sequencing first, then use the results to decide whether another lease is justified.",
+      "Based on the video, not until the motion is repeatable. The speaker's test is whether both founders can close the same way twice — same ideal customer, same objection sequence. For Northwind, run ten founder-led closes and log every objection. If a handful of objections drive most losses and you have answers, you're ready to hire to scale. If every deal still feels bespoke, a salesperson is buying an expensive search for product-market fit.",
   },
   {
     role: "user",
-    content: "What would improve margins fastest without raising prices?",
+    content: "What should the first GTM hire actually be?",
   },
   {
     role: "assistant",
     content:
-      "The video points to waste tracking and purchasing discipline before pricing. For Maple & Oak, a 3% spoilage reduction may beat a 3% price increase because it protects customer trust while improving gross margin. Pair daily waste logs with weekly batch-size reviews and quarterly supplier pricing locks.",
+      "The video points to removing the highest-frequency, most teachable work from the founders — not adding a VP. For Northwind at ~$40k MRR, that's likely a strong SDR or founder-associate running qualification and demos, keeping both co-founders on closing and product. Write the qualification checklist and demo script first so the role is teachable in two weeks.",
   },
 ];

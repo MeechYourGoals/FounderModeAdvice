@@ -34,7 +34,8 @@ export const Footer = () => {
           <div className="space-y-3">
             <BrandLogo className="h-9 w-auto" />
             <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
-              Turn any video on the web into tactical advice tailored to you, your situation, and your business.
+              Transcript-grounded founder intelligence. Turn the best founder and operator videos into company-specific
+              operating memos, risks, and action plans.
             </p>
           </div>
           {LINK_GROUPS.map((group) => (
@@ -59,7 +60,7 @@ export const Footer = () => {
         </div>
         <div className="mt-10 flex flex-col items-center justify-between gap-2 border-t border-border/60 pt-6 sm:flex-row">
           <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} Founder Mode Advice. Built for founders, by founders.
+            © {new Date().getFullYear()} Founder Mode Advice. Source-grounded intelligence for founders and operators.
           </p>
           <p className="text-xs text-muted-foreground/70">
             Independent analysis of public content — not endorsement or financial advice.

@@ -5,23 +5,23 @@ import { useNavigate } from "react-router-dom";
 const FAQS: { q: string; a: React.ReactNode }[] = [
   {
     q: "What does Founder Mode Advice do?",
-    a: "Founder Mode Advice turns any business, founder, operator, investor, strategy, or leadership video into tactical advice tailored to you and your business. Instead of watching for hours, you paste a link and get the takeaways, risks, opportunities, and action items that matter — applied to your industry and stage.",
+    a: "Founder Mode Advice turns founder, investor, and operator videos into transcript-grounded operating memos — lessons, risks, action items, and follow-up Q&A — tailored to your company, stage, and next decision. Instead of watching for hours, you paste a link and get structured intelligence you can act on, with every recommendation cited back to the source.",
   },
   {
     q: "Do I need an account to analyze a video?",
     a: "Yes. Creating a free account takes a few seconds and lets us save your analyses, profiles, and folders. The free plan includes a few analyses per month with no credit card required.",
   },
   {
-    q: "Is this only for tech startups?",
-    a: "No. It's built for every kind of builder — local business owners, mom-and-pop shops, service providers, clothing brands, restaurants, fitness businesses, agencies, creators, consultants, bootstrapped founders, and venture-backed startups alike. Set your industry on your business profile and the advice adapts to your business type.",
+    q: "Who is Founder Mode Advice for?",
+    a: "Founders, operators, and startup teams — from solo and technical founders building with AI, to angel-backed teams and venture-scale companies. Set your company's stage and industry on your profile and every memo adapts to your context and the decision in front of you, instead of handing you a generic playbook.",
   },
   {
     q: "What kinds of videos can I analyze?",
     a: "Any public video URL — YouTube, TikTok, Instagram Reels, X / Twitter video, Vimeo, LinkedIn, and most podcast MP3s. Private or login-gated posts aren't supported. You're responsible for ensuring you have the right to submit a given link.",
   },
   {
-    q: "How do business profiles work?",
-    a: "Create a profile for each company, idea, side hustle, store, agency, or project — with its name, description, industry, stage, and context. The selected profile personalizes every analysis (and, on The Boardroom, every video chat) to that business.",
+    q: "How do company profiles work?",
+    a: "Create a profile for each company, venture, or project — with its name, description, industry, stage, and context. The selected profile tailors every analysis (and, on The Boardroom, every video chat) to that company and the decision you're weighing.",
   },
   {
     q: "How do folders work?",

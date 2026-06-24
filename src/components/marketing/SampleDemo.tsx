@@ -16,6 +16,7 @@ import {
   SAMPLE_BUSINESS_PROFILES,
   SAMPLE_INSIGHT_GROUPS,
   SAMPLE_CHAT,
+  SAMPLE_PRIMARY_NAME,
 } from "@/lib/sampleDemoData";
 import demoVideoAsset from "@/assets/demo-video.mp4.asset.json";
 
@@ -41,8 +42,8 @@ export const SampleDemo = () => {
             <span className="font-display font-medium italic text-gradient">in action</span>
           </h2>
           <p className="text-base sm:text-xl text-foreground/90 max-w-2xl mx-auto">
-            Here's what an analysis looks like for a bootstrapped coffee roaster
-            — your output adapts to your own business, industry, and stage.
+            Here's what an operating memo looks like for a seed-stage B2B SaaS founder —
+            your output adapts to your own company, industry, and stage.
           </p>
         </div>
 
@@ -121,7 +122,7 @@ export const SampleDemo = () => {
                   </div>
                   <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-2 h-full">
                     <p className="text-sm font-medium uppercase tracking-wide text-primary">
-                      Tailored to Maple &amp; Oak
+                      Tailored to {SAMPLE_PRIMARY_NAME}
                     </p>
                     <p className="text-base leading-relaxed text-foreground">
                       {group.tailored}

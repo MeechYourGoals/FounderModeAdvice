@@ -32,10 +32,10 @@ export const LibraryEmptyState = () => {
           <span className="font-display font-medium italic text-gradient">first video</span>
         </h3>
         <p className="text-sm text-muted-foreground max-w-md mx-auto mt-1">
-          Paste any business, founder, or leadership video above — or start with one of these.
+          Paste a founder, operator, or investor video above — or start with one of these.
           {activeProfile
-            ? <> Insights will be tailored to <span className="font-medium text-foreground">{activeProfile.company_name}</span>.</>
-            : <> Add a business profile to personalize the advice.</>}
+            ? <> The memo will be tailored to <span className="font-medium text-foreground">{activeProfile.company_name}</span>.</>
+            : <> Add a company profile to tailor the advice to your stage and industry.</>}
         </p>
       </div>
 
