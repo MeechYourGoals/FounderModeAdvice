@@ -15,6 +15,7 @@ const LINK_GROUPS: { heading: string; links: { to: string; label: string }[] }[]
       { to: "/privacy-policy", label: "Privacy" },
       { to: "/terms-of-service", label: "Terms" },
       { to: "/cookies", label: "Cookies" },
+      { to: "/refund-policy", label: "Refunds" },
     ],
   },
   {
