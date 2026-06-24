@@ -16,6 +16,7 @@ import Settings from "./pages/Settings";
 import Founders from "./pages/Founders";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
+import RefundPolicy from "./pages/RefundPolicy";
 import CookiePolicy from "./pages/CookiePolicy";
 import FAQ from "./pages/FAQ";
 import AccountDeletion from "./pages/AccountDeletion";
@@ -79,6 +80,7 @@ const App = () => (
               <Route path="/founders" element={<Founders />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/terms-of-service" element={<TermsOfService />} />
+              <Route path="/refund-policy" element={<RefundPolicy />} />
               <Route path="/cookies" element={<CookiePolicy />} />
               <Route path="/faq" element={<FAQ />} />
               <Route path="/account-deletion" element={<AccountDeletion />} />
