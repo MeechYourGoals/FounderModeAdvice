@@ -6,8 +6,9 @@ Single-page deployment source of truth for shipping this app to iOS/Android.
 > Despia-fallback hybrid**: native iOS/Android can ship via Capacitor (full
 > control, native RevenueCat/OneSignal plugins) *or* via Despia (web-wrapped,
 > bridge commands). The web bridge layer is runtime-aware and supports both.
-> See `docs/mobile-wrapping.md` (wrappers) and `docs/store-readiness.md`
-> (store-compliance runbook) for the long-form versions of this checklist.
+> See `docs/mobile-wrapping.md` (wrappers), `docs/store-readiness.md`
+> (store-compliance runbook), and `docs/app-entry-and-runtime.md` (app-vs-browser
+> entry routing + runtime detection) for the long-form versions of this checklist.
 
 ---
 

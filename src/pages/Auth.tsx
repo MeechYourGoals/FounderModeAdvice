@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, Navigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +23,18 @@ const Auth = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, loading: authLoading } = useAuth();
+  const [searchParams] = useSearchParams();
+
+  // A password-reset link lands here with ?reset=true and an active recovery
+  // session — don't bounce those users into the app before they set a new password.
+  const isPasswordRecovery = searchParams.get("reset") === "true";
+
+  // Already signed in (native relaunch, deep link, or manual navigation): send the
+  // user into the app instead of showing a redundant login form.
+  if (!authLoading && user && !isPasswordRecovery) {
+    return <Navigate to="/" replace />;
+  }
 
   // Always show close button in browser; hide only in installed app/PWA to avoid loop.
   const showClose = !shouldShowAppAuthFirst();

@@ -1,39 +1,67 @@
-import { useState, useEffect } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export const useAuth = () => {
+interface AuthContextValue {
+  user: User | null;
+  session: Session | null;
+  loading: boolean;
+  signOut: () => Promise<void>;
+  deleteAccount: () => Promise<{ data?: unknown; error?: unknown }>;
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+/**
+ * Single source of truth for the Supabase session.
+ *
+ * Previously `useAuth` was a plain hook, so every consumer (~13 of them) spun up
+ * its own `onAuthStateChange` subscription, its own `getSession()` call, and its
+ * own `loading` flag — duplicate network work and a routing/UI race where each
+ * copy of the session resolved on its own timeline. Centralizing it in one
+ * provider gives the whole tree a single listener, a single session restore, and
+ * one consistent `loading` transition. The public API is unchanged.
+ */
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }
-    );
+    // Register the listener FIRST so we never miss an event fired during restore.
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+      setLoading(false);
+    });
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    // THEN restore any persisted session from storage.
+    supabase.auth.getSession().then(({ data: { session: existing } }) => {
+      setSession(existing);
+      setUser(existing?.user ?? null);
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
-  };
+  }, []);
 
-  const deleteAccount = async () => {
+  const deleteAccount = useCallback(async () => {
     if (!user) return { error: new Error("No user logged in") };
 
     try {
@@ -47,7 +75,20 @@ export const useAuth = () => {
       console.error("Error deleting account:", error);
       return { error };
     }
-  };
+  }, [user, signOut]);
 
-  return { user, session, loading, signOut, deleteAccount };
+  const value = useMemo(
+    () => ({ user, session, loading, signOut, deleteAccount }),
+    [user, session, loading, signOut, deleteAccount],
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export const useAuth = (): AuthContextValue => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return ctx;
 };

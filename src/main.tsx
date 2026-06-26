@@ -3,7 +3,7 @@ import App from "./App.tsx";
 import "./index.css";
 import { initializeNativePlugins, handleBackButton, initKeyboardViewportWatcher } from "./lib/capacitor";
 import { isDespia } from "./services/despiaService";
-import { isNativeWrapper, isStandalonePWA } from "./lib/appMode";
+import { isNativeWrapper, isStandalonePWA, getRuntimeSurface } from "./lib/appMode";
 import { initPushNotifications } from "./services/pushService";
 import { initAnalytics, captureEvent } from "./services/analytics";
 import { Capacitor } from "@capacitor/core";
@@ -39,6 +39,7 @@ if (inInstalledApp) {
   captureEvent("native_app_opened", {
     runtime: isDespia() ? "despia" : "capacitor",
     platform: Capacitor.getPlatform(),
+    surface: getRuntimeSurface(),
   });
 }
 

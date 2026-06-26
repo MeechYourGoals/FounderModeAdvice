@@ -1,7 +1,9 @@
 # Mobile Wrapping Guide — Despia, Capacitor, Expo/EAS
 
 How to ship this web app as an iOS/Android app, and what is already wired up
-for each path. See `docs/store-readiness.md` for the store-compliance runbook.
+for each path. See `docs/store-readiness.md` for the store-compliance runbook
+and `docs/app-entry-and-runtime.md` for the app-vs-browser entry routing and
+runtime-detection model.
 
 ## What the web app already does for native feel
 
