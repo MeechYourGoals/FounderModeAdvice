@@ -1,0 +1,23 @@
+# Expo
+.expo/
+dist/
+web-build/
+
+# Native build outputs (prebuild / bare)
+/ios
+/android
+
+# Metro
+.metro-health-check*
+
+# Dependencies
+node_modules/
+
+# Env / secrets
+.env*.local
+.env
+google-service-account.json
+
+# misc
+*.log
+.DS_Store

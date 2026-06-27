@@ -5,7 +5,9 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist"] },
+  // apps/** and packages/** are workspaces with their own toolchains (the Expo
+  // app lints via `expo lint`); keep the web app's flat config off React Native code.
+  { ignores: ["dist", "apps/**", "packages/**"] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],

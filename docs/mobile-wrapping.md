@@ -60,21 +60,21 @@ Then per platform: signing, icons/splash (`resources/`), push entitlement
 (OneSignal), and the OAuth deep-link scheme `com.foundermodeadvice.app://`
 (already handled in `src/lib/capacitor.ts`).
 
-## Option C — Expo / EAS
+## Option C — Expo / EAS (scaffolded in `apps/mobile`)
 
-This is a Vite + React DOM app, **not** a React Native/Expo project, so
-`eas build` cannot build it directly. Two ways to use EAS:
+The repo is now a monorepo with a real Expo (React Native) app under
+`apps/mobile` that builds via **EAS Build / EAS Submit**. Because Expo runs React
+Native (not the Vite DOM build), it has its own native UI and shares only logic
+with the web app via `packages/shared`.
 
-1. **WebView shell**: create a minimal Expo app whose root screen is
-   `react-native-webview` pointed at the production URL, then build that shell
-   with EAS. Append `?source=app` to the URL (or set a `Despia`-free custom
-   user agent and adapt `isNativeWrapper()`) so the web app enters
-   installed-app mode. You re-implement push/IAP bridges in the shell.
-2. **Full migration** to Expo Router + React Native — a rewrite of the UI
-   layer; only worth it if you need deep native UI later.
+- Setup, EAS commands, Supabase config, and the done/follow-up list:
+  **`docs/expo-monorepo.md`**.
+- Auth-first entry, login, and session restore are implemented; the full web
+  feature set (analysis, library, paywall, settings) is the documented follow-up.
 
-Despia (A) and Capacitor (B) are strictly less work than an EAS shell today,
-because their bridges are already wired.
+Despia (A) and Capacitor (B) still wrap the web build with full feature parity
+today and less work; Expo (C) is the path when you want a true native app. All
+three share the bundle id and Supabase redirect, so submit only one per platform.
 
 ## Smoke test checklist (any wrapper)
 
