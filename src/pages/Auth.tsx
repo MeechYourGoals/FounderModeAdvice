@@ -43,35 +43,22 @@ const Auth = () => {
     triggerHapticFeedback('light');
     setGoogleLoading(true);
     try {
-      if (isLovablePreview()) {
-        // Lovable sandbox/preview hosts can't be added to the OAuth allow-list,
-        // so go through the Lovable managed auth bridge.
-        const result = await lovable.auth.signInWithOAuth("google", {
-          redirect_uri: window.location.origin,
+      // Lovable Cloud managed Google auth: broker holds the OAuth secret, so
+      // ALL web environments (preview, published .lovable.app, custom domain,
+      // localhost) must go through the lovable.auth bridge. Calling
+      // supabase.auth.signInWithOAuth directly returns "missing OAuth secret".
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        toast({
+          title: "Google sign-in failed",
+          description: result.error.message,
+          variant: "destructive",
         });
-        if (result.error) {
-          toast({
-            title: "Google sign-in failed",
-            description: result.error.message,
-            variant: "destructive",
-          });
-        } else if (!result.redirected) {
-          // Session was set by the lovable bridge — navigate into the app.
-          navigate("/", { replace: true });
-        }
-      } else {
-        // Published domain, custom domain, native, and localhost use Supabase directly.
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: "google",
-          options: {
-            redirectTo: getOAuthRedirectUrl(),
-            skipBrowserRedirect: true,
-          },
-        });
-        if (error) throw error;
-        if (data?.url) {
-          window.location.href = data.url;
-        }
+      } else if (!result.redirected) {
+        // Session was set by the lovable bridge — navigate into the app.
+        navigate("/", { replace: true });
       }
     } catch (error: any) {
       toast({
@@ -88,31 +75,17 @@ const Auth = () => {
     triggerHapticFeedback('light');
     setAppleLoading(true);
     try {
-      if (isLovablePreview()) {
-        const result = await lovable.auth.signInWithOAuth("apple", {
-          redirect_uri: window.location.origin,
+      const result = await lovable.auth.signInWithOAuth("apple", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        toast({
+          title: "Apple sign-in failed",
+          description: result.error.message,
+          variant: "destructive",
         });
-        if (result.error) {
-          toast({
-            title: "Apple sign-in failed",
-            description: result.error.message,
-            variant: "destructive",
-          });
-        } else if (!result.redirected) {
-          navigate("/", { replace: true });
-        }
-      } else {
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: "apple",
-          options: {
-            redirectTo: getOAuthRedirectUrl(),
-            skipBrowserRedirect: true,
-          },
-        });
-        if (error) throw error;
-        if (data?.url) {
-          window.location.href = data.url;
-        }
+      } else if (!result.redirected) {
+        navigate("/", { replace: true });
       }
     } catch (error: any) {
       toast({
