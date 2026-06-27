@@ -56,3 +56,46 @@ export const getOAuthRedirectUrl = (): string => {
   if (Capacitor.isNativePlatform()) return NATIVE_OAUTH_REDIRECT;
   return `${window.location.origin}/auth/callback`;
 };
+
+/**
+ * The distinct runtimes this app can be opened from. Use this for descriptive
+ * decisions (analytics labels, layout hints) — for the "auth-first vs marketing"
+ * routing decision, use {@link shouldShowAppAuthFirst}, which gates on the same
+ * signals.
+ */
+export type RuntimeSurface =
+  | "native-ios"
+  | "native-android"
+  | "web-desktop"
+  | "web-mobile-browser"
+  | "web-pwa";
+
+const getUserAgent = (): string =>
+  typeof navigator !== "undefined" ? navigator.userAgent : "";
+
+/** Viewport-based desktop/mobile split — for layout/UX only, never for native detection. */
+const isMobileViewport = (): boolean =>
+  typeof window !== "undefined" &&
+  typeof window.matchMedia === "function" &&
+  window.matchMedia("(max-width: 767px)").matches;
+
+/**
+ * Classify the current runtime into a single {@link RuntimeSurface}.
+ *
+ * Derived entirely from the predicates above so there is exactly one source of
+ * truth. "Native" comes from real runtime signals ({@link isNativeWrapper}:
+ * Capacitor platform, the Despia UA token, or an explicit ?source=app launch) —
+ * never from viewport size or a bare mobile user-agent. iOS vs Android is taken
+ * from the Capacitor platform when available, otherwise a coarse UA hint.
+ */
+export const getRuntimeSurface = (): RuntimeSurface => {
+  if (isNativeWrapper()) {
+    const platform = Capacitor.getPlatform();
+    if (platform === "android") return "native-android";
+    if (platform === "ios") return "native-ios";
+    // Despia / ?source=app: Capacitor reports "web", so fall back to a UA hint.
+    return /android/i.test(getUserAgent()) ? "native-android" : "native-ios";
+  }
+  if (isStandalonePWA()) return "web-pwa";
+  return isMobileViewport() ? "web-mobile-browser" : "web-desktop";
+};

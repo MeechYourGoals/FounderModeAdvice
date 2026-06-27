@@ -44,10 +44,13 @@ export async function initializeNativePlugins() {
       if (url.includes('auth/callback')) {
         try {
           await supabase.auth.exchangeCodeForSession(url);
-        } catch (error) {
-          console.error('Error completing OAuth sign in:', error);
-        } finally {
+          // Success: land on the app shell (Index routes signed-in users in).
           window.location.href = '/';
+        } catch (error) {
+          // Failure: return to the auth screen so the user can retry, instead of
+          // bouncing through the marketing/app shell with no session.
+          console.error('Error completing OAuth sign in:', error);
+          window.location.href = '/auth';
         }
       }
     });

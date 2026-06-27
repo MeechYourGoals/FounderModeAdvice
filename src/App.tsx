@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useSearchParams } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider";
+import { AuthProvider } from "@/hooks/useAuth";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import { ActiveProfileProvider } from "@/contexts/ActiveProfileContext";
 import { useToast } from "@/hooks/use-toast";
@@ -62,6 +63,7 @@ function SubscriptionCallback() {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+      <AuthProvider>
       <SubscriptionProvider>
         <ActiveProfileProvider>
         <TooltipProvider>
@@ -98,6 +100,7 @@ const App = () => (
         </TooltipProvider>
         </ActiveProfileProvider>
       </SubscriptionProvider>
+      </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );
