@@ -292,16 +292,17 @@ const fetchTranscriptViaSupadata = async (
 
 /** One call that returns everything a downstream prompt needs. */
 export const getVideoContext = async (url: string): Promise<VideoContext> => {
-  const platform = detectPlatform(url);
+  const canonicalUrl = await canonicalizeVideoUrl(url);
+  const platform = detectPlatform(canonicalUrl);
 
   // Run metadata + transcript in parallel for speed.
   // For YouTube, try the free native extractor first; if it returns null, fall through to Supadata.
   const [metadata, nativeTranscript] = await Promise.all([
-    fetchOEmbedOrOg(url, platform),
-    platform === "youtube" ? extractYouTubeTranscriptNative(url) : Promise.resolve(null),
+    fetchOEmbedOrOg(canonicalUrl, platform),
+    platform === "youtube" ? extractYouTubeTranscriptNative(canonicalUrl) : Promise.resolve(null),
   ]);
 
-  const transcript = nativeTranscript ?? (await fetchTranscriptViaSupadata(url, platform));
+  const transcript = nativeTranscript ?? (await fetchTranscriptViaSupadata(canonicalUrl, platform));
 
   return { platform, metadata, transcript };
 };
