@@ -353,7 +353,7 @@ export const PublicLanding = () => {
                   </p>
                 </div>
                 <div className="space-y-3 flex flex-col">
-                  <MiniFeature icon={<ShieldCheck className="w-4 h-4" />} title="Any public video in" description="Paste a founder, investor, operator, strategy, or leadership video from YouTube, Vimeo, LinkedIn, X, or any public podcast or web video URL." />
+                  <MiniFeature icon={<ShieldCheck className="w-4 h-4" />} title="Public Youtube video in" description="Paste a founder, investor, operator, strategy, or leadership video from YouTube, Vimeo, LinkedIn, X, or any public podcast or web video URL." />
                   <MiniFeature icon={<Target className="w-4 h-4" />} title="Tailored advice out" description="Insight mapped to your industry, stage, customers, and constraints — not a generic venture-scale playbook." />
                   <MiniFeature icon={<MessageSquare className="w-4 h-4" />} title="Transcript-grounded Q&A" description="Ask follow-up questions directly against the transcript and your company context after analysis." />
                 </div>
