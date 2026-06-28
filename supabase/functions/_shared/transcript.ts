@@ -21,6 +21,7 @@ export type VideoTranscript = {
 export type VideoMetadata = {
   title: string | null;
   author: string | null;
+  authorUrl: string | null;
   thumbnail: string | null;
   description: string | null;
 };
@@ -120,7 +121,7 @@ export const fetchOEmbedOrOg = async (
   url: string,
   platform: Platform,
 ): Promise<VideoMetadata> => {
-  const empty: VideoMetadata = { title: null, author: null, thumbnail: null, description: null };
+  const empty: VideoMetadata = { title: null, author: null, authorUrl: null, thumbnail: null, description: null };
   try {
     // oEmbed endpoints (no auth required, lightweight)
     const oembedUrl =
@@ -139,6 +140,7 @@ export const fetchOEmbedOrOg = async (
         return {
           title: j.title || null,
           author: j.author_name || null,
+          authorUrl: j.author_url || null,
           thumbnail: j.thumbnail_url || null,
           description: j.description || null,
         };
@@ -161,6 +163,7 @@ export const fetchOEmbedOrOg = async (
         html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim() ||
         null,
       author: extractMeta(html, ["og:site_name", "author", "twitter:creator"]),
+      authorUrl: extractMeta(html, ["og:url"]),
       thumbnail: extractMeta(html, ["og:image", "twitter:image"]),
       description: extractMeta(html, ["og:description", "twitter:description", "description"]),
     };
@@ -168,6 +171,44 @@ export const fetchOEmbedOrOg = async (
     console.warn("fetchOEmbedOrOg failed:", e);
     return empty;
   }
+};
+
+/**
+ * Derive a stable @handle from oEmbed author_url or from the canonical URL.
+ * Examples:
+ *   https://www.youtube.com/@ycombinator           → @ycombinator
+ *   https://www.youtube.com/user/ycombinator       → @ycombinator
+ *   https://www.tiktok.com/@garyvee/video/123      → @garyvee
+ *   https://twitter.com/elonmusk/status/...        → @elonmusk
+ */
+export const deriveChannelHandle = (
+  authorUrl: string | null,
+  fallbackVideoUrl: string,
+): string | null => {
+  const tryUrl = (raw: string | null): string | null => {
+    if (!raw) return null;
+    try {
+      const u = new URL(raw);
+      const parts = u.pathname.split("/").filter(Boolean);
+      // Direct @handle anywhere in the path
+      const at = parts.find((p) => p.startsWith("@"));
+      if (at) return at.toLowerCase();
+      // youtube /user/<name> or /c/<name>
+      if (parts[0] === "user" || parts[0] === "c") return `@${parts[1]?.toLowerCase()}`;
+      // twitter/x.com /<handle>/...
+      if (/(?:^|\.)x\.com$/.test(u.hostname) || /(?:^|\.)twitter\.com$/.test(u.hostname)) {
+        if (parts[0] && !["i", "search", "home"].includes(parts[0])) return `@${parts[0].toLowerCase()}`;
+      }
+      // instagram /<handle>/...
+      if (u.hostname.includes("instagram.com") && parts[0] && parts[0] !== "reel" && parts[0] !== "p") {
+        return `@${parts[0].toLowerCase()}`;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+  return tryUrl(authorUrl) ?? tryUrl(fallbackVideoUrl);
 };
 
 /** YouTube native caption extractor (free; tried first for YouTube to save Supadata credits). */
