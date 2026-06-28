@@ -21,7 +21,7 @@ const loadAliasMap = async (): Promise<Map<string, string>> => {
       .select("canonical_name, alias");
     const m = new Map<string, string>();
     if (!error && Array.isArray(data)) {
-      for (const row of data as Array<{ canonical_name: string; alias: string }>) {
+      for (const row of data as unknown as Array<{ canonical_name: string; alias: string }>) {
         m.set(row.alias.trim().toLowerCase(), row.canonical_name);
       }
     }
