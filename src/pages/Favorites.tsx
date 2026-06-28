@@ -269,6 +269,7 @@ const Favorites = () => {
           <CollectionsSidebar
             activeId={activeCollectionId}
             onLoad={loadCollection}
+            onCopyLink={copyCollectionLink}
             disabled={!paid}
           />
         </aside>
