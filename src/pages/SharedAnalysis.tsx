@@ -25,7 +25,7 @@ const SharedAnalysis = () => {
     Promise.all([
       supabase
         .from("episodes")
-        .select("id, title, url, founder_names, analyzed_profile_id, analyzed_profile_name_snapshot, user_startup_profiles(company_name)")
+        .select("id, title, url, founder_names")
         .eq("id", episodeId)
         .single(),
       supabase

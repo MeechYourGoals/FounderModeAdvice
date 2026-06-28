@@ -341,7 +341,7 @@ export const PublicLanding = () => {
             <div className="max-w-5xl mx-auto glass rounded-3xl p-5 sm:p-8 md:p-10 border-primary/15 shadow-card">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 md:items-stretch">
                 <div className="space-y-4 flex flex-col">
-                  <BadgeLabel>Any public video in. Operating leverage out.</BadgeLabel>
+                  <BadgeLabel>Public Youtube video in. Operating leverage out.</BadgeLabel>
                   <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
                     You don&apos;t need a boardroom of advisors to{" "}
                     <span className="font-display font-medium italic text-gradient">learn like you have one</span>.
@@ -353,7 +353,7 @@ export const PublicLanding = () => {
                   </p>
                 </div>
                 <div className="space-y-3 flex flex-col">
-                  <MiniFeature icon={<ShieldCheck className="w-4 h-4" />} title="Any public video in" description="Paste a founder, investor, operator, strategy, or leadership video from YouTube, Vimeo, LinkedIn, X, or any public podcast or web video URL." />
+                  <MiniFeature icon={<ShieldCheck className="w-4 h-4" />} title="Public Youtube video in" description="Paste a founder, investor, operator, strategy, or leadership video from YouTube, Vimeo, LinkedIn, X, or any public podcast or web video URL." />
                   <MiniFeature icon={<Target className="w-4 h-4" />} title="Tailored advice out" description="Insight mapped to your industry, stage, customers, and constraints — not a generic venture-scale playbook." />
                   <MiniFeature icon={<MessageSquare className="w-4 h-4" />} title="Transcript-grounded Q&A" description="Ask follow-up questions directly against the transcript and your company context after analysis." />
                 </div>

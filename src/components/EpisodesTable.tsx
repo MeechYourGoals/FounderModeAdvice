@@ -46,8 +46,8 @@ interface Episode {
   release_date: string | null;
   url: string;
   founder_names: string | null;
-  analyzed_profile_id: string | null;
-  analyzed_profile_name_snapshot: string | null;
+  analyzed_profile_id?: string | null;
+  analyzed_profile_name_snapshot?: string | null;
   analysis_status: string;
   company_id: string | null;
   created_at: string | null;
@@ -335,8 +335,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
       let query = supabase
         .from("episodes")
         .select(`
-            id, title, release_date, url, founder_names, analyzed_profile_id, analyzed_profile_name_snapshot, analysis_status, company_id, created_at,
-            user_startup_profiles (company_name),
+            id, title, release_date, url, founder_names, analysis_status, company_id, created_at,
             companies (name, founding_year, current_stage, valuation, industry),
             lessons (
                 lesson_tags (

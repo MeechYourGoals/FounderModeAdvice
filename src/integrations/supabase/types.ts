@@ -14,91 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      analysis_access_grants: {
-        Row: {
-          created_at: string
-          episode_id: string
-          grantee_user_id: string
-          granted_by_user_id: string
-          id: string
-          role: string
-        }
-        Insert: {
-          created_at?: string
-          episode_id: string
-          grantee_user_id: string
-          granted_by_user_id: string
-          id?: string
-          role?: string
-        }
-        Update: {
-          created_at?: string
-          episode_id?: string
-          grantee_user_id?: string
-          granted_by_user_id?: string
-          id?: string
-          role?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "analysis_access_grants_episode_id_fkey"
-            columns: ["episode_id"]
-            isOneToOne: false
-            referencedRelation: "episodes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      analysis_invites: {
-        Row: {
-          accepted_at: string | null
-          accepted_by_user_id: string | null
-          created_at: string
-          episode_id: string
-          expires_at: string
-          id: string
-          invited_by_user_id: string
-          invited_email: string
-          role: string
-          status: string
-          token_hash: string
-        }
-        Insert: {
-          accepted_at?: string | null
-          accepted_by_user_id?: string | null
-          created_at?: string
-          episode_id: string
-          expires_at?: string
-          id?: string
-          invited_by_user_id: string
-          invited_email: string
-          role?: string
-          status?: string
-          token_hash: string
-        }
-        Update: {
-          accepted_at?: string | null
-          accepted_by_user_id?: string | null
-          created_at?: string
-          episode_id?: string
-          expires_at?: string
-          id?: string
-          invited_by_user_id?: string
-          invited_email?: string
-          role?: string
-          status?: string
-          token_hash?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "analysis_invites_episode_id_fkey"
-            columns: ["episode_id"]
-            isOneToOne: false
-            referencedRelation: "episodes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       bookmark_folders: {
         Row: {
           color: string | null
@@ -392,8 +307,6 @@ export type Database = {
         Row: {
           analysis_status: string | null
           analyzed_by: string | null
-          analyzed_profile_id: string | null
-          analyzed_profile_name_snapshot: string | null
           company_id: string | null
           created_at: string | null
           founder_names: string | null
@@ -408,8 +321,6 @@ export type Database = {
         Insert: {
           analysis_status?: string | null
           analyzed_by?: string | null
-          analyzed_profile_id?: string | null
-          analyzed_profile_name_snapshot?: string | null
           company_id?: string | null
           created_at?: string | null
           founder_names?: string | null
@@ -424,8 +335,6 @@ export type Database = {
         Update: {
           analysis_status?: string | null
           analyzed_by?: string | null
-          analyzed_profile_id?: string | null
-          analyzed_profile_name_snapshot?: string | null
           company_id?: string | null
           created_at?: string | null
           founder_names?: string | null
@@ -438,13 +347,6 @@ export type Database = {
           url?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "episodes_analyzed_profile_id_fkey"
-            columns: ["analyzed_profile_id"]
-            isOneToOne: false
-            referencedRelation: "user_startup_profiles"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "episodes_company_id_fkey"
             columns: ["company_id"]
@@ -1041,15 +943,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      accept_analysis_invite: {
-        Args: { p_token_hash: string }
-        Returns: string
-      }
       accept_folder_invite: { Args: { p_token_hash: string }; Returns: string }
-      can_user_view_invited_episode: {
-        Args: { _episode_id: string; _user_id: string }
-        Returns: boolean
-      }
       check_tier_limits: {
         Args: { p_user_id: string }
         Returns: {
@@ -1084,15 +978,10 @@ export type Database = {
         Returns: boolean
       }
       increment_analysis_count: { Args: { p_user_id: string }; Returns: number }
-      is_episode_owner: {
-        Args: { _episode_id: string; _user_id: string }
-        Returns: boolean
-      }
       is_folder_owner: {
         Args: { _folder_id: string; _user_id: string }
         Returns: boolean
       }
-      user_has_boardroom_plan: { Args: { _user_id: string }; Returns: boolean }
       user_has_paid_plan: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
