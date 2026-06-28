@@ -7,6 +7,7 @@ export const CANONICAL_TOPICS = [
   "Sales",
   "Fundraising",
   "Hiring",
+  "Competitors",
   "Product",
   "Growth",
   "Operations",
@@ -27,13 +28,19 @@ export const CANONICAL_TOPICS = [
 
 export type CanonicalTopic = (typeof CANONICAL_TOPICS)[number];
 
+/** Shortcut tabs surfaced at the top of the library + favorites view. */
+export const SHORTCUT_TOPICS: CanonicalTopic[] = [
+  "Marketing",
+  "Hiring",
+  "Competitors",
+  "Fundraising",
+];
+
 const LOWER_TO_DISPLAY = new Map<string, CanonicalTopic>(
   CANONICAL_TOPICS.map((t) => [t.toLowerCase(), t]),
 );
 
-// Cheap aliases so #growth-hacks or "go to market" still bucket correctly.
 const ALIASES: Record<string, CanonicalTopic> = {
-  gtm: "Go-To-Market" as unknown as CanonicalTopic, // not in canon — drop
   "go-to-market": "Distribution",
   "go to market": "Distribution",
   funding: "Fundraising",
@@ -49,14 +56,16 @@ const ALIASES: Record<string, CanonicalTopic> = {
   pmf: "Product-Market Fit",
   "product market fit": "Product-Market Fit",
   bootstrap: "Bootstrapping",
+  competition: "Competitors",
+  competitor: "Competitors",
+  rivals: "Competitors",
 };
 
-/** Map a free-form tag/topic string to a canonical topic, or null if no fit. */
 export const normalizeTopic = (raw: string): CanonicalTopic | null => {
   const clean = raw.trim().replace(/^#/, "").toLowerCase();
   if (!clean) return null;
   if (LOWER_TO_DISPLAY.has(clean)) return LOWER_TO_DISPLAY.get(clean)!;
-  if (ALIASES[clean] && CANONICAL_TOPICS.includes(ALIASES[clean])) return ALIASES[clean];
+  if (ALIASES[clean]) return ALIASES[clean];
   return null;
 };
 

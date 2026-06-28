@@ -5,7 +5,7 @@ import { getVideoContext, deriveChannelHandle } from "../_shared/transcript.ts";
 
 // Canonical topic vocabulary (keep in sync with src/lib/topics.ts).
 const CANONICAL_TOPICS = [
-  "Marketing","Sales","Fundraising","Hiring","Product","Growth","Operations",
+  "Marketing","Sales","Fundraising","Hiring","Competitors","Product","Growth","Operations",
   "Leadership","AI","Engineering","Design","Pricing","Distribution","Community",
   "Bootstrapping","Enterprise","Brand","Product-Market Fit","Strategy","Culture",
 ] as const;
@@ -429,6 +429,43 @@ INSTRUCTIONS:
     const channelHandle = deriveChannelHandle(videoContext.metadata.authorUrl, episodeUrl);
     const topics = normalizeTopics(analysis.topics);
 
+    // Canonicalize founder names via the founder_aliases table so favoriting
+    // "Elon Musk" once filters all his analyses.
+    const rawFounders = (analysis.founderNames || "")
+      .split(",")
+      .map((s: string) => s.trim())
+      .filter(Boolean);
+    let canonicalFounders: string[] = [];
+    if (rawFounders.length > 0) {
+      const lookupKeys = rawFounders.map((f) => f.toLowerCase().replace(/^@/, ""));
+      const { data: aliasRows } = await supabase
+        .from('founder_aliases')
+        .select('canonical_name, alias')
+        .in('alias', Array.from(new Set([...lookupKeys, ...lookupKeys.map((k) => "@" + k)])));
+      const aliasMap = new Map<string, string>(
+        (aliasRows ?? []).map((r: any) => [r.alias.toLowerCase(), r.canonical_name]),
+      );
+      const seen = new Set<string>();
+      for (const f of rawFounders) {
+        const key = f.toLowerCase().replace(/^@/, "");
+        const canonical =
+          aliasMap.get(key) ||
+          aliasMap.get("@" + key) ||
+          f.split(/\s+/).map((w) => w[0]?.toUpperCase() + w.slice(1)).join(" ");
+        // Best-effort insert of newly-seen alias so future videos match.
+        if (!aliasMap.has(key) && !aliasMap.has("@" + key)) {
+          await supabase.from('founder_aliases').upsert(
+            { canonical_name: canonical, alias: key },
+            { onConflict: 'alias' },
+          );
+        }
+        if (!seen.has(canonical.toLowerCase())) {
+          seen.add(canonical.toLowerCase());
+          canonicalFounders.push(canonical);
+        }
+      }
+    }
+
     const { data: episode, error: episodeError } = await supabase
       .from('episodes')
       .insert({
@@ -440,6 +477,7 @@ INSTRUCTIONS:
         analyzed_profile_id: resolvedStartupProfileId,
         analyzed_profile_name_snapshot: resolvedStartupProfileNameSnapshot,
         founder_names: analysis.founderNames,
+        founders: canonicalFounders,
         channel_name: channelName,
         channel_handle: channelHandle,
         topics,
