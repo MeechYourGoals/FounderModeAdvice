@@ -2,16 +2,17 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Layers, Pencil, Trash2, Check, X } from "lucide-react";
+import { Layers, Pencil, Trash2, Check, X, Link2 } from "lucide-react";
 import { useFavorites, type FavoriteCollection } from "@/hooks/useFavorites";
 
 interface Props {
   activeId: string | null;
   onLoad: (c: FavoriteCollection) => void;
+  onCopyLink: (c: FavoriteCollection) => void;
   disabled?: boolean;
 }
 
-export const CollectionsSidebar = ({ activeId, onLoad, disabled }: Props) => {
+export const CollectionsSidebar = ({ activeId, onLoad, onCopyLink, disabled }: Props) => {
   const { collections, renameCollection, deleteCollection } = useFavorites();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
@@ -80,6 +81,15 @@ export const CollectionsSidebar = ({ activeId, onLoad, disabled }: Props) => {
                         {c.pins.length} {c.pins.length === 1 ? "pin" : "pins"}
                       </div>
                     </button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                      onClick={() => onCopyLink(c)}
+                      aria-label="Copy share link"
+                    >
+                      <Link2 className="h-3.5 w-3.5" />
+                    </Button>
                     <Button
                       size="icon"
                       variant="ghost"

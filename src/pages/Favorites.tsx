@@ -160,8 +160,8 @@ const Favorites = () => {
   );
 
   const filteredEpisodes: EpisodeRow[] = useMemo(
-    () => filterEpisodesByPins(facets.rows, pins),
-    [facets.rows, pins],
+    () => filterEpisodesByPins(facets.index, pins),
+    [facets.index, pins],
   );
 
   const loadCollection = (c: FavoriteCollection) => {
@@ -173,6 +173,7 @@ const Favorites = () => {
     const params = new URLSearchParams(searchParams);
     if (nextPins.length === 0) params.delete("pins");
     else params.set("pins", encodePins(nextPins));
+    params.set("collection", c.id);
     setSearchParams(params, { replace: true });
     setActiveCollectionId(c.id);
   };
@@ -190,6 +191,37 @@ const Favorites = () => {
     }
   };
 
+  const copyShareLink = async () => {
+    const url = new URL(window.location.href);
+    url.search = "";
+    if (pins.length > 0) url.searchParams.set("pins", encodePins(pins));
+    if (activeCollectionId) url.searchParams.set("collection", activeCollectionId);
+    try {
+      await navigator.clipboard.writeText(url.toString());
+      toast({ title: "Link copied", description: "Paste it anywhere to reopen this exact view." });
+    } catch {
+      window.prompt("Copy this link", url.toString());
+    }
+  };
+
+  const copyCollectionLink = async (c: FavoriteCollection) => {
+    const url = new URL(window.location.href);
+    url.search = "";
+    const collectionPins = c.pins.map((p) => ({
+      kind: p.kind,
+      value: p.value,
+      display_name: lookupDisplay(p.kind, p.value),
+    }));
+    if (collectionPins.length > 0) url.searchParams.set("pins", encodePins(collectionPins));
+    url.searchParams.set("collection", c.id);
+    try {
+      await navigator.clipboard.writeText(url.toString());
+      toast({ title: "Collection link copied", description: `Share "${c.name}" with one click.` });
+    } catch {
+      window.prompt("Copy this link", url.toString());
+    }
+  };
+
   // Topic shortcut tab handler — sets a single topic pin.
   const onShortcutClick = (topic: string) => {
     const key = `topic:${topic.toLowerCase()}`;
@@ -198,10 +230,11 @@ const Favorites = () => {
     else setPins([{ kind: "topic", value: topic.toLowerCase(), display_name: topic }]);
   };
 
-  // Auto-clear active collection highlight if pins drift away from it.
+  // Hydrate active collection highlight from the URL on first load / reload.
   useEffect(() => {
-    if (!activeCollectionId) return;
-  }, [activeCollectionId]);
+    const cid = searchParams.get("collection");
+    if (cid && cid !== activeCollectionId) setActiveCollectionId(cid);
+  }, [searchParams, activeCollectionId]);
 
   if (authLoading || subLoading) return <AppLoadingScreen label="Loading favorites..." />;
   if (!user) {
@@ -236,6 +269,7 @@ const Favorites = () => {
           <CollectionsSidebar
             activeId={activeCollectionId}
             onLoad={loadCollection}
+            onCopyLink={copyCollectionLink}
             disabled={!paid}
           />
         </aside>
@@ -326,6 +360,7 @@ const Favorites = () => {
                 onRemove={(p) => setPins(pins.filter((x) => !(x.kind === p.kind && x.value === p.value)))}
                 onClear={() => setPins([])}
                 onSaveCollection={handleSaveCollection}
+                onShare={copyShareLink}
                 canSave={paid}
               />
               <div>

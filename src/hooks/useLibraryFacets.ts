@@ -26,11 +26,21 @@ export interface EpisodeRow {
   created_at: string | null;
 }
 
+export type PinKind = "founder" | "channel" | "topic";
+
+export interface PinIndex {
+  /** kind -> normalized value -> set of episode ids */
+  byKind: Record<PinKind, Map<string, Set<string>>>;
+  /** episode lookup */
+  rowById: Map<string, EpisodeRow>;
+}
+
 export interface LibraryFacets {
   founders: FacetCount[];
   channels: FacetCount[];
   topics: FacetCount[];
   rows: EpisodeRow[];
+  index: PinIndex;
   loading: boolean;
 }
 
@@ -39,6 +49,16 @@ const bump = (map: Map<string, FacetCount>, value: string, display: string) => {
   const existing = map.get(key);
   if (existing) existing.count += 1;
   else map.set(key, { value: key, display_name: display, count: 1 });
+};
+
+const indexAdd = (m: Map<string, Set<string>>, value: string, id: string) => {
+  const k = value.toLowerCase();
+  let s = m.get(k);
+  if (!s) {
+    s = new Set();
+    m.set(k, s);
+  }
+  s.add(id);
 };
 
 /** Pull canonical founders from a row, falling back to the legacy comma-joined string. */
@@ -94,16 +114,29 @@ export const useLibraryFacets = (): LibraryFacets => {
     const channels = new Map<string, FacetCount>();
     const topics = new Map<string, FacetCount>();
 
+    const index: PinIndex = {
+      byKind: {
+        founder: new Map(),
+        channel: new Map(),
+        topic: new Map(),
+      },
+      rowById: new Map(),
+    };
+
     for (const r of rows) {
+      index.rowById.set(r.id, r);
       for (const f of rowFounders(r)) {
-        bump(founders, f, f); // canonical name is already display-ready
+        bump(founders, f, f);
+        indexAdd(index.byKind.founder, f, r.id);
       }
       if (r.channel_name) {
         const handle = r.channel_handle?.trim() || r.channel_name.trim();
         bump(channels, handle, r.channel_name.trim());
+        indexAdd(index.byKind.channel, handle, r.id);
       }
       for (const t of normalizeTopics(r.topics)) {
         bump(topics, t, t);
+        indexAdd(index.byKind.topic, t, r.id);
       }
     }
 
@@ -117,25 +150,63 @@ export const useLibraryFacets = (): LibraryFacets => {
       channels: sort(channels),
       topics: sort(topics),
       rows,
+      index,
       loading,
     };
   }, [rows, loading]);
 };
 
-/** Filter an episode list by the strict intersection of selected pins. */
+/**
+ * Index-based intersection filter. O(smallest_set + ∑ lookups) instead of
+ * O(rows × pins). For thousands of episodes with multiple pins this stays
+ * sub-millisecond.
+ */
 export const filterEpisodesByPins = (
-  rows: EpisodeRow[],
-  pins: Array<{ kind: "founder" | "channel" | "topic"; value: string }>,
+  rowsOrIndex: EpisodeRow[] | PinIndex,
+  pins: Array<{ kind: PinKind; value: string }>,
 ): EpisodeRow[] => {
-  if (pins.length === 0) return rows;
-  return rows.filter((r) => {
-    const founderSet = new Set(rowFounders(r).map((s) => s.toLowerCase()));
-    const channelKey = (r.channel_handle?.trim() || r.channel_name?.trim() || "").toLowerCase();
-    const topicSet = new Set(normalizeTopics(r.topics).map((t) => t.toLowerCase()));
-    return pins.every((p) => {
-      if (p.kind === "founder") return founderSet.has(p.value.toLowerCase());
-      if (p.kind === "channel") return channelKey === p.value.toLowerCase();
-      return topicSet.has(p.value.toLowerCase());
+  // Back-compat: array input falls back to a linear scan.
+  if (Array.isArray(rowsOrIndex)) {
+    if (pins.length === 0) return rowsOrIndex;
+    return rowsOrIndex.filter((r) => {
+      const founderSet = new Set(rowFounders(r).map((s) => s.toLowerCase()));
+      const channelKey = (r.channel_handle?.trim() || r.channel_name?.trim() || "").toLowerCase();
+      const topicSet = new Set(normalizeTopics(r.topics).map((t) => t.toLowerCase()));
+      return pins.every((p) => {
+        if (p.kind === "founder") return founderSet.has(p.value.toLowerCase());
+        if (p.kind === "channel") return channelKey === p.value.toLowerCase();
+        return topicSet.has(p.value.toLowerCase());
+      });
     });
-  });
+  }
+
+  const index = rowsOrIndex;
+  const allRows = Array.from(index.rowById.values());
+  if (pins.length === 0) return allRows;
+
+  // Resolve each pin to its episode-id set; missing pin => empty result.
+  const sets: Set<string>[] = [];
+  for (const p of pins) {
+    const s = index.byKind[p.kind].get(p.value.toLowerCase());
+    if (!s || s.size === 0) return [];
+    sets.push(s);
+  }
+  sets.sort((a, b) => a.size - b.size);
+  const [smallest, ...rest] = sets;
+
+  const out: EpisodeRow[] = [];
+  for (const id of smallest) {
+    let ok = true;
+    for (const s of rest) {
+      if (!s.has(id)) { ok = false; break; }
+    }
+    if (ok) {
+      const row = index.rowById.get(id);
+      if (row) out.push(row);
+    }
+  }
+  // Preserve newest-first order from the source query.
+  const order = new Map(allRows.map((r, i) => [r.id, i]));
+  out.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
+  return out;
 };
