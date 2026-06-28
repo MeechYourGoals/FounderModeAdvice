@@ -230,11 +230,14 @@ export const AnalysisForm = () => {
             .eq('url', url)
             .limit(1);
 
+      // analyzed_profile_id column is missing in DB
+      /*
       if (options?.profileId) {
         existingQuery = existingQuery.eq("analyzed_profile_id", options.profileId);
       } else {
         existingQuery = existingQuery.is("analyzed_profile_id", null);
       }
+      */
       const { data: existing } = await existingQuery;
 
       if (existing && existing.length > 0) {
