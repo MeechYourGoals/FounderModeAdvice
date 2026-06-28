@@ -85,6 +85,15 @@ export const CollectionsSidebar = ({ activeId, onLoad, onCopyLink, disabled }: P
                       size="icon"
                       variant="ghost"
                       className="h-7 w-7"
+                      onClick={() => onCopyLink(c)}
+                      aria-label="Copy share link"
+                    >
+                      <Link2 className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
                       onClick={() => {
                         setDraft(c.name);
                         setEditingId(c.id);
