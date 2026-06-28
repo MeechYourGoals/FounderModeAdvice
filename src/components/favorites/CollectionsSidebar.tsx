@@ -2,16 +2,17 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Layers, Pencil, Trash2, Check, X } from "lucide-react";
+import { Layers, Pencil, Trash2, Check, X, Link2 } from "lucide-react";
 import { useFavorites, type FavoriteCollection } from "@/hooks/useFavorites";
 
 interface Props {
   activeId: string | null;
   onLoad: (c: FavoriteCollection) => void;
+  onCopyLink: (c: FavoriteCollection) => void;
   disabled?: boolean;
 }
 
-export const CollectionsSidebar = ({ activeId, onLoad, disabled }: Props) => {
+export const CollectionsSidebar = ({ activeId, onLoad, onCopyLink, disabled }: Props) => {
   const { collections, renameCollection, deleteCollection } = useFavorites();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
