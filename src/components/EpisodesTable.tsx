@@ -46,8 +46,8 @@ interface Episode {
   release_date: string | null;
   url: string;
   founder_names: string | null;
-  analyzed_profile_id: string | null;
-  analyzed_profile_name_snapshot: string | null;
+  analyzed_profile_id?: string | null;
+  analyzed_profile_name_snapshot?: string | null;
   analysis_status: string;
   company_id: string | null;
   created_at: string | null;
