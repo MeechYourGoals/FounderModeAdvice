@@ -229,7 +229,6 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
         .from('episodes')
         .select(`
           id, title, release_date, url, founder_names, analyzed_by, 
-          user_startup_profiles (company_name),
           companies (name, founding_year, current_stage, funding_raised, valuation, employee_count, industry, status)
         `)
         .eq('id', episodeId)
