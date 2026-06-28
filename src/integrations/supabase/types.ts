@@ -312,6 +312,7 @@ export type Database = {
           company_id: string | null
           created_at: string | null
           founder_names: string | null
+          founders: string[]
           id: string
           platform: string | null
           podcast_id: string | null
@@ -329,6 +330,7 @@ export type Database = {
           company_id?: string | null
           created_at?: string | null
           founder_names?: string | null
+          founders?: string[]
           id?: string
           platform?: string | null
           podcast_id?: string | null
@@ -346,6 +348,7 @@ export type Database = {
           company_id?: string | null
           created_at?: string | null
           founder_names?: string | null
+          founders?: string[]
           id?: string
           platform?: string | null
           podcast_id?: string | null
@@ -371,6 +374,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      favorite_collections: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          pins: Json
+          sort_order: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          pins?: Json
+          sort_order?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          pins?: Json
+          sort_order?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       folder_invites: {
         Row: {
@@ -450,6 +483,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      founder_aliases: {
+        Row: {
+          alias: string
+          canonical_name: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          alias: string
+          canonical_name: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          alias?: string
+          canonical_name?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
       }
       lesson_tags: {
         Row: {
@@ -669,6 +723,7 @@ export type Database = {
           display_name: string
           id: string
           kind: string
+          sort_order: number
           user_id: string
           value: string
         }
@@ -677,6 +732,7 @@ export type Database = {
           display_name: string
           id?: string
           kind: string
+          sort_order?: number
           user_id: string
           value: string
         }
@@ -685,6 +741,7 @@ export type Database = {
           display_name?: string
           id?: string
           kind?: string
+          sort_order?: number
           user_id?: string
           value?: string
         }

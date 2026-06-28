@@ -1,110 +1,104 @@
-# Smart Favorites & Auto-Grouping (Premium)
 
-Let users pivot their analyzed library by **founder**, **channel/source**, and **topic** — without manually building folders.
+## Smart Favorites v2
 
-## What we have
-- `episodes` already stores `founder_names` (text), `platform`, `url`, plus `companies` and `podcasts` tables.
-- `tags` + `lesson_tags` exist but only join to `lessons`, not to episodes/founders/channels.
-- `user_has_paid_plan()` already exists for gating.
+Five upgrades to the Favorites + Library facet system. All Pro-gated reads stay open; writes still require `user_has_paid_plan()`.
 
-## Architecture
+### 1. Topic shortcut tabs (Marketing / Hiring / Competitors / Fundraising)
 
-Three orthogonal facets, one new "Favorites" hub. All three are auto-derived from analysis output so users don't have to tag anything manually.
+- Add four pinned shortcut tabs at the top of the Library and on `/favorites`.
+- "Competitors" isn't currently canonical — add it to `CANONICAL_TOPICS` in `src/lib/topics.ts` and to the analyzer enum in `supabase/functions/analyze-episode/index.ts`.
+- Each tab links to `/library?topics=Marketing` (etc). No folder required — filters from `episodes.topics` array directly.
+- Shortcut tabs render even when zero matches exist, with an empty state CTA: "Analyze a video tagged Marketing to populate this view."
 
-### A. Schema (one migration)
+### 2. Multi-select pin intersection
 
+- Replace single-pin selection with a `Set<favoriteId>` in URL state (`?pins=ch:ycombinator,founder:elon-musk,topic:Marketing`).
+- Filter logic in `useLibraryFacets`: episode must match **every** selected pin (AND across facet types, AND within a facet type too — strict intersection).
+- Pin chip row shows selected pins with an `×` to remove individually and "Clear all".
+- Star toggle on a row still adds/removes from saved favorites; pin toggle is a separate click target on the chip.
+
+### 3. Favorites management drawer
+
+- New `src/components/favorites/FavoritesDrawer.tsx` opened from a gear icon in the Favorites hub and the Library facet bar.
+- Uses shadcn `Sheet` (right side).
+- Per favorite: rename (writes `display_name` override), drag-reorder (writes `sort_order`), remove.
+- Requires schema additions on `user_favorites`: `display_name text`, `sort_order integer default 0`.
+
+### 4. Saved facet collections + sidebar
+
+- New table `favorite_collections (id, user_id, name, pins jsonb, sort_order, created_at, updated_at)`.
+  - `pins` shape: `[{ kind: 'channel'|'founder'|'topic', value: string }]`.
+- "Save current filters" button in the pin chip row → prompts for name → inserts row.
+- New left sidebar section "Collections" on `/favorites` and `/library` listing saved collections; click loads pins into URL.
+- Inline rename + delete in sidebar. Paid-plan gated for writes.
+
+### 5. Founder entity de-duplication
+
+- New table `founder_aliases (id, canonical_name text, alias text unique, created_at)` seeded with common cases (Elon Musk / @elonmusk / elon, Paul Graham / pg, etc).
+- Add `founders text[]` to `episodes` (already extracted by analyzer into lessons/insights — promote to first-class column).
+- Update analyzer to: extract founders from transcript → normalize each through `founder_aliases` (insert new canonical row if unknown) → store canonical names in `episodes.founders`.
+- `useLibraryFacets` groups founders by canonical name so favoriting "Elon Musk" matches episodes tagged `@elonmusk`, `elon musk`, `Elon`.
+- Backfill: one-shot SQL pass mapping existing `lessons.speaker` / insights data into `episodes.founders` via the alias table.
+
+### Technical details
+
+**Migration**
 ```sql
--- 1. Channel extraction on episodes (auto-filled on analyze)
-ALTER TABLE episodes ADD COLUMN channel_name text;     -- "Y Combinator"
-ALTER TABLE episodes ADD COLUMN channel_handle text;   -- "@ycombinator" / tiktok @handle
-ALTER TABLE episodes ADD COLUMN topics text[];         -- ["marketing","fundraising"]
-CREATE INDEX idx_episodes_channel_handle ON episodes (channel_handle);
-CREATE INDEX idx_episodes_founder_names_trgm ON episodes USING gin (founder_names gin_trgm_ops);
-CREATE INDEX idx_episodes_topics ON episodes USING gin (topics);
+-- favorites enhancements
+alter table public.user_favorites
+  add column if not exists display_name text,
+  add column if not exists sort_order integer not null default 0;
 
--- 2. Per-user favorites (founders, channels, topics — one polymorphic table)
-CREATE TABLE user_favorites (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  kind text NOT NULL CHECK (kind IN ('founder','channel','topic')),
-  value text NOT NULL,           -- normalized lowercase
-  display_name text NOT NULL,    -- "Y Combinator", "Elon Musk", "Marketing"
-  created_at timestamptz DEFAULT now(),
-  UNIQUE (user_id, kind, value)
+-- collections
+create table public.favorite_collections (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  name text not null,
+  pins jsonb not null default '[]'::jsonb,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
-GRANT SELECT, INSERT, UPDATE, DELETE ON user_favorites TO authenticated;
-GRANT ALL ON user_favorites TO service_role;
-ALTER TABLE user_favorites ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "own favorites" ON user_favorites FOR ALL USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+grant select, insert, update, delete on public.favorite_collections to authenticated;
+grant all on public.favorite_collections to service_role;
+alter table public.favorite_collections enable row level security;
+create policy "own collections read" on public.favorite_collections for select to authenticated using (auth.uid() = user_id);
+create policy "own collections write" on public.favorite_collections for all to authenticated
+  using (auth.uid() = user_id and public.user_has_paid_plan(auth.uid()))
+  with check (auth.uid() = user_id and public.user_has_paid_plan(auth.uid()));
+
+-- founder canonicalization
+create table public.founder_aliases (
+  id uuid primary key default gen_random_uuid(),
+  canonical_name text not null,
+  alias text not null unique,
+  created_at timestamptz not null default now()
+);
+create index on public.founder_aliases (canonical_name);
+grant select on public.founder_aliases to authenticated, anon;
+grant all on public.founder_aliases to service_role;
+alter table public.founder_aliases enable row level security;
+create policy "aliases readable" on public.founder_aliases for select to authenticated, anon using (true);
+
+alter table public.episodes add column if not exists founders text[] not null default '{}';
+create index if not exists episodes_founders_gin on public.episodes using gin(founders);
 ```
 
-A canonical topic vocabulary (~20 entries: Marketing, Sales, Fundraising, Hiring, Product, Growth, Operations, Leadership, AI, Engineering, Design, Pricing, Distribution, Community, Bootstrapping, Enterprise, Brand, PMF, Strategy, Culture) lives in `src/lib/topics.ts`. The analyzer picks 1–3 from this fixed list — no free-text topic explosion.
+**Files touched**
+- `src/lib/topics.ts` — add `Competitors`.
+- `src/lib/founders.ts` (new) — `normalizeFounder()` using cached alias table.
+- `src/hooks/useFavorites.ts` — add rename / reorder / collection CRUD.
+- `src/hooks/useLibraryFacets.ts` — multi-pin intersection, canonical-name grouping, topic-tab shortcuts.
+- `src/pages/Favorites.tsx` + `src/pages/Index.tsx` — shortcut tabs, sidebar, drawer trigger, pin chip row.
+- `src/components/favorites/FavoritesDrawer.tsx` (new) — manage pins.
+- `src/components/favorites/CollectionsSidebar.tsx` (new).
+- `src/components/favorites/PinChips.tsx` (new).
+- `supabase/functions/analyze-episode/index.ts` + `_shared/founders.ts` (new) — founder extraction + alias upsert + canonical storage.
 
-### B. Edge function (`analyze-episode`)
+**Rollout**
+1. Migration (schema + seed aliases for ~30 well-known founders).
+2. Edge function update + backfill SQL for existing episodes.
+3. Frontend in one batch: hooks → components → page wiring.
+4. Smoke test on `test@test.com`: create 2 pins, save as collection, switch collection, rename a favorite, click Marketing tab.
 
-Already returns a structured analysis. Extend the prompt to also return:
-
-```json
-{ "channel_name": "...", "channel_handle": "...", "topics": ["Marketing","Growth"] }
-```
-
-For YouTube, prefer the canonical channel from oEmbed (`author_name` + `author_url`) over the LLM. For TikTok/Instagram/X, use the `@handle` from the canonical URL. Write `channel_name`, `channel_handle`, `topics` to `episodes` on insert/update.
-
-### C. Backfill
-
-One-time admin route (or `pg_notify` job) that re-walks existing rows: re-runs metadata fetch + a cheap topic-only LLM call for `topics`. Idempotent — skip rows already populated.
-
-### D. UI — `/library` (renamed from current Episodes list)
-
-Left rail (sticky on desktop, drawer on mobile):
-
-```
-★ Favorites
-  • Y Combinator (channel) — 14
-  • Elon Musk (founder) — 9
-  • Marketing (topic) — 23
-─────────────────
-Browse by
-  Founders ▸
-  Channels ▸
-  Topics ▸
-All videos
-```
-
-- Clicking a favorite filters the right-pane list (`episodes.where(channel_handle = $1 OR founder_names ilike %$1% OR $1 = ANY(topics))`).
-- "Browse by Founders/Channels/Topics" expands to faceted counts derived from the user's own analyzed library (`group by`).
-- A ★ icon on every facet row and every episode card toggles `user_favorites`.
-- Free users: rail shows facets but ★ buttons open the Pro upsell modal (reuses existing `useSubscription` + paywall).
-
-### E. Paywall
-
-`user_favorites` writes are gated by `user_has_paid_plan(auth.uid())` in the RLS `WITH CHECK`. Reads stay open so we can show their current pins even if they downgrade.
-
-## Files
-
-**New**
-- `supabase/migrations/<ts>_favorites_and_facets.sql`
-- `src/lib/topics.ts` — canonical topic list + helpers
-- `src/hooks/useFavorites.ts`
-- `src/hooks/useLibraryFacets.ts` — groups user's episodes by founder/channel/topic
-- `src/components/library/FavoritesRail.tsx`
-- `src/components/library/FacetGroup.tsx`
-- `src/components/library/FavoriteStar.tsx` (Pro-gated)
-
-**Modified**
-- `supabase/functions/analyze-episode/index.ts` — emit `channel_*` + `topics`, persist them
-- `supabase/functions/_shared/transcript.ts` — surface `author_url` (channel handle) from oEmbed
-- `src/pages/Library.tsx` (or current episodes page) — mount `FavoritesRail` + facet filtering
-- `src/components/EpisodeCard.tsx` — ★ button + channel/founder/topic chips
-- Mobile bottom nav: add Favorites entry for Pro users
-
-## Out of scope
-- No new payment SKU — uses existing Pro tier.
-- No social/shared favorites — strictly per-user.
-- No notifications when a favorited channel posts a new video (good follow-up later).
-
-## Rollout
-1. Migration + backfill script.
-2. Edge-function update (so all new analyses are tagged).
-3. UI rail + ★ buttons behind Pro gate.
-4. Verify on `test@test.com` (Pro): favorite Y Combinator, favorite Elon Musk, filter by Marketing, confirm counts match `episodes`.
+Ship as one cohesive release — these features depend on each other (intersection needs collections to be worth saving, drawer needs sort_order, topic tabs need Competitors in the enum).
