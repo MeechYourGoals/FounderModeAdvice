@@ -335,7 +335,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
       let query = supabase
         .from("episodes")
         .select(`
-            id, title, release_date, url, founder_names, analyzed_profile_id, analyzed_profile_name_snapshot, analysis_status, company_id, created_at,
+            id, title, release_date, url, founder_names, analysis_status, company_id, created_at,
             user_startup_profiles (company_name),
             companies (name, founding_year, current_stage, valuation, industry),
             lessons (

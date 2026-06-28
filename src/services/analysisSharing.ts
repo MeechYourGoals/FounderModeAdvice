@@ -43,7 +43,7 @@ export async function createAnalysisInvite(params: { episodeId: string; email: s
   const rawToken = generateInviteToken();
   const tokenHash = await hashInviteToken(rawToken);
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("analysis_invites")
     .insert({
       episode_id: params.episodeId,
@@ -63,7 +63,7 @@ export async function createAnalysisInvite(params: { episodeId: string; email: s
 }
 
 export async function listAnalysisInvites(episodeId: string): Promise<AnalysisInvite[]> {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("analysis_invites")
     .select("*")
     .eq("episode_id", episodeId)
@@ -74,14 +74,14 @@ export async function listAnalysisInvites(episodeId: string): Promise<AnalysisIn
 }
 
 export async function revokeAnalysisInvite(invite: AnalysisInvite) {
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from("analysis_invites")
     .update({ status: "revoked" })
     .eq("id", invite.id);
   if (error) throw error;
 
   if (invite.accepted_by_user_id) {
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await (supabase as any)
       .from("analysis_access_grants")
       .delete()
       .eq("episode_id", invite.episode_id)
@@ -92,7 +92,7 @@ export async function revokeAnalysisInvite(invite: AnalysisInvite) {
 
 export async function acceptAnalysisInvite(rawToken: string): Promise<string> {
   const tokenHash = await hashInviteToken(rawToken);
-  const { data, error } = await supabase.rpc("accept_analysis_invite", {
+  const { data, error } = await (supabase as any).rpc("accept_analysis_invite", {
     p_token_hash: tokenHash,
   });
   if (error) throw error;
@@ -105,7 +105,7 @@ export async function listSharedAnalyses(): Promise<SharedAnalysisSummary[]> {
   } = await supabase.auth.getUser();
   if (!user) return [];
 
-  const { data: grants, error } = await supabase
+  const { data: grants, error } = await (supabase as any)
     .from("analysis_access_grants")
     .select(`
       episode_id,
@@ -113,10 +113,7 @@ export async function listSharedAnalyses(): Promise<SharedAnalysisSummary[]> {
         id,
         title,
         created_at,
-        founder_names,
-        analyzed_profile_id,
-        analyzed_profile_name_snapshot,
-        user_startup_profiles (company_name)
+        founder_names
       )
     `)
     .eq("grantee_user_id", user.id);

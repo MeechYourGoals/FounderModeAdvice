@@ -228,7 +228,7 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
       const { data: episodeData, error: episodeError } = await supabase
         .from('episodes')
         .select(`
-          id, title, release_date, url, founder_names, analyzed_by, analyzed_profile_id, analyzed_profile_name_snapshot,
+          id, title, release_date, url, founder_names, analyzed_by, 
           user_startup_profiles (company_name),
           companies (name, founding_year, current_stage, funding_raised, valuation, employee_count, industry, status)
         `)
