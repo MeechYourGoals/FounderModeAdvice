@@ -307,6 +307,8 @@ export type Database = {
         Row: {
           analysis_status: string | null
           analyzed_by: string | null
+          channel_handle: string | null
+          channel_name: string | null
           company_id: string | null
           created_at: string | null
           founder_names: string | null
@@ -315,12 +317,15 @@ export type Database = {
           podcast_id: string | null
           release_date: string | null
           title: string
+          topics: string[] | null
           updated_at: string | null
           url: string
         }
         Insert: {
           analysis_status?: string | null
           analyzed_by?: string | null
+          channel_handle?: string | null
+          channel_name?: string | null
           company_id?: string | null
           created_at?: string | null
           founder_names?: string | null
@@ -329,12 +334,15 @@ export type Database = {
           podcast_id?: string | null
           release_date?: string | null
           title: string
+          topics?: string[] | null
           updated_at?: string | null
           url: string
         }
         Update: {
           analysis_status?: string | null
           analyzed_by?: string | null
+          channel_handle?: string | null
+          channel_name?: string | null
           company_id?: string | null
           created_at?: string | null
           founder_names?: string | null
@@ -343,6 +351,7 @@ export type Database = {
           podcast_id?: string | null
           release_date?: string | null
           title?: string
+          topics?: string[] | null
           updated_at?: string | null
           url?: string
         }
@@ -651,6 +660,33 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+        }
+        Relationships: []
+      }
+      user_favorites: {
+        Row: {
+          created_at: string
+          display_name: string
+          id: string
+          kind: string
+          user_id: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          id?: string
+          kind: string
+          user_id: string
+          value: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          id?: string
+          kind?: string
+          user_id?: string
+          value?: string
         }
         Relationships: []
       }
@@ -982,6 +1018,8 @@ export type Database = {
         Args: { _folder_id: string; _user_id: string }
         Returns: boolean
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       user_has_paid_plan: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {

@@ -1,7 +1,26 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import { getVideoContext } from "../_shared/transcript.ts";
+import { getVideoContext, deriveChannelHandle } from "../_shared/transcript.ts";
+
+// Canonical topic vocabulary (keep in sync with src/lib/topics.ts).
+const CANONICAL_TOPICS = [
+  "Marketing","Sales","Fundraising","Hiring","Product","Growth","Operations",
+  "Leadership","AI","Engineering","Design","Pricing","Distribution","Community",
+  "Bootstrapping","Enterprise","Brand","Product-Market Fit","Strategy","Culture",
+] as const;
+const TOPIC_SET = new Set(CANONICAL_TOPICS.map((t) => t.toLowerCase()));
+const normalizeTopics = (raw: unknown): string[] => {
+  if (!Array.isArray(raw)) return [];
+  const out = new Set<string>();
+  for (const item of raw) {
+    if (typeof item !== "string") continue;
+    const clean = item.trim().replace(/^#/, "");
+    const match = CANONICAL_TOPICS.find((t) => t.toLowerCase() === clean.toLowerCase());
+    if (match) out.add(match);
+  }
+  return Array.from(out).slice(0, 3);
+};
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -223,7 +242,8 @@ INSTRUCTIONS:
 6. Rank lessons by actionability (1-10) and impact (1-10)
 7. Include speaker attribution for each lesson
 8. Assign 1-3 relevant tags to each lesson (e.g. #growth, #culture, #pricing)
-9. If you cannot access the content, return an error - do NOT provide mock data`;
+9. Assign 1-3 TOPICS to the whole video, chosen ONLY from this fixed list: ${CANONICAL_TOPICS.join(", ")}
+10. If you cannot access the content, return an error - do NOT provide mock data`;
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -299,9 +319,16 @@ INSTRUCTIONS:
                       },
                       required: ["text", "relevanceScore"]
                     }
+                  },
+                  topics: {
+                    type: "array",
+                    description: `1-3 topics for the video, chosen ONLY from: ${CANONICAL_TOPICS.join(", ")}`,
+                    items: { type: "string", enum: [...CANONICAL_TOPICS] },
+                    minItems: 1,
+                    maxItems: 3
                   }
                 },
-                required: ["podcastSeriesName", "episodeTitle", "founderNames", "company", "lessons", "chavelCallouts"],
+                required: ["podcastSeriesName", "episodeTitle", "founderNames", "company", "lessons", "chavelCallouts", "topics"],
                 additionalProperties: false
               }
             }
@@ -397,6 +424,11 @@ INSTRUCTIONS:
     // Step 5: Create episode with date validation
     const isValidDate = (dateStr: string) => /^\d{4}-\d{2}-\d{2}$/.test(dateStr);
 
+    // Derive channel facets from oEmbed (preferred) with URL fallback.
+    const channelName = videoContext.metadata.author || null;
+    const channelHandle = deriveChannelHandle(videoContext.metadata.authorUrl, episodeUrl);
+    const topics = normalizeTopics(analysis.topics);
+
     const { data: episode, error: episodeError } = await supabase
       .from('episodes')
       .insert({
@@ -408,6 +440,9 @@ INSTRUCTIONS:
         analyzed_profile_id: resolvedStartupProfileId,
         analyzed_profile_name_snapshot: resolvedStartupProfileNameSnapshot,
         founder_names: analysis.founderNames,
+        channel_name: channelName,
+        channel_handle: channelHandle,
+        topics,
         analysis_status: 'completed',
         analyzed_by: authenticatedUserId || null,
       })

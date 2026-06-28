@@ -27,6 +27,7 @@ import SharedWithMe from "./pages/SharedWithMe";
 import SharedFolder from "./pages/SharedFolder";
 import AcceptAnalysisInvite from "./pages/AcceptAnalysisInvite";
 import SharedAnalysis from "./pages/SharedAnalysis";
+import Favorites from "./pages/Favorites";
 import NotFound from "./pages/NotFound";
 import { OfflineBadge } from "@/components/OfflineBadge";
 import { AppChrome } from "@/components/AppChrome";
@@ -95,6 +96,7 @@ const App = () => (
               <Route path="/shared" element={<SharedWithMe />} />
               <Route path="/shared/:folderId" element={<SharedFolder />} />
               <Route path="/shared-analysis/:episodeId" element={<SharedAnalysis />} />
+              <Route path="/favorites" element={<Favorites />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
