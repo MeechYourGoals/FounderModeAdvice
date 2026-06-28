@@ -359,6 +359,7 @@ const Favorites = () => {
                 onRemove={(p) => setPins(pins.filter((x) => !(x.kind === p.kind && x.value === p.value)))}
                 onClear={() => setPins([])}
                 onSaveCollection={handleSaveCollection}
+                onShare={copyShareLink}
                 canSave={paid}
               />
               <div>
