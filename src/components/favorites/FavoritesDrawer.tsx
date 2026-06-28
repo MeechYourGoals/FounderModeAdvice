@@ -2,8 +2,19 @@ import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Settings2, Trash2, GripVertical, Check, Pencil, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Settings2,
+  Trash2,
+  GripVertical,
+  Check,
+  Pencil,
+  X,
+  ArrowUpToLine,
+  ArrowDownToLine,
+} from "lucide-react";
 import { useFavorites, type Favorite, type FavoriteKind } from "@/hooks/useFavorites";
+import { useToast } from "@/hooks/use-toast";
 
 const KIND_LABEL: Record<FavoriteKind, string> = {
   channel: "Channels",
@@ -15,8 +26,30 @@ const KIND_ORDER: FavoriteKind[] = ["channel", "founder", "topic"];
 
 export const FavoritesDrawer = ({ disabled }: { disabled?: boolean }) => {
   const { favorites, rename, remove, reorder } = useFavorites();
+  const { toast } = useToast();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  const toggleSelected = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAllKind = (kind: FavoriteKind, on: boolean) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      for (const f of favorites.filter((x) => x.kind === kind)) {
+        if (on) next.add(f.id);
+        else next.delete(f.id);
+      }
+      return next;
+    });
+  };
 
   const move = (kind: FavoriteKind, fromIdx: number, dir: -1 | 1) => {
     const list = favorites.filter((f) => f.kind === kind);
@@ -24,13 +57,35 @@ export const FavoritesDrawer = ({ disabled }: { disabled?: boolean }) => {
     if (toIdx < 0 || toIdx >= list.length) return;
     const reordered = [...list];
     [reordered[fromIdx], reordered[toIdx]] = [reordered[toIdx], reordered[fromIdx]];
-    // Build new global order: keep other kinds where they are, replace this kind's slice.
     const newOrder: string[] = [];
     for (const k of KIND_ORDER) {
       if (k === kind) newOrder.push(...reordered.map((f) => f.id));
       else newOrder.push(...favorites.filter((f) => f.kind === k).map((f) => f.id));
     }
     void reorder(newOrder);
+  };
+
+  const bulkMove = async (kind: FavoriteKind, direction: "top" | "bottom") => {
+    const list = favorites.filter((f) => f.kind === kind);
+    const sel = list.filter((f) => selected.has(f.id));
+    const rest = list.filter((f) => !selected.has(f.id));
+    if (sel.length === 0) return;
+    const reordered = direction === "top" ? [...sel, ...rest] : [...rest, ...sel];
+    const newOrder: string[] = [];
+    for (const k of KIND_ORDER) {
+      if (k === kind) newOrder.push(...reordered.map((f) => f.id));
+      else newOrder.push(...favorites.filter((f) => f.kind === k).map((f) => f.id));
+    }
+    await reorder(newOrder);
+  };
+
+  const bulkRemove = async () => {
+    const targets = favorites.filter((f) => selected.has(f.id));
+    if (targets.length === 0) return;
+    if (!window.confirm(`Remove ${targets.length} pinned ${targets.length === 1 ? "item" : "items"}?`)) return;
+    await Promise.all(targets.map((f) => remove(f.kind, f.value)));
+    setSelected(new Set());
+    toast({ title: `Removed ${targets.length} pins` });
   };
 
   const startEdit = (f: Favorite) => {
@@ -44,6 +99,8 @@ export const FavoritesDrawer = ({ disabled }: { disabled?: boolean }) => {
     setEditingId(null);
   };
 
+  const selectedCount = selected.size;
+
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -56,6 +113,19 @@ export const FavoritesDrawer = ({ disabled }: { disabled?: boolean }) => {
         <SheetHeader>
           <SheetTitle>Manage favorites</SheetTitle>
         </SheetHeader>
+
+        {selectedCount > 0 && (
+          <div className="sticky top-0 z-10 -mx-6 mt-4 border-y border-border bg-background/95 backdrop-blur px-6 py-2 flex items-center gap-2">
+            <span className="text-sm font-medium">{selectedCount} selected</span>
+            <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>
+              Clear
+            </Button>
+            <Button size="sm" variant="destructive" className="ml-auto" onClick={() => void bulkRemove()}>
+              <Trash2 className="h-3.5 w-3.5 mr-1" /> Remove
+            </Button>
+          </div>
+        )}
+
         <div className="mt-6 space-y-6">
           {favorites.length === 0 && (
             <p className="text-sm text-muted-foreground">
@@ -65,17 +135,53 @@ export const FavoritesDrawer = ({ disabled }: { disabled?: boolean }) => {
           {KIND_ORDER.map((kind) => {
             const list = favorites.filter((f) => f.kind === kind);
             if (list.length === 0) return null;
+            const selectedInKind = list.filter((f) => selected.has(f.id)).length;
+            const allSelected = selectedInKind === list.length;
             return (
               <section key={kind}>
-                <h4 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-                  {KIND_LABEL[kind]}
-                </h4>
+                <div className="flex items-center gap-2 mb-2">
+                  <Checkbox
+                    checked={allSelected}
+                    onCheckedChange={(v) => selectAllKind(kind, Boolean(v))}
+                    aria-label={`Select all ${KIND_LABEL[kind]}`}
+                  />
+                  <h4 className="text-xs uppercase tracking-wide text-muted-foreground">
+                    {KIND_LABEL[kind]}
+                  </h4>
+                  {selectedInKind > 0 && (
+                    <div className="ml-auto flex items-center gap-1">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        onClick={() => void bulkMove(kind, "top")}
+                        aria-label="Move selected to top"
+                      >
+                        <ArrowUpToLine className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        onClick={() => void bulkMove(kind, "bottom")}
+                        aria-label="Move selected to bottom"
+                      >
+                        <ArrowDownToLine className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
                 <ul className="space-y-1.5">
                   {list.map((f, idx) => (
                     <li
                       key={f.id}
                       className="flex items-center gap-2 rounded-md border border-border bg-card px-2 py-1.5"
                     >
+                      <Checkbox
+                        checked={selected.has(f.id)}
+                        onCheckedChange={() => toggleSelected(f.id)}
+                        aria-label={`Select ${f.display_name}`}
+                      />
                       <div className="flex flex-col">
                         <button
                           onClick={() => move(kind, idx, -1)}
