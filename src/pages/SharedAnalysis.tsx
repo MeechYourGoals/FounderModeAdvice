@@ -1,0 +1,114 @@
+import { useEffect, useState } from "react";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, ExternalLink, Lightbulb, Loader2 } from "lucide-react";
+import { getAnalysisProfileLabel } from "@/lib/analysisProfile";
+
+const SharedAnalysis = () => {
+  const { episodeId } = useParams<{ episodeId: string }>();
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [episode, setEpisode] = useState<any>(null);
+  const [lessons, setLessons] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!episodeId || authLoading || !user) return;
+    setLoading(true);
+    setError(null);
+
+    Promise.all([
+      supabase
+        .from("episodes")
+        .select("id, title, url, founder_names, analyzed_profile_id, analyzed_profile_name_snapshot, user_startup_profiles(company_name)")
+        .eq("id", episodeId)
+        .single(),
+      supabase
+        .from("lessons")
+        .select("id, lesson_text, category, personalized_insights(personalized_text)")
+        .eq("episode_id", episodeId)
+        .order("impact_score", { ascending: false }),
+    ])
+      .then(([episodeResult, lessonsResult]) => {
+        if (episodeResult.error) throw episodeResult.error;
+        if (lessonsResult.error) throw lessonsResult.error;
+        setEpisode(episodeResult.data);
+        setLessons(lessonsResult.data || []);
+      })
+      .catch((err) => {
+        setError(err?.message || "You do not have access to this analysis.");
+      })
+      .finally(() => setLoading(false));
+  }, [episodeId, authLoading, user]);
+
+  if (!authLoading && !user) return <Navigate to="/auth" replace />;
+
+  return (
+    <div className="h-screen overflow-y-auto bg-background p-6 md:p-12 pb-nav" style={{ paddingTop: "calc(1.5rem + var(--safe-area-top))" }}>
+      <div className="max-w-4xl mx-auto">
+        <Button variant="ghost" onClick={() => navigate("/shared")} className="mb-6 -ml-2">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Shared with me
+        </Button>
+
+        {loading || authLoading ? (
+          <div className="flex items-center gap-2 py-12 text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin" /> Loading invited analysis…
+          </div>
+        ) : error || !episode ? (
+          <Card className="rounded-2xl border border-dashed border-border bg-muted/30 px-6 py-12 text-center text-muted-foreground">
+            {error || "Analysis not found"}
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            <Card className="p-6">
+              <h1 className="text-2xl font-bold tracking-tight">{episode.title}</h1>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <Badge variant="secondary" className="text-[11px]">
+                  Analyzed for {getAnalysisProfileLabel(episode)}
+                </Badge>
+              </div>
+              {episode.founder_names && (
+                <p className="mt-2 text-muted-foreground">with {episode.founder_names}</p>
+              )}
+              <Button asChild size="sm" className="mt-4">
+                <a href={episode.url} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Open source video
+                </a>
+              </Button>
+            </Card>
+
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Top lessons</h2>
+              <div className="space-y-3">
+                {lessons.map((lesson) => (
+                  <div key={lesson.id} className="rounded-xl border border-border/60 bg-muted/20 p-4">
+                    <div className="flex items-start gap-2">
+                      <Lightbulb className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+                      <div>
+                        <p className="text-sm leading-relaxed">{lesson.lesson_text}</p>
+                        {lesson.personalized_insights?.[0]?.personalized_text && (
+                          <p className="mt-2 text-xs text-muted-foreground">
+                            {lesson.personalized_insights[0].personalized_text}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default SharedAnalysis;

@@ -25,6 +25,8 @@ import Contact from "./pages/Contact";
 import AcceptInvite from "./pages/AcceptInvite";
 import SharedWithMe from "./pages/SharedWithMe";
 import SharedFolder from "./pages/SharedFolder";
+import AcceptAnalysisInvite from "./pages/AcceptAnalysisInvite";
+import SharedAnalysis from "./pages/SharedAnalysis";
 import NotFound from "./pages/NotFound";
 import { OfflineBadge } from "@/components/OfflineBadge";
 import { AppChrome } from "@/components/AppChrome";
@@ -89,8 +91,10 @@ const App = () => (
               <Route path="/account-deletion" element={<AccountDeletion />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/invite/:token" element={<AcceptInvite />} />
+              <Route path="/analysis-invite/:token" element={<AcceptAnalysisInvite />} />
               <Route path="/shared" element={<SharedWithMe />} />
               <Route path="/shared/:folderId" element={<SharedFolder />} />
+              <Route path="/shared-analysis/:episodeId" element={<SharedAnalysis />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

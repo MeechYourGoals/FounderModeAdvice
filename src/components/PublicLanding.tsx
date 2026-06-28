@@ -256,7 +256,7 @@ export const PublicLanding = () => {
                   icon={<ShieldCheck className="w-4 h-4" />}
                   title="Share a single folder"
                   badge="Paid plans"
-                  description="Hand a new hire or advisor exactly the playbook they need — one folder, not your whole workspace. On the free plan, your library stays private to you."
+                  description="Boardroom members can invite teammates or advisors to view specific insights and folders — without exposing the rest of the workspace."
                 />
               </Reveal>
             </div>
@@ -493,7 +493,7 @@ const STEPS = [
   {
     step: "04",
     title: "Save, ask, operationalize",
-    description: "File it into a playbook, ask the transcript follow-ups, and turn the advice into your next move.",
+    description: "File it into a playbook, ask transcript follow-ups, and on Boardroom run one video across multiple business profiles in one go.",
   },
 ] as const;
 

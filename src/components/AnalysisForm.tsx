@@ -2,16 +2,25 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Loader2, ArrowLeft, FastForward } from "lucide-react";
+import { Loader2, ArrowLeft, FastForward, Building2, Check, ChevronDown, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useActiveProfile } from "@/contexts/ActiveProfileContext";
-import { isUnlimited } from "@/types/subscription";
+import { canBatchAnalyzeProfiles, isUnlimited } from "@/types/subscription";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { StartupProfileForm } from "./StartupProfileForm";
 import { UpgradePrompt } from "./subscription";
 import { triggerHapticFeedback } from "@/lib/capacitor";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const POPULAR_SOURCES = [
   "TED",
@@ -46,14 +55,30 @@ export const AnalysisForm = () => {
   const [step, setStep] = useState<"episode" | "profile">("episode");
   const [savedProfiles, setSavedProfiles] = useState<SavedProfile[]>([]);
   const [startupContext, setStartupContext] = useState<any>(null);
+  const [selectedProfileIds, setSelectedProfileIds] = useState<string[]>([]);
   const { toast } = useToast();
   const { subscription, canAnalyzeVideo, refreshSubscription } = useSubscription();
-  const { activeProfile, refreshProfiles } = useActiveProfile();
+  const { activeProfile, activeProfileId, setActiveProfileId, profiles, refreshProfiles } = useActiveProfile();
   const profileLimit = subscription?.limits.profiles.max || 1;
+  const canBatchProfiles = subscription ? canBatchAnalyzeProfiles(subscription.tier) : false;
 
   useEffect(() => {
     fetchSavedProfiles();
   }, [subscription]);
+
+  useEffect(() => {
+    if (canBatchProfiles) {
+      if (selectedProfileIds.length === 0 && activeProfileId) {
+        setSelectedProfileIds([activeProfileId]);
+      }
+      return;
+    }
+    if (activeProfileId) {
+      setSelectedProfileIds([activeProfileId]);
+    } else {
+      setSelectedProfileIds([]);
+    }
+  }, [activeProfileId, canBatchProfiles, selectedProfileIds.length]);
 
   const fetchSavedProfiles = async () => {
     try {
@@ -70,11 +95,9 @@ export const AnalysisForm = () => {
     }
   };
 
-  const handleEpisodeSubmit = (e: React.FormEvent) => {
+  const handleEpisodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // With an active business profile, analyze directly with that context;
-    // otherwise drop into the manual context step.
-    validateAndProceed(activeProfile ? "active" : "profile");
+    await handleAnalyzeSelectedProfiles();
   };
 
   // Starter videos from the empty state dispatch this with a URL to one-tap analyze.
@@ -178,45 +201,62 @@ export const AnalysisForm = () => {
     }
   };
 
-  const analyzeWithContext = async (profile: any, urlArg?: string) => {
+  const analyzeWithContext = async (
+    profile: any,
+    urlArg?: string,
+    options?: { profileId?: string | null; progressLabel?: string; manageState?: boolean },
+  ) => {
     const url = (urlArg ?? episodeUrl).trim();
     if (!url) return;
-    setIsAnalyzing(true);
-    setProgress(profile ? "Analyzing with your business context..." : "Analyzing episode...");
+    const manageState = options?.manageState ?? true;
+    if (manageState) {
+      setIsAnalyzing(true);
+      setProgress(options?.progressLabel || (profile ? "Analyzing with your business context..." : "Analyzing episode..."));
+    }
 
     try {
-      setProgress("Checking for duplicates...");
+      if (manageState) setProgress("Checking for duplicates...");
       const { data: { user } } = await supabase.auth.getUser();
-      const { data: existing } = user?.id
-        ? await supabase
+      let existingQuery = user?.id
+        ? supabase
             .from('episodes')
             .select('id, title, url')
             .eq('url', url)
             .eq('analyzed_by', user.id)
             .limit(1)
-        : await supabase
+        : supabase
             .from('episodes')
             .select('id, title, url')
             .eq('url', url)
             .limit(1);
 
+      if (options?.profileId) {
+        existingQuery = existingQuery.eq("analyzed_profile_id", options.profileId);
+      } else {
+        existingQuery = existingQuery.is("analyzed_profile_id", null);
+      }
+      const { data: existing } = await existingQuery;
+
       if (existing && existing.length > 0) {
-        toast({
-          title: "Episode already analyzed",
-          description: `"${existing[0].title}" has already been analyzed. View it in your episodes list.`,
-        });
-        setIsAnalyzing(false);
-        setProgress("");
-        window.dispatchEvent(new CustomEvent('episodeAnalyzed'));
-        return;
+        if (manageState) {
+          toast({
+            title: "Episode already analyzed",
+            description: `"${existing[0].title}" has already been analyzed for this profile. View it in your episodes list.`,
+          });
+          setIsAnalyzing(false);
+          setProgress("");
+          window.dispatchEvent(new CustomEvent('episodeAnalyzed'));
+        }
+        return { success: false, reason: "duplicate" as const };
       }
 
-      setProgress("Fetching episode data...");
+      if (manageState) setProgress("Fetching episode data...");
       const { data, error } = await supabase.functions.invoke('analyze-episode', {
         body: {
           episodeUrl: url,
           podcastName: podcastName.trim() || undefined,
           startupProfile: profile,
+          startupProfileId: options?.profileId || undefined,
           deckSummary: profile?.deck_summary || undefined
         }
       });
@@ -229,38 +269,134 @@ export const AnalysisForm = () => {
           description: error.message || "Failed to analyze episode. Please try again.",
           variant: "destructive",
         });
-        return;
+        return { success: false, reason: "error" as const, message: error.message };
       }
 
-      setProgress("Generating insights...");
+      if (manageState) setProgress("Generating insights...");
 
       triggerHapticFeedback('heavy');
       // Server-side already increments the analysis count via RPC; just refresh the UI
       await refreshSubscription();
 
-      toast({
-        title: "Analysis complete!",
-        description: "Episode analyzed successfully.",
-      });
+      if (manageState) {
+        toast({
+          title: "Analysis complete!",
+          description: "Episode analyzed successfully.",
+        });
 
-      setEpisodeUrl("");
-      setPodcastName("");
-      setStep("episode");
-      setStartupContext(null);
-
-      window.dispatchEvent(new CustomEvent('episodeAnalyzed'));
+        setEpisodeUrl("");
+        setPodcastName("");
+        setStep("episode");
+        setStartupContext(null);
+        window.dispatchEvent(new CustomEvent('episodeAnalyzed'));
+      }
+      return { success: true as const, episodeId: data?.episodeId as string | undefined };
     } catch (error) {
       console.error('Analysis error:', error);
-      toast({
-        title: "Analysis failed",
-        description: error instanceof Error ? error.message : "Please try again",
-        variant: "destructive",
-      });
+      if (manageState) {
+        toast({
+          title: "Analysis failed",
+          description: error instanceof Error ? error.message : "Please try again",
+          variant: "destructive",
+        });
+      }
+      return { success: false as const, reason: "error" as const, message: error instanceof Error ? error.message : "Please try again" };
     } finally {
-      setIsAnalyzing(false);
-      setProgress("");
+      if (manageState) {
+        setIsAnalyzing(false);
+        setProgress("");
+      }
     }
   };
+
+  const handleAnalyzeSelectedProfiles = async () => {
+    if (canBatchProfiles && selectedProfileIds.length > 1) {
+      if (!episodeUrl.trim()) {
+        toast({ title: "Missing Information", description: "Please enter an episode URL", variant: "destructive" });
+        return;
+      }
+
+      if (!subscription) return;
+      if (!isUnlimited(subscription.limits.analyses.max)) {
+        const remaining = subscription.limits.analyses.max - subscription.limits.analyses.used;
+        if (remaining < selectedProfileIds.length) {
+          toast({
+            title: "Not enough analyses remaining",
+            description: `You selected ${selectedProfileIds.length} profiles but only have ${remaining} analyses left this month.`,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      const selectedProfiles = profiles.filter((profile) => selectedProfileIds.includes(profile.id));
+      if (selectedProfiles.length === 0) {
+        toast({ title: "Select at least one profile", description: "Choose one or more profiles before submitting.", variant: "destructive" });
+        return;
+      }
+
+      setIsAnalyzing(true);
+      const successes: { name: string; episodeId?: string }[] = [];
+      const failures: { name: string; message: string }[] = [];
+
+      for (let i = 0; i < selectedProfiles.length; i += 1) {
+        const profile = selectedProfiles[i];
+        setProgress(`Analyzing for ${selectedProfiles.length} profiles… (${i + 1}/${selectedProfiles.length})`);
+        const result = await analyzeWithContext(profile, undefined, {
+          profileId: profile.id,
+          manageState: false,
+        });
+
+        if (result?.success) {
+          successes.push({ name: profile.company_name, episodeId: result.episodeId });
+        } else {
+          failures.push({ name: profile.company_name, message: result?.message || "Could not create analysis." });
+        }
+      }
+
+      setIsAnalyzing(false);
+      setProgress("");
+      await refreshSubscription();
+      window.dispatchEvent(new CustomEvent('episodeAnalyzed'));
+
+      if (successes.length > 0 && failures.length === 0) {
+        toast({
+          title: "Batch analysis complete",
+          description: `Created ${successes.length} analyses successfully.`,
+        });
+      } else if (successes.length > 0 && failures.length > 0) {
+        toast({
+          title: "Batch analysis partially complete",
+          description: `${successes.length} succeeded, ${failures.length} failed.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Batch analysis failed",
+          description: "No analyses were created. Please try again.",
+          variant: "destructive",
+        });
+      }
+      return;
+    }
+
+    // With an active business profile, analyze directly with that context;
+    // otherwise drop into the manual context step.
+    if (!canBatchProfiles && selectedProfileIds.length === 0 && activeProfileId === null) {
+      validateAndProceed("quick");
+      return;
+    }
+    validateAndProceed(activeProfile ? "active" : "profile");
+  };
+
+  const selectedProfiles = profiles.filter((profile) => selectedProfileIds.includes(profile.id));
+  const selectedProfileLabel = canBatchProfiles
+    ? selectedProfiles.length === 1
+      ? selectedProfiles[0].company_name
+      : selectedProfiles.length > 1
+        ? `${selectedProfiles.length} profiles`
+        : "No profiles selected"
+    : activeProfile?.company_name || "Universal";
 
   if (step === "profile") {
     return (
@@ -403,10 +539,90 @@ export const AnalysisForm = () => {
           </TabsContent>
         </Tabs>
 
+        <div className="space-y-3">
+          <div className="flex justify-center">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isAnalyzing || !analysisCheck.allowed}
+                  className="w-full sm:w-auto min-w-[280px] justify-between rounded-full"
+                >
+                  <span className="inline-flex items-center gap-2 truncate">
+                    {selectedProfiles.length > 0 ? (
+                      <Building2 className="h-4 w-4 text-primary shrink-0" />
+                    ) : (
+                      <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
+                    )}
+                    <span className="truncate">Analyze for {selectedProfileLabel}</span>
+                  </span>
+                  <ChevronDown className="h-4 w-4 opacity-60" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" className="w-72">
+                <DropdownMenuLabel className="text-xs text-muted-foreground">
+                  {canBatchProfiles ? "Select one or more profiles" : "Select active profile"}
+                </DropdownMenuLabel>
+                {!canBatchProfiles && (
+                  <>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setActiveProfileId(null);
+                        setSelectedProfileIds([]);
+                      }}
+                      className="gap-2"
+                    >
+                      <Globe className="h-4 w-4 text-muted-foreground" />
+                      <span className="flex-1">Universal (no profile)</span>
+                      {selectedProfileIds.length === 0 && <Check className="h-4 w-4 text-primary" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                {profiles.map((profile) => (
+                  canBatchProfiles ? (
+                    <DropdownMenuCheckboxItem
+                      key={profile.id}
+                      checked={selectedProfileIds.includes(profile.id)}
+                      onCheckedChange={(checked) => {
+                        setSelectedProfileIds((prev) => {
+                          if (checked) {
+                            if (!prev.includes(profile.id)) {
+                              setActiveProfileId(profile.id);
+                              return [...prev, profile.id];
+                            }
+                            return prev;
+                          }
+                          return prev.filter((id) => id !== profile.id);
+                        });
+                      }}
+                    >
+                      {profile.company_name}
+                    </DropdownMenuCheckboxItem>
+                  ) : (
+                    <DropdownMenuItem
+                      key={profile.id}
+                      onClick={() => {
+                        setActiveProfileId(profile.id);
+                        setSelectedProfileIds([profile.id]);
+                      }}
+                      className="gap-2"
+                    >
+                      <Building2 className="h-4 w-4 text-primary" />
+                      <span className="flex-1">{profile.company_name}</span>
+                      {selectedProfileIds.includes(profile.id) && <Check className="h-4 w-4 text-primary" />}
+                    </DropdownMenuItem>
+                  )
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
         <div className="flex flex-col sm:flex-row justify-center gap-3">
           <Button
             type="submit"
-            disabled={isAnalyzing || !analysisCheck.allowed}
+            disabled={isAnalyzing || !analysisCheck.allowed || (canBatchProfiles && selectedProfileIds.length === 0)}
             size="lg"
             className="min-w-[200px] min-h-[48px] sm:min-h-0 rounded-full"
           >
@@ -419,6 +635,10 @@ export const AnalysisForm = () => {
               <>
                 Upgrade to Continue
               </>
+            ) : canBatchProfiles && selectedProfileIds.length > 1 ? (
+              <>Analyze for {selectedProfileIds.length} profiles</>
+            ) : selectedProfiles.length === 1 ? (
+              <>Analyze for {selectedProfiles[0].company_name}</>
             ) : activeProfile ? (
               <>Analyze for {activeProfile.company_name}</>
             ) : (
@@ -439,6 +659,7 @@ export const AnalysisForm = () => {
               Quick analyze
             </Button>
           )}
+        </div>
         </div>
       </form>
     </Card>

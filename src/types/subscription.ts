@@ -65,6 +65,11 @@ export function hasSharing(tier: SubscriptionTier): boolean {
   return TIER_LIMITS[tier].sharing;
 }
 
+/** Tiers that can submit one video across multiple profiles in one action. */
+export function canBatchAnalyzeProfiles(tier: SubscriptionTier): boolean {
+  return TIER_LIMITS[tier].batchProfileAnalysis;
+}
+
 export const TIER_LIMITS: Record<SubscriptionTier, Omit<TierLimits, 'profiles' | 'bookmarks' | 'analyses'> & {
   profiles: { max: number };
   bookmarks: { max: number };
@@ -74,8 +79,10 @@ export const TIER_LIMITS: Record<SubscriptionTier, Omit<TierLimits, 'profiles' |
   videoChat: boolean;
   /** Whether the plan unlocks exporting analyses and chat summaries. */
   exports: boolean;
-  /** Whether the plan unlocks inviting collaborators to insight folders. */
+  /** Whether the plan unlocks inviting collaborators to insight folders/analyses. */
   sharing: boolean;
+  /** Whether one URL submission can target multiple profiles. */
+  batchProfileAnalysis: boolean;
 }> = {
   free: {
     profiles: { max: 1 },
@@ -85,16 +92,18 @@ export const TIER_LIMITS: Record<SubscriptionTier, Omit<TierLimits, 'profiles' |
     videoChat: false,
     exports: false,
     sharing: false,
+    batchProfileAnalysis: false,
   },
   // "The C-Suite" — entry paid plan.
   seed: {
-    profiles: { max: 3 },
+    profiles: { max: 5 },
     bookmarks: { max: 30 },
     bookmarksPerProfile: 10,
     analyses: { max: 20 },
     videoChat: false,
     exports: false,
-    sharing: true,
+    sharing: false,
+    batchProfileAnalysis: false,
   },
   // "The Boardroom" — power plan. Everything unlimited + Ask-the-video AI chat + export.
   series_z: {
@@ -105,6 +114,7 @@ export const TIER_LIMITS: Record<SubscriptionTier, Omit<TierLimits, 'profiles' |
     videoChat: true,
     exports: true,
     sharing: true,
+    batchProfileAnalysis: true,
   },
 };
 
@@ -141,10 +151,10 @@ export const TIER_PRICING: Record<SubscriptionTier, TierPricing> = {
     priceDisplay: '$9.99/month',
     features: [
       '20 video analyses per month',
-      'Up to 3 business profiles',
+      'Up to 5 business profiles',
       'Personalized insights by industry & stage',
-      'Organize & share insight folders',
-      'Invite teammates & advisors to folders',
+      'One analysis target per submission',
+      'Organize analyses into private folders',
     ],
     recommended: true,
   },
@@ -156,9 +166,10 @@ export const TIER_PRICING: Record<SubscriptionTier, TierPricing> = {
     features: [
       'Unlimited video analyses',
       'Unlimited business profiles',
+      'Run one video across multiple profiles in one go',
       'Ask-the-video AI chat (unlimited)',
       'Personalized insights by industry & stage',
-      'Share insight folders with your team',
+      'Invite teammates & advisors to view insights',
       'Priority feature access',
       'Best for multiple ventures & clients',
     ],

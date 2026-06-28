@@ -158,7 +158,7 @@ export const FolderShareDialog = ({
           <div className="pt-1">
             <UpgradePrompt
               feature="sharing"
-              message="Inviting collaborators to a folder is part of The C-Suite and The Boardroom plans. On the free plan your folders stay private to you."
+              message="Inviting collaborators is a Boardroom feature. Upgrade to share read-only insight access with teammates and advisors."
             />
           </div>
         ) : (

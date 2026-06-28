@@ -3,22 +3,28 @@ import { useNavigate, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, FolderOpen, Loader2, Users } from "lucide-react";
+import { ArrowLeft, FolderOpen, Loader2, Users, Lightbulb } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { listSharedFolders, type SharedFolderSummary } from "@/services/folderSharing";
+import { listSharedAnalyses, type SharedAnalysisSummary } from "@/services/analysisSharing";
+import { getAnalysisProfileLabel } from "@/lib/analysisProfile";
 
 const SharedWithMe = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [folders, setFolders] = useState<SharedFolderSummary[]>([]);
+  const [analyses, setAnalyses] = useState<SharedAnalysisSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (authLoading || !user) return;
     setLoading(true);
-    listSharedFolders()
-      .then(setFolders)
-      .catch((err) => console.error("Failed to load shared folders", err))
+    Promise.all([listSharedFolders(), listSharedAnalyses()])
+      .then(([sharedFolders, sharedAnalyses]) => {
+        setFolders(sharedFolders);
+        setAnalyses(sharedAnalyses);
+      })
+      .catch((err) => console.error("Failed to load shared content", err))
       .finally(() => setLoading(false));
   }, [user, authLoading]);
 
@@ -48,7 +54,7 @@ const SharedWithMe = () => {
           <div className="flex items-center gap-2 py-12 text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin" /> Loading shared folders…
           </div>
-        ) : folders.length === 0 ? (
+        ) : folders.length === 0 && analyses.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border bg-muted/30 px-6 py-12 text-center">
             <Users className="mx-auto mb-3 h-7 w-7 text-muted-foreground" />
             <p className="font-medium">Nothing shared with you yet</p>
@@ -57,37 +63,81 @@ const SharedWithMe = () => {
             </p>
           </div>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {folders.map((folder) => (
-              <Card
-                key={folder.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => navigate(`/shared/${folder.id}`)}
-                onKeyDown={(e) => e.key === "Enter" && navigate(`/shared/${folder.id}`)}
-                className="cursor-pointer p-4 transition-all hover:border-primary/40 hover:shadow-md active:scale-[0.99]"
-              >
-                <div className="flex items-start gap-3">
-                  <span
-                    className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
-                    style={{ backgroundColor: `${folder.color ?? "#3b82f6"}20`, color: folder.color ?? "#3b82f6" }}
-                  >
-                    <FolderOpen className="h-4 w-4" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold">{folder.name}</p>
-                    <div className="mt-1 flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">
-                        {folder.episodeCount} {folder.episodeCount === 1 ? "analysis" : "analyses"}
-                      </span>
-                      <Badge variant="outline" className="text-[10px] capitalize">
-                        {folder.role}
-                      </Badge>
-                    </div>
-                  </div>
+          <div className="space-y-8">
+            {analyses.length > 0 && (
+              <div>
+                <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-3">
+                  Invited analysis
+                </h2>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {analyses.map((analysis) => (
+                    <Card
+                      key={analysis.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => navigate(`/shared-analysis/${analysis.id}`)}
+                      onKeyDown={(e) => e.key === "Enter" && navigate(`/shared-analysis/${analysis.id}`)}
+                      className="cursor-pointer p-4 transition-all hover:border-primary/40 hover:shadow-md active:scale-[0.99]"
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                          <Lightbulb className="h-4 w-4" />
+                        </span>
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold">{analysis.title}</p>
+                          <div className="mt-1 flex items-center gap-2">
+                            <Badge variant="secondary" className="text-[10px]">
+                              {getAnalysisProfileLabel(analysis)}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground truncate">{analysis.founder_names || "Invited insight"}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
                 </div>
-              </Card>
-            ))}
+              </div>
+            )}
+
+            {folders.length > 0 && (
+              <div>
+                <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-3">
+                  Shared folders
+                </h2>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {folders.map((folder) => (
+                    <Card
+                      key={folder.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => navigate(`/shared/${folder.id}`)}
+                      onKeyDown={(e) => e.key === "Enter" && navigate(`/shared/${folder.id}`)}
+                      className="cursor-pointer p-4 transition-all hover:border-primary/40 hover:shadow-md active:scale-[0.99]"
+                    >
+                      <div className="flex items-start gap-3">
+                        <span
+                          className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+                          style={{ backgroundColor: `${folder.color ?? "#3b82f6"}20`, color: folder.color ?? "#3b82f6" }}
+                        >
+                          <FolderOpen className="h-4 w-4" />
+                        </span>
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold">{folder.name}</p>
+                          <div className="mt-1 flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">
+                              {folder.episodeCount} {folder.episodeCount === 1 ? "analysis" : "analyses"}
+                            </span>
+                            <Badge variant="outline" className="text-[10px] capitalize">
+                              {folder.role}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
