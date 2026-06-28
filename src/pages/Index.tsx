@@ -11,7 +11,7 @@ import { AppLoadingScreen } from "@/components/AppLoadingScreen";
 import { PublicLanding } from "@/components/PublicLanding";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/contexts/SubscriptionContext";
-import { Bookmark, LogOut, Briefcase, Menu, User, Settings, Users } from "lucide-react";
+import { Bookmark, LogOut, Briefcase, Menu, User, Settings, Users, Star } from "lucide-react";
 import { PENDING_INVITE_KEY } from "@/services/folderSharing";
 import { PENDING_ANALYSIS_INVITE_KEY } from "@/services/analysisSharing";
 import { Button } from "@/components/ui/button";
@@ -163,6 +163,10 @@ const Index = () => {
                     <Bookmark className="h-4 w-4 mr-2" />
                     Bookmarks
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { triggerHapticFeedback('light'); setProfileOpen(false); navigate("/favorites"); }}>
+                    <Star className="h-4 w-4 mr-2" />
+                    Favorites
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => { triggerHapticFeedback('light'); setProfileOpen(false); navigate("/shared"); }}>
                     <Users className="h-4 w-4 mr-2" />
                     Shared with me
@@ -255,6 +259,11 @@ const Index = () => {
               </div>
             </PopoverContent>
           </Popover>
+
+          <Button variant="outline" size="sm" onClick={() => navigate("/favorites")}>
+            <Star className="h-4 w-4 mr-2" />
+            Favorites
+          </Button>
 
           <Button variant="outline" size="sm" onClick={() => navigate("/shared")}>
             <Users className="h-4 w-4 mr-2" />
