@@ -29,11 +29,11 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
   },
   {
     q: "What is included in The C-Suite plan?",
-    a: "The C-Suite ($9.99/month) includes 20 video analyses per month, up to 3 business profiles, folder organization, and personalized insights tuned to your industry and stage.",
+    a: "The C-Suite ($9.99/month) includes 20 video analyses per month, up to 5 business profiles, folder organization, and personalized insights tuned to your industry and stage. Analyses are still submitted one target profile at a time.",
   },
   {
     q: "What is included in The Boardroom plan?",
-    a: "The Boardroom ($19.99/month) includes unlimited video analyses, unlimited business profiles, and unlimited Ask-the-video AI chat — a transcript-grounded assistant you can ask follow-up questions about each analyzed video. It's best for people running multiple ventures, clients, or business ideas.",
+    a: "The Boardroom ($19.99/month) includes unlimited video analyses, unlimited business profiles, one-click multi-profile batch analysis for the same video, unlimited Ask-the-video chat, and invite-based collaboration so teammates and advisors can view shared insights.",
   },
   {
     q: "What happens if I hit my monthly limits?",

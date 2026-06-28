@@ -4,12 +4,14 @@ import { cacheLastAnalysis, getCachedAnalysis } from "@/lib/offlineCache";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, ExternalLink, TrendingUp, Target, Lightbulb, RefreshCw, Loader2, Plus, X, Download } from "lucide-react";
+import { ArrowLeft, ExternalLink, TrendingUp, Target, Lightbulb, RefreshCw, Loader2, Plus, X, Download, Share2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { VideoChatSheet } from "@/components/VideoChatSheet";
 import { ExportModal } from "@/components/ExportModal";
+import { AnalysisShareDialog } from "@/components/AnalysisShareDialog";
+import { getAnalysisProfileLabel, isUniversalAnalysis } from "@/lib/analysisProfile";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -71,6 +73,11 @@ interface Episode {
   url: string;
   founder_names: string | null;
   analyzed_by: string | null;
+  analyzed_profile_id: string | null;
+  analyzed_profile_name_snapshot: string | null;
+  user_startup_profiles?: {
+    company_name: string | null;
+  } | null;
   companies?: {
     name: string;
     founding_year: number | null;
@@ -190,6 +197,7 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
   const [mobileInsightTab, setMobileInsightTab] = useState<"lessons" | "personalized">("lessons");
+  const [shareOpen, setShareOpen] = useState(false);
   const { toast } = useToast();
   const { canAnalyzeVideo, refreshSubscription } = useSubscription();
 
@@ -220,7 +228,8 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
       const { data: episodeData, error: episodeError } = await supabase
         .from('episodes')
         .select(`
-          id, title, release_date, url, founder_names, analyzed_by,
+          id, title, release_date, url, founder_names, analyzed_by, analyzed_profile_id, analyzed_profile_name_snapshot,
+          user_startup_profiles (company_name),
           companies (name, founding_year, current_stage, funding_raised, valuation, employee_count, industry, status)
         `)
         .eq('id', episodeId)
@@ -431,6 +440,11 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div className="flex-1 min-w-0">
               <h1 className="text-xl sm:text-3xl font-bold tracking-tight mb-2 sm:mb-3">{episode.title}</h1>
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <Badge variant={isUniversalAnalysis(episode) ? "outline" : "secondary"} className="text-[11px]">
+                  Analyzed for {getAnalysisProfileLabel(episode)}
+                </Badge>
+              </div>
               {episode.founder_names && (
                 <p className="text-base sm:text-lg text-muted-foreground mb-1 sm:mb-2">
                   with <span className="font-display font-medium italic text-foreground/90">{episode.founder_names}</span>
@@ -464,6 +478,17 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
                     : 'Listen Now'}
                 </a>
                 </Button>
+                {episode.analyzed_by === currentUserId && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="sm:size-default flex-1 sm:flex-initial"
+                    onClick={() => setShareOpen(true)}
+                  >
+                    <Share2 className="w-4 h-4 mr-2" />
+                    Invite
+                  </Button>
+                )}
               </div>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
@@ -583,7 +608,9 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
               <span className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                 <Target className="w-4 h-4 sm:w-5 sm:h-5" />
               </span>
-              Personalized for Your Startup <span className="text-muted-foreground font-normal">({personalizedInsights.length})</span>
+              {isUniversalAnalysis(episode)
+                ? "Universal insights"
+                : `Personalized for ${getAnalysisProfileLabel(episode)}`} <span className="text-muted-foreground font-normal">({personalizedInsights.length})</span>
             </h2>
             <div className="space-y-4 sm:space-y-6">
               {lessons.map((lesson) => {
@@ -607,7 +634,11 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
                             <Lightbulb className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           </span>
                           <div className="flex-1 min-w-0">
-                            <p className="text-[11px] font-semibold uppercase tracking-wide text-primary mb-1">For Your Startup</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-primary mb-1">
+                              {isUniversalAnalysis(episode)
+                                ? "Universal analysis"
+                                : `For ${getAnalysisProfileLabel(episode)}`}
+                            </p>
                             <p className="text-sm sm:text-base text-foreground leading-relaxed">{insight.personalized_text}</p>
                           </div>
                         </div>
@@ -668,6 +699,12 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
       )}
 
       <ExportModal episodeId={episode.id} open={exportOpen} onOpenChange={setExportOpen} />
+      <AnalysisShareDialog
+        episodeId={episode.analyzed_by === currentUserId ? episode.id : null}
+        episodeTitle={episode.title}
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+      />
     </div>
   );
 };

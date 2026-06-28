@@ -60,7 +60,7 @@ const STEPS: OnboardingStep[] = [
   {
     icon: Crown,
     title: "Choose your plan",
-    body: "Start free, then upgrade to The C-Suite ($9.99/mo) for 20 analyses and 3 profiles, or The Boardroom ($19.99/mo) for unlimited everything plus video chat.",
+    body: "Start free, then upgrade to The C-Suite ($9.99/mo) for 20 analyses and up to 5 profiles (one target per submission), or The Boardroom ($19.99/mo) for unlimited analyses, multi-profile batch runs, and collaboration.",
   },
 ];
 

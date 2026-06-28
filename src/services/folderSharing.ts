@@ -240,6 +240,9 @@ export interface SharedEpisode {
   url: string | null;
   platform: string | null;
   founder_names: string | null;
+  analyzed_profile_id?: string | null;
+  analyzed_profile_name_snapshot?: string | null;
+  user_startup_profiles?: { company_name?: string | null } | null;
   companies?: { name: string | null } | null;
   lessons?: SharedLesson[] | null;
 }

@@ -12,6 +12,7 @@ import {
   type SharedFolderDetail,
   type SharedLesson,
 } from "@/services/folderSharing";
+import { getAnalysisProfileLabel } from "@/lib/analysisProfile";
 
 const SharedFolder = () => {
   const { folderId } = useParams<{ folderId: string }>();
@@ -104,6 +105,9 @@ const SharedFolder = () => {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <h2 className="font-semibold text-lg leading-snug">{ep.title}</h2>
+                        <Badge variant="secondary" className="mt-1 text-[10px]">
+                          Analyzed for {getAnalysisProfileLabel(ep)}
+                        </Badge>
                         <p className="mt-0.5 text-sm text-muted-foreground">
                           {[ep.platform, ep.companies?.name, ep.founder_names]
                             .filter(Boolean)

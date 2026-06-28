@@ -38,6 +38,7 @@ import {
 import { triggerHapticFeedback } from "@/lib/capacitor";
 import { LibraryEmptyState } from "@/components/LibraryEmptyState";
 import { getLibraryPrefs, setLibraryPrefs } from "@/lib/libraryPrefs";
+import { getAnalysisProfileLabel, isUniversalAnalysis } from "@/lib/analysisProfile";
 
 interface Episode {
   id: string;
@@ -45,6 +46,8 @@ interface Episode {
   release_date: string | null;
   url: string;
   founder_names: string | null;
+  analyzed_profile_id: string | null;
+  analyzed_profile_name_snapshot: string | null;
   analysis_status: string;
   company_id: string | null;
   created_at: string | null;
@@ -54,6 +57,9 @@ interface Episode {
     current_stage: string | null;
     valuation: string | null;
     industry: string | null;
+  } | null;
+  user_startup_profiles?: {
+    company_name: string | null;
   } | null;
   lessons?: {
     lesson_tags?: {
@@ -329,7 +335,8 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
       let query = supabase
         .from("episodes")
         .select(`
-            id, title, release_date, url, founder_names, analysis_status, company_id, created_at,
+            id, title, release_date, url, founder_names, analyzed_profile_id, analyzed_profile_name_snapshot, analysis_status, company_id, created_at,
+            user_startup_profiles (company_name),
             companies (name, founding_year, current_stage, valuation, industry),
             lessons (
                 lesson_tags (
@@ -631,6 +638,11 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <p className="font-medium text-sm line-clamp-2 mb-1">{episode.title}</p>
+            <div className="mb-1">
+              <Badge variant={isUniversalAnalysis(episode) ? "outline" : "secondary"} className="text-[10px]">
+                {getAnalysisProfileLabel(episode)}
+              </Badge>
+            </div>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
               {episode.companies?.name && <span>{episode.companies.name}</span>}
               {episode.founder_names && <span>{episode.founder_names}</span>}
@@ -1021,6 +1033,11 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                       <TableCell className="font-medium max-w-md">
                         <div className="space-y-1">
                           <div className="line-clamp-2">{episode.title}</div>
+                        <div className="mt-1">
+                          <Badge variant={isUniversalAnalysis(episode) ? "outline" : "secondary"} className="text-[10px]">
+                            {getAnalysisProfileLabel(episode)}
+                          </Badge>
+                        </div>
                           <div className="flex gap-1 flex-wrap">
                             {getEpisodeTags(episode).slice(0, 5).map(tagName => (
                               <Badge

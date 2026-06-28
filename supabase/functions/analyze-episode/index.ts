@@ -50,8 +50,14 @@ serve(async (req) => {
     }
     const authenticatedUserId: string = authUserFromToken.id;
 
-    const { episodeUrl, podcastName, startupProfile } = await req.json();
-    console.log('Analyzing episode:', { episodeUrl, podcastName, hasProfile: !!startupProfile, userId: authenticatedUserId });
+    const { episodeUrl, podcastName, startupProfile, startupProfileId } = await req.json();
+    console.log('Analyzing episode:', {
+      episodeUrl,
+      podcastName,
+      hasProfile: !!startupProfile,
+      startupProfileId: startupProfileId || null,
+      userId: authenticatedUserId,
+    });
 
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
     if (!lovableApiKey) {
@@ -85,6 +91,33 @@ serve(async (req) => {
     // detects the platform (YouTube, TikTok, Instagram, X, Vimeo, LinkedIn, podcast, generic)
     // and pulls a transcript via free YouTube captions or Supadata for everything else.
 
+    let resolvedStartupProfile = startupProfile;
+    let resolvedStartupProfileId: string | null = null;
+    let resolvedStartupProfileNameSnapshot: string | null = null;
+
+    // Canonical server-side profile resolution and ownership enforcement.
+    if (typeof startupProfileId === 'string' && startupProfileId.trim().length > 0) {
+      const { data: savedProfile, error: profileError } = await supabase
+        .from('user_startup_profiles')
+        .select('*')
+        .eq('id', startupProfileId)
+        .eq('user_id', authenticatedUserId)
+        .maybeSingle();
+
+      if (profileError) {
+        throw new Error('Could not validate selected profile');
+      }
+      if (!savedProfile) {
+        return new Response(JSON.stringify({ error: 'You can only analyze for profiles you own.' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      resolvedStartupProfile = savedProfile;
+      resolvedStartupProfileId = savedProfile.id;
+      resolvedStartupProfileNameSnapshot = savedProfile.company_name ?? null;
+    }
 
 
     // Check subscription limits if we have a user (skip for Founder/Super Admin)
@@ -149,12 +182,12 @@ serve(async (req) => {
 
 
     // Optional context about the viewer's own business, used to bias examples/jargon.
-    const viewerBusiness = startupProfile && (startupProfile.company_name || startupProfile.industry || startupProfile.stage)
+    const viewerBusiness = resolvedStartupProfile && (resolvedStartupProfile.company_name || resolvedStartupProfile.industry || resolvedStartupProfile.stage)
       ? `\n\nViewer's business context (adapt examples, jargon, KPIs, and risks to THIS type of business — do NOT assume a venture-backed tech startup unless stated):
-- Business: ${startupProfile.company_name || 'Not specified'}
-- Industry: ${startupProfile.industry || 'Not specified'}
-- Stage/type: ${startupProfile.stage || 'Not specified'}
-${startupProfile.description ? `- About: ${startupProfile.description}` : ''}`
+- Business: ${resolvedStartupProfile.company_name || 'Not specified'}
+- Industry: ${resolvedStartupProfile.industry || 'Not specified'}
+- Stage/type: ${resolvedStartupProfile.stage || 'Not specified'}
+${resolvedStartupProfile.description ? `- About: ${resolvedStartupProfile.description}` : ''}`
       : '';
 
     // Step 2: Use AI to analyze the episode with tool calling
@@ -372,6 +405,8 @@ INSTRUCTIONS:
         release_date: (analysis.releaseDate && isValidDate(analysis.releaseDate)) ? analysis.releaseDate : undefined,
         url: episodeUrl,
         company_id: companyId,
+        analyzed_profile_id: resolvedStartupProfileId,
+        analyzed_profile_name_snapshot: resolvedStartupProfileNameSnapshot,
         founder_names: analysis.founderNames,
         analysis_status: 'completed',
         analyzed_by: authenticatedUserId || null,
@@ -518,8 +553,8 @@ INSTRUCTIONS:
     }
 
     // Use the provided startup profile for personalized insights, if any
-    const hasCustomProfile = startupProfile && (startupProfile.company_name || startupProfile.stage);
-    const profileToUse = hasCustomProfile ? startupProfile : null;
+    const hasCustomProfile = resolvedStartupProfile && (resolvedStartupProfile.company_name || resolvedStartupProfile.stage);
+    const profileToUse = hasCustomProfile ? resolvedStartupProfile : null;
     
     // Only generate personalized insights when a user profile is provided
     if (profileToUse) {
@@ -585,7 +620,7 @@ Adapt the language, examples, KPIs, risks, and recommended actions to their indu
                   
                   personalizedInsights.push({
                     lesson_id: lesson.id,
-                    startup_profile_id: null, // Can be linked later if profile was saved
+                    startup_profile_id: resolvedStartupProfileId,
                     personalized_text: personalizedData.personalizedText,
                     relevance_score: Math.max(1, Math.min(10, Math.round(Number(personalizedData.relevanceScore) || 5))),
                     action_items: personalizedData.actionItems || [],

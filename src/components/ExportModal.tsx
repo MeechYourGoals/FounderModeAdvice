@@ -11,6 +11,7 @@ import { useSubscription } from "@/contexts/SubscriptionContext";
 import { hasExport } from "@/types/subscription";
 import { saveOrShareBlob } from "@/lib/downloadFile";
 import { UpgradePrompt } from "@/components/subscription";
+import { getAnalysisProfileLabel } from "@/lib/analysisProfile";
 
 interface ExportModalProps {
   episodeId?: string;
@@ -131,7 +132,7 @@ export const ExportModal = ({ episodeId, episodeIds, scopeLabel, open, onOpenCha
       const data = await getExportArray();
 
       const csvRows = [];
-      csvRows.push(['Episode Title', 'Company', 'Founders', 'Release Date', 'Lesson', 'Category', 'Impact', 'Actionability', 'Personalized Insight', 'Action Items', 'Insight Relevance', 'URL']);
+      csvRows.push(['Episode Title', 'Analyzed For', 'Company', 'Founders', 'Release Date', 'Lesson', 'Category', 'Impact', 'Actionability', 'Personalized Insight', 'Action Items', 'Insight Relevance', 'URL']);
       
       data?.forEach((episode: any) => {
         episode.lessons?.forEach((lesson: any) => {
@@ -141,6 +142,7 @@ export const ExportModal = ({ episodeId, episodeIds, scopeLabel, open, onOpenCha
           
           csvRows.push([
             `"${episode.title?.replace(/"/g, '""') || ''}"`,
+            `"${getAnalysisProfileLabel(episode).replace(/"/g, '""')}"`,
             `"${episode.companies?.name?.replace(/"/g, '""') || ''}"`,
             `"${episode.founder_names?.replace(/"/g, '""') || ''}"`,
             episode.release_date || '',
@@ -177,6 +179,7 @@ export const ExportModal = ({ episodeId, episodeIds, scopeLabel, open, onOpenCha
       
       data?.forEach((episode: any) => {
         markdown += `## ${episode.title}\n\n`;
+        markdown += `**Analyzed for:** ${getAnalysisProfileLabel(episode)}\n\n`;
         markdown += `**Company:** ${episode.companies?.name || 'N/A'}\n\n`;
         markdown += `**Founders:** ${episode.founder_names || 'N/A'}\n\n`;
         markdown += `**Release Date:** ${episode.release_date || 'N/A'}\n\n`;
@@ -192,7 +195,7 @@ export const ExportModal = ({ episodeId, episodeIds, scopeLabel, open, onOpenCha
             
             const insight = lesson.personalized_insights?.[0];
             if (insight) {
-              markdown += `\n   **💡 Personalized for Your Startup:**\n`;
+              markdown += `\n   **💡 Personalized for ${getAnalysisProfileLabel(episode)}:**\n`;
               markdown += `   ${insight.personalized_text}\n`;
               
               if (insight.action_items && Array.isArray(insight.action_items)) {

@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { Bookmark, LogOut, Briefcase, Menu, User, Settings, Users } from "lucide-react";
 import { PENDING_INVITE_KEY } from "@/services/folderSharing";
+import { PENDING_ANALYSIS_INVITE_KEY } from "@/services/analysisSharing";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -102,6 +103,10 @@ const Index = () => {
     const pendingInvite = localStorage.getItem(PENDING_INVITE_KEY);
     if (pendingInvite) {
       navigate(`/invite/${pendingInvite}`, { replace: true });
+    }
+    const pendingAnalysisInvite = localStorage.getItem(PENDING_ANALYSIS_INVITE_KEY);
+    if (pendingAnalysisInvite) {
+      navigate(`/analysis-invite/${pendingAnalysisInvite}`, { replace: true });
     }
   }, [user, loading, navigate]);
 
