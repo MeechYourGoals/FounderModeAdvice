@@ -96,6 +96,7 @@ const App = () => (
               <Route path="/shared" element={<SharedWithMe />} />
               <Route path="/shared/:folderId" element={<SharedFolder />} />
               <Route path="/shared-analysis/:episodeId" element={<SharedAnalysis />} />
+              <Route path="/favorites" element={<Favorites />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
