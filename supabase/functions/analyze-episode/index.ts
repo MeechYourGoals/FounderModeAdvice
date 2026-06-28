@@ -5,7 +5,7 @@ import { getVideoContext, deriveChannelHandle } from "../_shared/transcript.ts";
 
 // Canonical topic vocabulary (keep in sync with src/lib/topics.ts).
 const CANONICAL_TOPICS = [
-  "Marketing","Sales","Fundraising","Hiring","Product","Growth","Operations",
+  "Marketing","Sales","Fundraising","Hiring","Competitors","Product","Growth","Operations",
   "Leadership","AI","Engineering","Design","Pricing","Distribution","Community",
   "Bootstrapping","Enterprise","Brand","Product-Market Fit","Strategy","Culture",
 ] as const;
