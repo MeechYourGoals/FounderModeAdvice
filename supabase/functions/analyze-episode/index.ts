@@ -424,6 +424,11 @@ INSTRUCTIONS:
     // Step 5: Create episode with date validation
     const isValidDate = (dateStr: string) => /^\d{4}-\d{2}-\d{2}$/.test(dateStr);
 
+    // Derive channel facets from oEmbed (preferred) with URL fallback.
+    const channelName = videoContext.metadata.author || null;
+    const channelHandle = deriveChannelHandle(videoContext.metadata.authorUrl, episodeUrl);
+    const topics = normalizeTopics(analysis.topics);
+
     const { data: episode, error: episodeError } = await supabase
       .from('episodes')
       .insert({
@@ -435,6 +440,9 @@ INSTRUCTIONS:
         analyzed_profile_id: resolvedStartupProfileId,
         analyzed_profile_name_snapshot: resolvedStartupProfileNameSnapshot,
         founder_names: analysis.founderNames,
+        channel_name: channelName,
+        channel_handle: channelHandle,
+        topics,
         analysis_status: 'completed',
         analyzed_by: authenticatedUserId || null,
       })
