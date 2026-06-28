@@ -1,4 +1,4 @@
-import { X, Save } from "lucide-react";
+import { X, Save, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { FavoriteKind } from "@/hooks/useFavorites";
 
@@ -13,6 +13,7 @@ interface Props {
   onRemove: (p: Pin) => void;
   onClear: () => void;
   onSaveCollection: () => void;
+  onShare: () => void;
   canSave: boolean;
 }
 
@@ -22,7 +23,7 @@ const KIND_LABEL: Record<FavoriteKind, string> = {
   topic: "Topic",
 };
 
-export const PinChips = ({ pins, onRemove, onClear, onSaveCollection, canSave }: Props) => {
+export const PinChips = ({ pins, onRemove, onClear, onSaveCollection, onShare, canSave }: Props) => {
   if (pins.length === 0) return null;
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -50,12 +51,18 @@ export const PinChips = ({ pins, onRemove, onClear, onSaveCollection, canSave }:
       <Button variant="ghost" size="sm" onClick={onClear}>
         Clear all
       </Button>
-      {canSave && pins.length >= 2 && (
-        <Button variant="outline" size="sm" onClick={onSaveCollection} className="ml-auto">
-          <Save className="h-3.5 w-3.5 mr-1.5" />
-          Save as collection
+      <div className="ml-auto flex items-center gap-2">
+        <Button variant="outline" size="sm" onClick={onShare}>
+          <Link2 className="h-3.5 w-3.5 mr-1.5" />
+          Share view
         </Button>
-      )}
+        {canSave && pins.length >= 2 && (
+          <Button variant="outline" size="sm" onClick={onSaveCollection}>
+            <Save className="h-3.5 w-3.5 mr-1.5" />
+            Save as collection
+          </Button>
+        )}
+      </div>
     </div>
   );
 };
