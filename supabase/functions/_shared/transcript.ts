@@ -37,14 +37,55 @@ export const detectPlatform = (urlString: string): Platform => {
     const h = u.hostname.toLowerCase();
     if (h.includes("youtube.com") || h === "youtu.be" || h.endsWith(".youtube.com")) return "youtube";
     if (h.includes("tiktok.com")) return "tiktok";
-    if (h.includes("instagram.com")) return "instagram";
-    if (h === "x.com" || h === "twitter.com" || h.endsWith(".x.com") || h.endsWith(".twitter.com")) return "x";
+    if (h.includes("instagram.com") || h === "instagr.am") return "instagram";
+    if (h === "x.com" || h === "twitter.com" || h.endsWith(".x.com") || h.endsWith(".twitter.com") || h === "t.co") return "x";
     if (h.includes("vimeo.com")) return "vimeo";
-    if (h.includes("linkedin.com")) return "linkedin";
+    if (h.includes("linkedin.com") || h === "lnkd.in") return "linkedin";
     if (/\.(mp3|m4a|wav|ogg)(\?|$)/i.test(u.pathname)) return "podcast";
     return "generic";
   } catch {
     return "generic";
+  }
+};
+
+/** Short-link hosts that 30x-redirect to the canonical video URL. */
+const SHORT_LINK_HOSTS = new Set([
+  "vm.tiktok.com",
+  "vt.tiktok.com",
+  "t.co",
+  "instagr.am",
+  "lnkd.in",
+  "youtu.be", // canonicalize to youtube.com/watch?v=
+]);
+
+/** Tracking params to strip for stable dedup + cleaner Supadata calls. */
+const TRACKING_PARAMS = [
+  "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
+  "si", "feature", "igsh", "igshid", "fbclid", "gclid", "ref", "ref_src", "ref_url",
+];
+
+/** Resolve short links and strip tracking junk. Safe to call before any other step. */
+export const canonicalizeVideoUrl = async (input: string): Promise<string> => {
+  const trimmed = input.trim();
+  let current = trimmed;
+  try {
+    let u = new URL(current);
+    // Follow up to 3 redirects on known short-link hosts.
+    for (let i = 0; i < 3; i++) {
+      if (!SHORT_LINK_HOSTS.has(u.hostname.toLowerCase())) break;
+      const res = await fetch(current, { method: "HEAD", redirect: "follow" });
+      if (res.url && res.url !== current) {
+        current = res.url;
+        u = new URL(current);
+      } else {
+        break;
+      }
+    }
+    // Strip tracking params.
+    for (const p of TRACKING_PARAMS) u.searchParams.delete(p);
+    return u.toString();
+  } catch {
+    return trimmed;
   }
 };
 
