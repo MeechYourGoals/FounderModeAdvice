@@ -27,6 +27,7 @@ import SharedWithMe from "./pages/SharedWithMe";
 import SharedFolder from "./pages/SharedFolder";
 import AcceptAnalysisInvite from "./pages/AcceptAnalysisInvite";
 import SharedAnalysis from "./pages/SharedAnalysis";
+import Favorites from "./pages/Favorites";
 import NotFound from "./pages/NotFound";
 import { OfflineBadge } from "@/components/OfflineBadge";
 import { AppChrome } from "@/components/AppChrome";
