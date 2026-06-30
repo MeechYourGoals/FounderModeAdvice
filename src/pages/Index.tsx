@@ -11,7 +11,7 @@ import { AppLoadingScreen } from "@/components/AppLoadingScreen";
 import { PublicLanding } from "@/components/PublicLanding";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/contexts/SubscriptionContext";
-import { Bookmark, LogOut, Briefcase, Menu, User, Settings, Users, Star } from "lucide-react";
+import { Bookmark, LogOut, Briefcase, Menu, User, Settings, Users, Star, ChevronLeft } from "lucide-react";
 import { PENDING_INVITE_KEY } from "@/services/folderSharing";
 import { PENDING_ANALYSIS_INVITE_KEY } from "@/services/analysisSharing";
 import { Button } from "@/components/ui/button";
@@ -289,7 +289,19 @@ const Index = () => {
           profile switcher, and empty-state CTAs across all viewports). */}
       {(
         <Sheet open={profileOpen} onOpenChange={setProfileOpen}>
-          <SheetContent side="right" className="w-full max-w-[100vw] sm:w-[400px] safe-top safe-bottom">
+          <SheetContent side="right" hideClose className="w-full max-w-[100vw] sm:w-[400px] safe-top safe-bottom">
+            <div className="flex items-center justify-between gap-2 -ml-2 mb-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-11 px-2 text-base"
+                onClick={() => { triggerHapticFeedback('light'); setProfileOpen(false); }}
+                aria-label="Back"
+              >
+                <ChevronLeft className="h-5 w-5 mr-1" />
+                Back
+              </Button>
+            </div>
             <SheetHeader>
               <SheetTitle>{activeTab === "bookmarks" ? "Bookmarks" : "Business Profiles"}</SheetTitle>
               <SheetDescription>
@@ -298,7 +310,7 @@ const Index = () => {
                   : "Manage your business profiles"}
               </SheetDescription>
             </SheetHeader>
-            <ScrollArea className="h-[calc(100vh-120px)] pr-4 mt-4">
+            <ScrollArea className="h-[calc(100vh-180px-var(--safe-area-top)-var(--safe-area-bottom))] pr-4 mt-4">
               {profileOpen && (
                 <ProfileSettings
                   view={activeTab}

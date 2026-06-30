@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Building2, Bookmark, Users, Settings as SettingsIcon, Check, Globe, Sparkles } from "lucide-react";
+import { Building2, Bookmark, Users, Settings as SettingsIcon, Check, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 import {
@@ -30,6 +30,14 @@ export const MobileBottomNav = () => {
   const goHomeWith = (state: Record<string, unknown>) => {
     triggerHapticFeedback("light");
     navigate("/", { state: { ...state, ts: Date.now() } });
+  };
+
+  // Pick the "analyzing as" lens, then jump straight into a fresh analysis on home.
+  const selectLens = (id: string | null) => {
+    triggerHapticFeedback("light");
+    setActiveProfileId(id);
+    setLensOpen(false);
+    navigate("/", { state: { action: "analyze", ts: Date.now() } });
   };
 
   const isActive = (predicate: boolean) => predicate;
@@ -67,7 +75,6 @@ export const MobileBottomNav = () => {
   );
 
   const lensLabel = activeProfile ? activeProfile.company_name : "Universal";
-  const lensInitial = activeProfile ? activeProfile.company_name.charAt(0).toUpperCase() : null;
 
   const onSharedRoute = location.pathname.startsWith("/shared");
   const onSettingsRoute = location.pathname.startsWith("/settings") || location.pathname.startsWith("/account");
@@ -97,16 +104,17 @@ export const MobileBottomNav = () => {
           <Sheet open={lensOpen} onOpenChange={setLensOpen}>
             <SheetTrigger asChild>
               <button
-                aria-label={`Analyzing as ${lensLabel}. Tap to switch.`}
+                aria-label={`Founder Mode Advice. Analyzing as ${lensLabel}. Tap to start a new analysis.`}
                 onClick={() => triggerHapticFeedback("light")}
-                className="-mt-6 h-14 w-14 rounded-full text-primary-foreground shadow-[inset_0_1px_0_0_hsl(0_0%_100%/0.25),0_8px_24px_-6px_hsl(var(--primary)/0.6)] flex items-center justify-center ring-4 ring-background transition-transform duration-200 active:scale-90 touch-manipulation"
+                className="-mt-6 h-14 w-14 overflow-hidden rounded-full shadow-[inset_0_1px_0_0_hsl(0_0%_100%/0.25),0_8px_24px_-6px_hsl(var(--primary)/0.6)] flex items-center justify-center ring-4 ring-background transition-transform duration-200 active:scale-90 touch-manipulation"
                 style={{ background: "var(--gradient-primary)" }}
               >
-                {lensInitial ? (
-                  <span className="text-lg font-bold tracking-tight">{lensInitial}</span>
-                ) : (
-                  <Sparkles className="h-6 w-6" strokeWidth={2.5} />
-                )}
+                <img
+                  src="/apple-touch-icon.png"
+                  alt="Founder Mode Advice"
+                  className="h-full w-full object-cover"
+                  draggable={false}
+                />
               </button>
             </SheetTrigger>
             <SheetContent side="bottom" className="rounded-t-2xl border-t pb-[calc(1rem+var(--safe-area-bottom))]">
@@ -118,11 +126,7 @@ export const MobileBottomNav = () => {
               </SheetHeader>
               <div className="mt-4 space-y-1">
                 <button
-                  onClick={() => {
-                    triggerHapticFeedback("light");
-                    setActiveProfileId(null);
-                    setLensOpen(false);
-                  }}
+                  onClick={() => selectLens(null)}
                   className={cn(
                     "w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors min-h-[56px]",
                     activeProfileId === null ? "bg-primary/10" : "hover:bg-muted active:bg-muted",
@@ -143,11 +147,7 @@ export const MobileBottomNav = () => {
                   return (
                     <button
                       key={profile.id}
-                      onClick={() => {
-                        triggerHapticFeedback("light");
-                        setActiveProfileId(profile.id);
-                        setLensOpen(false);
-                      }}
+                      onClick={() => selectLens(profile.id)}
                       className={cn(
                         "w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors min-h-[56px]",
                         selected ? "bg-primary/10" : "hover:bg-muted active:bg-muted",
