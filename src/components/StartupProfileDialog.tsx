@@ -258,7 +258,7 @@ export const StartupProfileDialog = ({
                 variant="outline"
                 onClick={() => onOpenChange(false)}
               >
-                Cancel
+                Back
               </Button>
             </div>
           </div>

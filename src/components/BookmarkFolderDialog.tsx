@@ -127,12 +127,12 @@ export const BookmarkFolderDialog = ({
             <Button onClick={handleSave} disabled={loading || !name.trim()} className="flex-1">
               {loading ? "Saving..." : folder ? "Update" : "Create"} Folder
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={loading}
             >
-              Cancel
+              Back
             </Button>
           </div>
         </div>
