@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -143,16 +143,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
 
   const parseIndustries = (industryString: string | null | undefined): string[] => {
     if (!industryString) return [];
-    return [...new Set(industryString.split(/[,\/]/).map(i => i.trim()).filter(Boolean))];
-  };
-
-  const getEpisodeTags = (ep: Episode): string[] => {
-    const names = new Set<string>();
-    ep.lessons?.forEach(l => l.lesson_tags?.forEach(lt => {
-      const n = lt.tags?.name?.trim();
-      if (n) names.add(n);
-    }));
-    return Array.from(names);
+    return [...new Set(industryString.split(/[,/]/).map(i => i.trim()).filter(Boolean))];
   };
 
   const toggleIndustryFilter = (industry: string) => {
@@ -191,33 +182,58 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     });
   };
 
-  // Derive unique options
-  const uniqueFounders = useMemo(() => {
-    const s = new Set<string>();
-    allEpisodes.forEach(ep => ep.founder_names?.split(',').forEach(n => s.add(n.trim())));
-    return Array.from(s).sort();
-  }, [allEpisodes]);
+  // Derive unique options and pre-calculate tags in a single pass for performance
+  const { uniqueFounders, uniqueCompanies, uniqueYears, uniqueTags, episodeTagsMap } = useMemo(() => {
+    const founders = new Set<string>();
+    const companies = new Set<string>();
+    const years = new Set<string>();
+    const tagCounts = new Map<string, number>();
+    const tagsMap = new Map<string, string[]>();
 
-  const uniqueCompanies = useMemo(() => {
-    const s = new Set<string>();
-    allEpisodes.forEach(ep => ep.companies?.name && s.add(ep.companies.name));
-    return Array.from(s).sort();
-  }, [allEpisodes]);
-
-  const uniqueYears = useMemo(() => {
-    const s = new Set<string>();
-    allEpisodes.forEach(ep => ep.release_date && s.add(ep.release_date.slice(0, 4)));
-    return Array.from(s).sort().reverse();
-  }, [allEpisodes]);
-
-  // Unique tags with counts, sorted by frequency desc
-  const uniqueTags = useMemo(() => {
-    const counts = new Map<string, number>();
     allEpisodes.forEach(ep => {
-      getEpisodeTags(ep).forEach(t => counts.set(t, (counts.get(t) || 0) + 1));
+      // Founders
+      ep.founder_names?.split(',').forEach(n => founders.add(n.trim()));
+
+      // Companies
+      if (ep.companies?.name) companies.add(ep.companies.name);
+
+      // Years
+      if (ep.release_date) years.add(ep.release_date.slice(0, 4));
+
+      // Tags (Extract and cache)
+      const names = new Set<string>();
+      ep.lessons?.forEach(l => l.lesson_tags?.forEach(lt => {
+        const n = lt.tags?.name?.trim();
+        if (n) names.add(n);
+      }));
+      const episodeTags = Array.from(names);
+      tagsMap.set(ep.id, episodeTags);
+
+      // Update tag counts for facet filter
+      episodeTags.forEach(t => {
+        tagCounts.set(t, (tagCounts.get(t) || 0) + 1);
+      });
     });
-    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+
+    return {
+      uniqueFounders: Array.from(founders).sort(),
+      uniqueCompanies: Array.from(companies).sort(),
+      uniqueYears: Array.from(years).sort().reverse(),
+      uniqueTags: Array.from(tagCounts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])),
+      episodeTagsMap: tagsMap
+    };
   }, [allEpisodes]);
+
+  const getEpisodeTags = useCallback((ep: Episode): string[] => {
+    return episodeTagsMap.get(ep.id) || [];
+  }, [episodeTagsMap]);
+
+  // Pre-calculate folder map for O(1) lookups during rendering
+  const folderMap = useMemo(() => {
+    const map = new Map<string, EpisodeFolder>();
+    folders.forEach(f => map.set(f.id, f));
+    return map;
+  }, [folders]);
 
   // Filter → Sort → Paginate
   const filteredEpisodes = useMemo(() => {
@@ -267,7 +283,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     }
 
     return result;
-  }, [allEpisodes, selectedIndustries, selectedTags, selectedFolderId, folderAssignments, founderFilter, companyFilter, yearFilter, search]);
+  }, [allEpisodes, selectedIndustries, selectedTags, selectedFolderId, folderAssignments, founderFilter, companyFilter, yearFilter, search, getEpisodeTags]);
 
   const sortedEpisodes = useMemo(() => {
     const sorted = [...filteredEpisodes];
@@ -292,7 +308,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
       return sortDirection === "asc" ? cmp : -cmp;
     });
     return sorted;
-  }, [filteredEpisodes, sortColumn, sortDirection]);
+  }, [filteredEpisodes, sortColumn, sortDirection, getEpisodeTags]);
 
   const totalPages = Math.max(1, Math.ceil(sortedEpisodes.length / PAGE_SIZE));
   const paginatedEpisodes = sortedEpisodes.slice(
@@ -623,7 +639,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
   // Mobile card view for each episode
   const MobileEpisodeCard = ({ episode }: { episode: Episode }) => {
     const episodeFolders = (folderAssignments[episode.id] || [])
-      .map(fId => folders.find(f => f.id === fId))
+      .map(fId => folderMap.get(fId))
       .filter(Boolean);
 
     return (
@@ -1020,7 +1036,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
               <TableBody>
                 {paginatedEpisodes.map((episode) => {
                   const episodeFolders = (folderAssignments[episode.id] || [])
-                    .map(fId => folders.find(f => f.id === fId))
+                    .map(fId => folderMap.get(fId))
                     .filter(Boolean);
 
                   return (
@@ -1381,7 +1397,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
               .filter(([, ids]) => ids.includes(selectedFolderId))
               .map(([epId]) => epId)
           : undefined}
-        scopeLabel={selectedFolderId ? folders.find(f => f.id === selectedFolderId)?.name : undefined}
+        scopeLabel={selectedFolderId ? folderMap.get(selectedFolderId)?.name : undefined}
         open={exportModalOpen}
         onOpenChange={setExportModalOpen}
       />
