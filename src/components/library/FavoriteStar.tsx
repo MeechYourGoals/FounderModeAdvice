@@ -52,7 +52,10 @@ export const FavoriteStar = ({ kind, displayName, size = "icon", className }: Fa
       className={cn("h-8 w-8 shrink-0", className)}
     >
       <Star
-        className={cn("h-4 w-4 transition-colors", active ? "fill-primary text-primary" : "text-muted-foreground")}
+        className={cn(
+          "h-4 w-4 transition-all duration-200 ease-ios-spring",
+          active ? "fill-brand-red text-brand-red scale-110" : "text-muted-foreground",
+        )}
       />
     </Button>
   );

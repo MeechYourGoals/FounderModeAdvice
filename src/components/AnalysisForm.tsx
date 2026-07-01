@@ -10,6 +10,7 @@ import { useActiveProfile } from "@/contexts/ActiveProfileContext";
 import { canBatchAnalyzeProfiles, isUnlimited } from "@/types/subscription";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { StartupProfileForm } from "./StartupProfileForm";
+import { AnalyzingScene } from "./AnalyzingScene";
 import { UpgradePrompt } from "./subscription";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 import {
@@ -277,7 +278,8 @@ export const AnalysisForm = () => {
 
       if (manageState) setProgress("Generating insights...");
 
-      triggerHapticFeedback('heavy');
+      // UIKit success pattern — the payoff for the wait.
+      triggerHapticFeedback('success');
       // Server-side already increments the analysis count via RPC; just refresh the UI
       await refreshSubscription();
 
@@ -467,6 +469,20 @@ export const AnalysisForm = () => {
         </p>
       )}
 
+      {isAnalyzing ? (
+        <div className="space-y-6">
+          <div className="space-y-2 text-center">
+            <h2 className="text-title-2 sm:text-title-1 text-center">
+              Writing your{" "}
+              <span className="font-display font-medium italic text-gradient">memo</span>
+            </h2>
+          </div>
+          <AnalyzingScene
+            companyName={selectedProfiles[0]?.company_name || activeProfile?.company_name}
+            batchLabel={canBatchProfiles && selectedProfileIds.length > 1 ? progress : undefined}
+          />
+        </div>
+      ) : (
       <form onSubmit={handleEpisodeSubmit} className="space-y-6">
         <div className="space-y-2 text-center">
           <h2 className="text-title-2 sm:text-title-1 text-center">
@@ -665,6 +681,7 @@ export const AnalysisForm = () => {
         </div>
         </div>
       </form>
+      )}
     </Card>
   );
 };
