@@ -21,7 +21,7 @@ import { SubscriptionSettingsCard } from "@/components/subscription";
 import { clearOfflineCache } from "@/lib/offlineCache";
 import { useToast } from "@/hooks/use-toast";
 import {
-  ArrowLeft, Loader2, Shield, FileText, LifeBuoy, Mail,
+  ArrowLeft, ChevronRight, Loader2, Shield, FileText, LifeBuoy, Mail,
   RotateCcw, Building2, Globe, SlidersHorizontal, User, Users, Trash2, Info,
 } from "lucide-react";
 import {
@@ -76,7 +76,7 @@ const Settings = () => {
   return (
     <div className="h-screen flex flex-col bg-gradient-to-b from-background to-muted/20">
       {/* Header */}
-      <div className="glass-nav relative z-50 border-b border-border" style={{ paddingTop: "var(--safe-area-top)" }}>
+      <div className="glass-nav hairline-b relative z-50" style={{ paddingTop: "var(--safe-area-top)" }}>
         <div className="flex items-center justify-between px-4 py-3">
           <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="-ml-2">
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -93,6 +93,9 @@ const Settings = () => {
           style={{ paddingBottom: isMobile ? "calc(5rem + var(--safe-area-bottom))" : "2rem" }}
         >
           <div className="space-y-6">
+            {/* iOS large-title header (the compact bar title stays for wayfinding) */}
+            <h1 className="text-large-title px-1 pt-1 md:hidden">Settings</h1>
+
             {/* Active business profile */}
             <Card>
               <CardHeader>
@@ -249,15 +252,19 @@ const Settings = () => {
               <CardHeader>
                 <CardTitle>Legal & account</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-1">
+              <CardContent className="space-y-0.5">
                 <SettingsLink to="/account" icon={User} label="Account & data" />
                 <SettingsLink to="/faq" icon={LifeBuoy} label="FAQ" />
                 <SettingsLink to="/privacy-policy" icon={Shield} label="Privacy Policy" />
                 <SettingsLink to="/terms-of-service" icon={FileText} label="Terms of Service" />
                 <Separator className="my-2" />
-                <a href="mailto:CA@saintmarlolabs.com" className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors text-sm">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  Contact Support
+                <a
+                  href="mailto:CA@saintmarlolabs.com"
+                  className="flex items-center gap-3 px-2 rounded-lg min-h-11 hover:bg-muted active:bg-muted transition-colors text-subhead"
+                >
+                  <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="flex-1">Contact Support</span>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground/50 shrink-0" />
                 </a>
               </CardContent>
             </Card>
@@ -269,9 +276,13 @@ const Settings = () => {
 };
 
 const SettingsLink = ({ to, icon: Icon, label }: { to: string; icon: typeof User; label: string }) => (
-  <Link to={to} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors text-sm">
-    <Icon className="h-4 w-4 text-muted-foreground" />
-    {label}
+  <Link
+    to={to}
+    className="flex items-center gap-3 px-2 rounded-lg min-h-11 hover:bg-muted active:bg-muted transition-colors text-subhead"
+  >
+    <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+    <span className="flex-1">{label}</span>
+    <ChevronRight className="h-4 w-4 text-muted-foreground/50 shrink-0" />
   </Link>
 );
 

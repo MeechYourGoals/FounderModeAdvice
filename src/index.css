@@ -25,7 +25,9 @@ All colors MUST be HSL.
     --secondary-foreground: 222 28% 16%;
 
     --muted: 220 16% 95%;
-    --muted-foreground: 220 10% 42%;
+    /* 38% lightness ≈ 5.9:1 on the near-white background — comfortably AA
+       for the small secondary text this token is used on. */
+    --muted-foreground: 220 10% 38%;
 
     --accent: 211 100% 50%;
     --accent-foreground: 0 0% 100%;
@@ -92,7 +94,9 @@ All colors MUST be HSL.
     --secondary-foreground: 210 20% 96%;
 
     --muted: 222 14% 16%;
-    --muted-foreground: 218 12% 62%;
+    /* 70% lightness ≈ 7.4:1 on the 8% background — secondary text stays
+       legible on OLED at low brightness instead of washing out. */
+    --muted-foreground: 218 14% 70%;
 
     --accent: 211 100% 60%;
     --accent-foreground: 0 0% 100%;
@@ -364,6 +368,46 @@ All colors MUST be HSL.
     .pulse-live { animation: none; }
   }
 
+  /* Retina hairlines — true 0.5px separators like UIKit, instead of 1px
+     borders that read chunky on 2x/3x displays. Drawn with box-shadow so
+     they never affect layout. */
+  .hairline-t {
+    box-shadow: inset 0 0.5px 0 0 hsl(var(--border));
+  }
+  .hairline-b {
+    box-shadow: inset 0 -0.5px 0 0 hsl(var(--border));
+  }
+
+  /* iOS inset-grouped list (Settings-style): rounded container, rows divided
+     by inset hairlines that stop short of the leading icon column. */
+  .ios-list {
+    border-radius: 1rem;
+    overflow: hidden;
+  }
+  .ios-list > * + * {
+    position: relative;
+  }
+  .ios-list > * + *::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 3.5rem; /* clears the leading icon column so separators read inset */
+    right: 0;
+    height: 0.5px;
+    background: hsl(var(--border));
+    pointer-events: none;
+  }
+
+  /* UIKit page-sheet grabber */
+  .sheet-grabber {
+    width: 36px;
+    height: 5px;
+    border-radius: 9999px;
+    background: hsl(var(--muted-foreground) / 0.4);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
   /* Despia-recommended scrollable container: hide scrollbar, flex-grow */
   .despia-scroll {
     flex: 1 1 auto;
@@ -383,6 +427,31 @@ All colors MUST be HSL.
   .cv-row {
     content-visibility: auto;
     contain-intrinsic-size: auto 72px;
+  }
+}
+
+/* iOS navigation-push feel on route changes: the incoming screen slides in
+   from the right with Apple's sheet curve. Applied by the keyed wrapper in
+   App.tsx, so it replays on every route change. Kept outside @layer and
+   guarded for reduced motion. */
+@media (max-width: 1023px) {
+  .route-screen {
+    animation: route-push 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+}
+@keyframes route-push {
+  from {
+    opacity: 0.4;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .route-screen {
+    animation: none;
   }
 }
 

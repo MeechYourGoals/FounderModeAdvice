@@ -139,7 +139,7 @@ const Index = () => {
 
       {/* Mobile & Tablet nav - relative top bar with safe area (Despia pattern) */}
       {!isDesktop ? (
-        <div className="glass-nav relative z-50 border-b border-border" style={{ paddingTop: 'var(--safe-area-top)' }}>
+        <div className="glass-nav hairline-b relative z-50" style={{ paddingTop: 'var(--safe-area-top)' }}>
           <div className="flex items-center justify-between px-4 py-2">
             <button onClick={() => { triggerHapticFeedback('light'); setSelectedEpisodeId(null); window.dispatchEvent(new Event("homeReset")); }} className="flex items-center hover:opacity-80 transition-opacity shrink-0" aria-label="Founder Mode Advice — home">
               <BrandLogo className="h-8 w-auto" />

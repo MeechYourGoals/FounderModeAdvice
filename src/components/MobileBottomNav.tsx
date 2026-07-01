@@ -64,13 +64,15 @@ export const MobileBottomNav = () => {
     >
       <span
         className={cn(
-          "flex items-center justify-center rounded-full px-3.5 py-0.5 transition-all duration-200 group-active:scale-90",
-          active ? "bg-primary/10" : "bg-transparent",
+          "flex items-center justify-center rounded-full px-3.5 py-0.5 transition-all duration-200 ease-ios-spring group-active:scale-90",
+          active ? "bg-primary/10 animate-tab-pop" : "bg-transparent",
         )}
       >
         <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
       </span>
-      <span className="text-[10px] font-medium leading-tight">{label}</span>
+      <span className={cn("text-[10px] leading-tight tracking-wide", active ? "font-semibold" : "font-medium")}>
+        {label}
+      </span>
     </button>
   );
 
@@ -81,7 +83,7 @@ export const MobileBottomNav = () => {
 
   return (
     <nav
-      className="mobile-bottom-nav glass-nav fixed bottom-0 left-0 right-0 z-50 border-t border-border safe-bottom lg:hidden"
+      className="mobile-bottom-nav glass-nav hairline-t no-select fixed bottom-0 left-0 right-0 z-50 safe-bottom lg:hidden"
       role="navigation"
       aria-label="Main navigation"
     >
@@ -117,7 +119,7 @@ export const MobileBottomNav = () => {
                 />
               </button>
             </SheetTrigger>
-            <SheetContent side="bottom" className="rounded-t-2xl border-t pb-[calc(1rem+var(--safe-area-bottom))]">
+            <SheetContent side="bottom" className="pb-[calc(1rem+var(--safe-area-bottom))]">
               <SheetHeader className="text-left">
                 <SheetTitle>Analyzing as</SheetTitle>
                 <SheetDescription>
