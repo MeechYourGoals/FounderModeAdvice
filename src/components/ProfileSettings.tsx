@@ -166,6 +166,7 @@ export const ProfileSettings = ({
           .eq("id", editingProfile.id);
 
         if (error) throw error;
+        triggerHapticFeedback("success");
         toast({ title: "Profile updated successfully" });
       } else {
         const { error } = await supabase
@@ -185,6 +186,7 @@ export const ProfileSettings = ({
           }]);
 
         if (error) throw error;
+        triggerHapticFeedback("success");
         toast({ title: "Profile created successfully" });
       }
 
@@ -363,6 +365,7 @@ export const ProfileSettings = ({
           .eq('id', editingFolder.id);
 
         if (error) throw error;
+        triggerHapticFeedback("success");
         toast({ title: "Folder updated" });
       } else {
         const { error } = await supabase
@@ -375,6 +378,7 @@ export const ProfileSettings = ({
           });
 
         if (error) throw error;
+        triggerHapticFeedback("success");
         toast({ title: "Folder created" });
       }
 

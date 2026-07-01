@@ -113,6 +113,17 @@ export default defineConfig(({ mode }) => ({
               expiration: { maxEntries: 32, maxAgeSeconds: 60 * 60 * 24 },
             },
           },
+          // Runtime-hosted brand assets (logo PNGs) are same-origin but not
+          // in the build output, so precache misses them. Cache-first keeps
+          // the brand mark rendering offline and on flaky connections.
+          {
+            urlPattern: /\/__l5e\/assets-v1\/.*/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "brand-assets",
+              expiration: { maxEntries: 16, maxAgeSeconds: 60 * 60 * 24 * 30 },
+            },
+          },
         ],
       },
     }),

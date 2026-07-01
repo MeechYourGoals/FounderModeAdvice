@@ -16,6 +16,9 @@ export const LibraryEmptyState = () => {
   const analyzeStarter = (url: string) => {
     triggerHapticFeedback("medium");
     window.dispatchEvent(new CustomEvent("analyzeUrl", { detail: { url } }));
+    // Bring the analyzing scene into view — the empty state sits below the
+    // form, so without this the progress plays off-screen.
+    window.dispatchEvent(new Event("openAnalyze"));
   };
 
   return (

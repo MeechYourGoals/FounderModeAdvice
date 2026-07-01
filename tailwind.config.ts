@@ -50,6 +50,8 @@ export default {
           DEFAULT: "hsl(var(--success))",
           foreground: "hsl(var(--success-foreground))",
         },
+        /* Rare brand accent (favorites, logo wordmark) — see --brand-red */
+        "brand-red": "hsl(var(--brand-red))",
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",

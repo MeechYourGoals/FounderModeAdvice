@@ -256,7 +256,7 @@ const Favorites = () => {
           </Button>
           <BrandLogo className="h-7 w-auto" />
           <h1 className="text-lg font-semibold ml-2 flex items-center gap-2">
-            <Star className="h-4 w-4 text-primary fill-primary" /> Favorites
+            <Star className="h-4 w-4 text-brand-red fill-brand-red" /> Favorites
           </h1>
           <div className="ml-auto">
             <FavoritesDrawer disabled={!paid} />
@@ -325,7 +325,7 @@ const Favorites = () => {
           {favorites.length > 0 && (
             <Card className="p-4">
               <h2 className="font-semibold mb-3 flex items-center gap-2">
-                <Star className="h-4 w-4 text-primary fill-primary" /> Your pins
+                <Star className="h-4 w-4 text-brand-red fill-brand-red" /> Your pins
                 <span className="text-xs text-muted-foreground font-normal ml-2">
                   Click to combine — results show the intersection.
                 </span>

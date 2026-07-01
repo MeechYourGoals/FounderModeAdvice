@@ -125,16 +125,46 @@ export async function handleBackButton() {
   }
 }
 
-// Haptic feedback for native interactions (Capacitor or Despia runtime)
-export async function triggerHapticFeedback(type: 'light' | 'medium' | 'heavy' = 'light') {
+
+/**
+ * Haptic feedback for native interactions (Capacitor or Despia runtime).
+ *
+ * Impact types (light/medium/heavy) are physical taps for direct
+ * manipulation. Notification types (success/warning/error) are the richer
+ * UIKit patterns for outcomes — use `success` when something the user
+ * initiated finishes (analysis complete, folder saved, share sent).
+ */
+export type HapticType = 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error';
+
+export async function triggerHapticFeedback(type: HapticType = 'light') {
   if (!isNative) {
     const { isDespia, triggerDespiaHaptic } = await import('@/services/despiaService');
-    if (isDespia()) triggerDespiaHaptic(type);
+    // Despia only speaks impact strengths; map outcome patterns to the
+    // closest physical equivalent.
+    const despiaMap = {
+      light: 'light',
+      medium: 'medium',
+      heavy: 'heavy',
+      success: 'heavy',
+      warning: 'medium',
+      error: 'heavy',
+    } as const;
+    if (isDespia()) triggerDespiaHaptic(despiaMap[type]);
     return;
   }
 
   try {
-    const { Haptics, ImpactStyle } = await import('@capacitor/haptics');
+    const { Haptics, ImpactStyle, NotificationType } = await import('@capacitor/haptics');
+
+    if (type === 'success' || type === 'warning' || type === 'error') {
+      const notificationMap = {
+        success: NotificationType.Success,
+        warning: NotificationType.Warning,
+        error: NotificationType.Error,
+      };
+      await Haptics.notification({ type: notificationMap[type] });
+      return;
+    }
 
     const styleMap = {
       light: ImpactStyle.Light,

@@ -4,6 +4,7 @@ import { cacheLastAnalysis, getCachedAnalysis } from "@/lib/offlineCache";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, ExternalLink, TrendingUp, Target, Lightbulb, RefreshCw, Loader2, Plus, X, Download, Share2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
@@ -409,12 +410,29 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
 
   if (loading) {
     return (
-      <Card className="p-6 sm:p-8" role="status" aria-live="polite" aria-label="Loading episode details">
-        <div className="flex items-center justify-center gap-3 py-10 text-muted-foreground">
-          <Loader2 className="w-5 h-5 animate-spin text-primary" aria-hidden />
-          <span>Loading episode details...</span>
-        </div>
-      </Card>
+      <div className="space-y-4 sm:space-y-6" role="status" aria-live="polite" aria-label="Loading episode details">
+        <Card className="p-4 sm:p-8 space-y-4">
+          <Skeleton className="h-7 w-4/5" />
+          <div className="flex gap-2">
+            <Skeleton className="h-5 w-32 rounded-full" />
+            <Skeleton className="h-5 w-24 rounded-full" />
+          </div>
+          <Skeleton className="h-4 w-2/5" />
+        </Card>
+        <Card className="p-4 sm:p-8 space-y-5">
+          <Skeleton className="h-6 w-48" />
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="space-y-2.5">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-11/12" />
+              <div className="flex gap-2 pt-1">
+                <Skeleton className="h-5 w-20 rounded-full" />
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+            </div>
+          ))}
+        </Card>
+      </div>
     );
   }
 
@@ -427,7 +445,7 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+    <div className="space-y-4 sm:space-y-6 animate-slide-up">
       <Button variant="ghost" onClick={onBack} className="mb-2 sm:mb-4 min-h-[44px] sm:min-h-0 -ml-2">
         <ArrowLeft className="w-4 h-4 mr-2" />
         Back to All Episodes
@@ -583,9 +601,9 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
                       <ScorePill label="Action" score={lesson.actionability_score} />
                     </div>
                   </div>
-                  <p className="text-sm sm:text-base text-foreground leading-relaxed mb-2">{lesson.lesson_text}</p>
+                  <p className="text-body-lg text-foreground leading-relaxed max-w-[65ch] mb-2">{lesson.lesson_text}</p>
                   {lesson.founder_attribution && (
-                    <p className="font-display text-xs sm:text-sm text-muted-foreground italic">
+                    <p className="font-display text-sm sm:text-base text-muted-foreground italic">
                       — {lesson.founder_attribution}
                     </p>
                   )}
@@ -620,7 +638,7 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
                   <div key={lesson.id} className="space-y-3 sm:space-y-4">
                     <div className="p-3 sm:p-5 bg-card rounded-2xl border border-primary/15 shadow-sm">
                       <div className="flex-1 mb-3">
-                        <h3 className="font-semibold text-sm sm:text-lg mb-2 leading-snug">{lesson.lesson_text}</h3>
+                        <h3 className="text-headline sm:text-title-3 mb-2 leading-snug max-w-[65ch]">{lesson.lesson_text}</h3>
                         <div className="flex gap-2 mb-3 flex-wrap">
                           <ScorePill label="Impact" score={lesson.impact_score} />
                           <ScorePill label="Action" score={lesson.actionability_score} />
@@ -638,7 +656,7 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
                                 ? "Universal analysis"
                                 : `For ${getAnalysisProfileLabel(episode)}`}
                             </p>
-                            <p className="text-sm sm:text-base text-foreground leading-relaxed">{insight.personalized_text}</p>
+                            <p className="text-body-lg text-foreground leading-relaxed max-w-[65ch]">{insight.personalized_text}</p>
                           </div>
                         </div>
 
@@ -686,7 +704,7 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
                   <Lightbulb className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm sm:text-base text-foreground leading-relaxed">{callout.callout_text}</p>
+                  <p className="text-body-lg text-foreground leading-relaxed max-w-[65ch]">{callout.callout_text}</p>
                   <div className="mt-2">
                     <ScorePill label="Relevance" score={callout.relevance_score} />
                   </div>
