@@ -66,10 +66,12 @@ function SubscriptionCallback() {
 // Replays an iOS-style push animation whenever the route changes. The key
 // remounts the wrapper per pathname; .route-screen (index.css) only animates
 // below the desktop breakpoint and respects prefers-reduced-motion.
+// data-vaul-drawer-wrapper lets bottom sheets scale this screen back behind
+// them, exactly like a native iOS page sheet.
 function ScreenTransition({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   return (
-    <div key={pathname} className="route-screen">
+    <div key={pathname} className="route-screen bg-background" data-vaul-drawer-wrapper="">
       {children}
     </div>
   );

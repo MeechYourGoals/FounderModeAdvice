@@ -539,6 +539,11 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
       toast({ title: "Could not load folders", description: "Folder data may be temporarily out of date.", variant: "destructive" });
     });
     const handleEpisodeAnalyzed = () => { fetchEpisodes(); };
+    // Pull-to-refresh on the home screen re-syncs both episodes and folders.
+    const handleLibraryRefresh = () => {
+      fetchEpisodes();
+      fetchFolders().catch(() => undefined);
+    };
     const handleHomeReset = () => {
       setSelectedTags(new Set());
       setSelectedIndustries(new Set());
@@ -551,9 +556,11 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
       setSearchParams({});
     };
     window.addEventListener("episodeAnalyzed", handleEpisodeAnalyzed);
+    window.addEventListener("libraryRefresh", handleLibraryRefresh);
     window.addEventListener("homeReset", handleHomeReset);
     return () => {
       window.removeEventListener("episodeAnalyzed", handleEpisodeAnalyzed);
+      window.removeEventListener("libraryRefresh", handleLibraryRefresh);
       window.removeEventListener("homeReset", handleHomeReset);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

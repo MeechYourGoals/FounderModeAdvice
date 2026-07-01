@@ -7,6 +7,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { ProfileSettings } from "@/components/ProfileSettings";
 import { BrandLogo } from "@/components/BrandLogo";
 import { AppLoadingScreen } from "@/components/AppLoadingScreen";
+import { PullToRefresh } from "@/components/PullToRefresh";
 
 import { PublicLanding } from "@/components/PublicLanding";
 import { useAuth } from "@/hooks/useAuth";
@@ -326,8 +327,17 @@ const Index = () => {
         </Sheet>
       )}
 
-      {/* Scrollable content area (Despia pattern: only this element scrolls) */}
-      <div className="despia-scroll">
+      {/* Scrollable content area (Despia pattern: only this element scrolls),
+          wrapped in native pull-to-refresh that re-syncs the library. */}
+      <PullToRefresh
+        onRefresh={() => {
+          window.dispatchEvent(new Event("libraryRefresh"));
+          window.dispatchEvent(new Event("profilesChanged"));
+          // Library refetch isn't awaitable from here; hold the indicator
+          // long enough to feel real without ever feeling stuck.
+          return new Promise((resolve) => setTimeout(resolve, 900));
+        }}
+      >
         <HeroSection />
         <div className="container mx-auto px-4 py-8 sm:py-12 space-y-8 sm:space-y-12 max-w-6xl pb-24 md:pb-8" style={{ paddingBottom: isMobile ? 'calc(5rem + var(--safe-area-bottom))' : undefined }}>
           <div ref={analyzeRef} className="scroll-mt-20">
@@ -342,7 +352,7 @@ const Index = () => {
             <EpisodesTable onSelectEpisode={setSelectedEpisodeId} />
           )}
         </div>
-      </div>
+      </PullToRefresh>
     </div>
   );
 };
