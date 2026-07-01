@@ -74,7 +74,7 @@ const Settings = () => {
   if (!user) return null;
 
   return (
-    <div className="h-screen flex flex-col bg-gradient-to-b from-background to-muted/20">
+    <div className="app-ambient h-screen flex flex-col bg-gradient-to-b from-background to-muted/20">
       {/* Header */}
       <div className="glass-nav hairline-b relative z-50" style={{ paddingTop: "var(--safe-area-top)" }}>
         <div className="flex items-center justify-between px-4 py-3">
@@ -239,10 +239,10 @@ const Settings = () => {
                   About
                 </CardTitle>
               </CardHeader>
-              <CardContent className="text-sm text-muted-foreground space-y-1">
+              <CardContent className="text-sm text-foreground-tertiary space-y-1">
                 <div className="flex items-center justify-between">
                   <span>App version</span>
-                  <span className="font-mono text-xs">{__APP_VERSION__}</span>
+                  <span className="font-mono text-xs tabular-nums">{__APP_VERSION__}</span>
                 </div>
               </CardContent>
             </Card>

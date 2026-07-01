@@ -654,7 +654,7 @@ export const ProfileSettings = ({
                         <div className="text-caption-1 text-muted-foreground truncate">{folder.description}</div>
                       )}
                     </div>
-                    <span className="text-footnote tabular-nums text-muted-foreground shrink-0">{count}</span>
+                    <span className="text-footnote tabular-nums text-foreground-tertiary shrink-0">{count}</span>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -714,7 +714,7 @@ export const ProfileSettings = ({
               <h4 className="text-headline truncate">
                 {folders.find(f => f.id === selectedFolderId)?.name}
               </h4>
-              <span className="text-footnote tabular-nums text-muted-foreground ml-auto shrink-0">
+              <span className="text-footnote tabular-nums text-foreground-tertiary ml-auto shrink-0">
                 {bookmarkedEpisodes.length} saved
               </span>
             </div>

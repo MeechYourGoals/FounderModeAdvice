@@ -438,7 +438,7 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
         <div className="space-y-4 sm:space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl sm:text-3xl font-bold tracking-tight mb-2 sm:mb-3">{episode.title}</h1>
+              <h1 className="text-title-2 sm:text-title-1 mb-2 sm:mb-3">{episode.title}</h1>
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <Badge variant={isUniversalAnalysis(episode) ? "outline" : "secondary"} className="text-[11px]">
                   Analyzed for {getAnalysisProfileLabel(episode)}
@@ -558,7 +558,7 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
       <div className="grid gap-4 sm:gap-6 xl:grid-cols-2 xl:items-start">
         {lessons.length > 0 && (
           <Card className="min-w-0 p-4 sm:p-8">
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-4 sm:mb-6 flex items-center gap-2.5">
+            <h2 className="text-title-3 sm:text-title-2 mb-4 sm:mb-6 flex items-center gap-2.5">
               <span className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                 <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
               </span>
@@ -603,7 +603,7 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
         {personalizedInsights.length > 0 && (
           <Card className="glass relative min-w-0 overflow-hidden p-4 sm:p-8 border-primary/15">
             <div aria-hidden className="absolute inset-x-0 top-0 h-[3px]" style={{ background: 'var(--gradient-primary)' }} />
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-4 sm:mb-6 flex items-center gap-2.5">
+            <h2 className="text-title-3 sm:text-title-2 mb-4 sm:mb-6 flex items-center gap-2.5">
               <span className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                 <Target className="w-4 h-4 sm:w-5 sm:h-5" />
               </span>
@@ -673,7 +673,7 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
 
       {callouts.length > 0 && (
         <Card className="p-4 sm:p-8 bg-accent/5">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-4 sm:mb-6 flex items-center gap-2.5">
+          <h2 className="text-title-3 sm:text-title-2 mb-4 sm:mb-6 flex items-center gap-2.5">
             <span className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
               <Target className="w-4 h-4 sm:w-5 sm:h-5" />
             </span>

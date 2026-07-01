@@ -32,7 +32,7 @@ const SharedWithMe = () => {
 
   return (
     <div
-      className="h-screen overflow-y-auto bg-background p-6 md:p-12 pb-nav"
+      className="app-ambient h-screen overflow-y-auto bg-background p-6 md:p-12 pb-nav"
       style={{ paddingTop: "calc(1.5rem + var(--safe-area-top))" }}
     >
       <div className="max-w-3xl mx-auto">

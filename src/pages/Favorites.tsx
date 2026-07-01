@@ -245,9 +245,9 @@ const Favorites = () => {
   const paid = isPaid(subscription?.tier);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+    <div className="app-ambient min-h-screen bg-gradient-to-b from-background to-muted/20">
       <header
-        className="sticky top-0 z-40 glass-nav border-b border-border"
+        className="sticky top-0 z-40 glass-nav hairline-b"
         style={{ paddingTop: "var(--safe-area-top)" }}
       >
         <div className="container mx-auto max-w-7xl px-4 py-3 flex items-center gap-3">

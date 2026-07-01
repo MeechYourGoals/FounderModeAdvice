@@ -8,15 +8,17 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Light — "polished daylight": cool graphite whites + Apple blue */
+    /* Light — "gallery daylight": cool graphite whites + Apple blue.
+       Text is a four-tier ramp (foreground → secondary → tertiary →
+       quaternary) so hierarchy comes from deliberate steps, not opacity. */
     --background: 210 30% 99%;
-    --foreground: 222 32% 12%;
+    --foreground: 224 44% 9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 32% 12%;
+    --card-foreground: 224 44% 9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 32% 12%;
+    --popover-foreground: 224 44% 9%;
 
     --primary: 211 100% 50%;
     --primary-foreground: 0 0% 100%;
@@ -25,9 +27,15 @@ All colors MUST be HSL.
     --secondary-foreground: 222 28% 16%;
 
     --muted: 220 16% 95%;
-    /* 38% lightness ≈ 5.9:1 on the near-white background — comfortably AA
-       for the small secondary text this token is used on. */
-    --muted-foreground: 220 10% 38%;
+    /* Secondary text tier — 34% ≈ 7:1 on the near-white background. */
+    --muted-foreground: 221 12% 34%;
+
+    /* Text ramp below the secondary tier: tertiary for metadata
+       (timestamps, counts, captions), quaternary for placeholders and
+       decorative glyphs only — never body copy. */
+    --foreground-secondary: 221 12% 34%;
+    --foreground-tertiary: 220 9% 45%;
+    --foreground-quaternary: 220 8% 62%;
 
     --accent: 211 100% 50%;
     --accent-foreground: 0 0% 100%;
@@ -57,8 +65,14 @@ All colors MUST be HSL.
     --shadow-md: 0 4px 12px -2px hsl(222 32% 12% / 0.1);
     --shadow-lg: 0 12px 32px -8px hsl(222 32% 12% / 0.16);
     --shadow-elegant: 0 20px 50px -16px hsl(211 100% 50% / 0.18);
-    --shadow-card: 0 1px 2px hsl(222 32% 12% / 0.04), 0 8px 24px -12px hsl(222 32% 12% / 0.1);
+    --shadow-card: 0 1px 2px hsl(222 32% 12% / 0.05), 0 8px 24px -12px hsl(222 32% 12% / 0.09);
     --shadow-glass: 0 8px 32px -8px hsl(222 32% 12% / 0.12), inset 0 1px 0 0 hsl(var(--glass-border) / 0.6);
+
+    /* Primary-button surface: lit from above like a physical key cap. */
+    --gradient-button: linear-gradient(180deg, hsl(211 100% 55%), hsl(213 96% 46%));
+
+    /* Ambient top glow behind page content (see .app-ambient) */
+    --ambient-glow: radial-gradient(70% 42% at 50% -8%, hsl(211 100% 50% / 0.07), transparent 65%);
 
     --glass-bg: 0 0% 100%;
     --glass-border: 222 32% 12%;
@@ -77,26 +91,34 @@ All colors MUST be HSL.
   }
 
   .dark {
-    /* Dark — "midnight glass": deep cool graphite + brighter Apple blue (DEFAULT) */
-    --background: 222 24% 8%;
-    --foreground: 210 20% 96%;
+    /* Dark — "obsidian glass" (DEFAULT): the page sits two steps below the
+       cards, so elevation reads as light, not as borders. Ramp:
+       background 6.5% → card 11% → popover/menus 14% → secondary 18%. */
+    --background: 224 28% 6.5%;
+    --foreground: 213 30% 97%;
 
-    --card: 222 20% 12%;
-    --card-foreground: 210 20% 96%;
+    --card: 223 22% 11%;
+    --card-foreground: 213 30% 97%;
 
-    --popover: 222 22% 11%;
-    --popover-foreground: 210 20% 96%;
+    --popover: 223 24% 14%;
+    --popover-foreground: 213 30% 97%;
 
     --primary: 211 100% 60%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 222 16% 18%;
-    --secondary-foreground: 210 20% 96%;
+    --secondary-foreground: 213 30% 97%;
 
     --muted: 222 14% 16%;
-    /* 70% lightness ≈ 7.4:1 on the 8% background — secondary text stays
-       legible on OLED at low brightness instead of washing out. */
-    --muted-foreground: 218 14% 70%;
+    /* Secondary text tier — ≈ 8:1 on the page, ≈ 6.5:1 on cards, so body
+       copy stays legible on OLED at low brightness without stealing
+       emphasis from primary text. */
+    --muted-foreground: 217 18% 73%;
+
+    /* Text ramp below the secondary tier (metadata, then placeholders). */
+    --foreground-secondary: 217 18% 73%;
+    --foreground-tertiary: 219 13% 56%;
+    --foreground-quaternary: 220 10% 40%;
 
     --accent: 211 100% 60%;
     --accent-foreground: 0 0% 100%;
@@ -112,7 +134,7 @@ All colors MUST be HSL.
     --ring: 211 100% 60%;
 
     --gradient-primary: linear-gradient(135deg, hsl(211 100% 60%), hsl(199 90% 64%));
-    --gradient-hero: radial-gradient(120% 120% at 50% 0%, hsl(214 60% 16%) 0%, hsl(222 24% 8%) 55%);
+    --gradient-hero: radial-gradient(120% 120% at 50% 0%, hsl(214 60% 15%) 0%, hsl(224 28% 6.5%) 55%);
     --gradient-mesh: radial-gradient(60% 50% at 18% 8%, hsl(211 100% 60% / 0.2), transparent 70%),
                      radial-gradient(50% 60% at 85% 12%, hsl(199 90% 60% / 0.16), transparent 70%),
                      radial-gradient(45% 45% at 60% 80%, hsl(224 90% 64% / 0.1), transparent 70%);
@@ -122,18 +144,26 @@ All colors MUST be HSL.
     --shadow-md: 0 4px 12px -2px hsl(0 0% 0% / 0.4);
     --shadow-lg: 0 12px 32px -8px hsl(0 0% 0% / 0.5);
     --shadow-elegant: 0 20px 50px -16px hsl(211 100% 50% / 0.35);
-    --shadow-card: 0 1px 2px hsl(0 0% 0% / 0.4), 0 8px 24px -12px hsl(0 0% 0% / 0.5);
+    /* Card elevation in the dark theme = drop shadow below + a 1px light
+       edge on top, like every surface catches the same overhead light.
+       This is what makes cards read as "floating" instead of "outlined". */
+    --shadow-card: inset 0 1px 0 0 hsl(210 40% 96% / 0.06), 0 1px 2px hsl(0 0% 0% / 0.4),
+      0 8px 24px -12px hsl(0 0% 0% / 0.5);
     --shadow-glass: 0 8px 32px -8px hsl(0 0% 0% / 0.45), inset 0 1px 0 0 hsl(var(--glass-border) / 0.08);
+
+    --gradient-button: linear-gradient(180deg, hsl(210 100% 64%), hsl(212 96% 53%));
+
+    --ambient-glow: radial-gradient(70% 42% at 50% -8%, hsl(211 100% 60% / 0.12), transparent 65%);
 
     --glass-bg: 222 24% 12%;
     --glass-border: 210 40% 96%;
 
-    --sidebar-background: 222 24% 8%;
+    --sidebar-background: 224 28% 6.5%;
     --sidebar-foreground: 210 20% 90%;
     --sidebar-primary: 211 100% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 222 16% 18%;
-    --sidebar-accent-foreground: 210 20% 96%;
+    --sidebar-accent-foreground: 213 30% 97%;
     --sidebar-border: 220 16% 22%;
     --sidebar-ring: 211 100% 60%;
   }
@@ -149,6 +179,7 @@ All colors MUST be HSL.
     font-family: -apple-system, "SF Pro Display", "SF Pro Text", BlinkMacSystemFont, system-ui, "Inter",
       "Segoe UI", Roboto, sans-serif;
     letter-spacing: -0.011em;
+    text-rendering: optimizeLegibility;
     -webkit-tap-highlight-color: transparent;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -161,6 +192,11 @@ All colors MUST be HSL.
   /* No long-press save/copy callout on controls — a webview giveaway on iOS */
   button, a, [role="button"] {
     -webkit-touch-callout: none;
+  }
+
+  /* Headlines never orphan a single word onto their own line */
+  h1, h2, h3, h4 {
+    text-wrap: balance;
   }
 }
 
@@ -366,6 +402,19 @@ All colors MUST be HSL.
   }
   @media (prefers-reduced-motion: reduce) {
     .pulse-live { animation: none; }
+  }
+
+  /* Ambient top glow — a faint brand-blue aurora anchored above the fold.
+     Gives dark screens the "lit room" depth of Linear/Arc instead of a flat
+     void, and warms the top of light screens. Pure paint: fixed, behind
+     content, never intercepts input. */
+  .app-ambient::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: var(--ambient-glow);
   }
 
   /* Retina hairlines — true 0.5px separators like UIKit, instead of 1px

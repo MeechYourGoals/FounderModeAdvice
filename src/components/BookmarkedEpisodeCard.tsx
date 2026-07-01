@@ -96,7 +96,7 @@ export const BookmarkedEpisodeCard = ({
               <h4 className="font-medium line-clamp-2">
                 {bookmark.episodes?.title || "Untitled Episode"}
               </h4>
-              <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 mt-1 text-footnote text-foreground-tertiary">
                 {bookmark.episodes?.founder_names && (
                   <span>{bookmark.episodes.founder_names}</span>
                 )}

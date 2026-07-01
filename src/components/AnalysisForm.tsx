@@ -469,7 +469,7 @@ export const AnalysisForm = () => {
 
       <form onSubmit={handleEpisodeSubmit} className="space-y-6">
         <div className="space-y-2 text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-center">
+          <h2 className="text-title-2 sm:text-title-1 text-center">
             New{" "}
             <span className="font-display font-medium italic text-gradient">analysis</span>
           </h2>

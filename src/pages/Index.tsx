@@ -131,7 +131,7 @@ const Index = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gradient-to-b from-background to-muted/20">
+    <div className="app-ambient h-screen flex flex-col bg-gradient-to-b from-background to-muted/20">
       {/* First-run product tour — shows once per user until manually restarted */}
       {user && !onboardingLoading && onboardingCompleted === false && (
         <OnboardingDialog open onClose={completeOnboarding} />
