@@ -1,9 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useSearchParams } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useSearchParams, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/hooks/useAuth";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
@@ -63,6 +63,20 @@ function SubscriptionCallback() {
   return null;
 }
 
+// Replays an iOS-style push animation whenever the route changes. The key
+// remounts the wrapper per pathname; .route-screen (index.css) only animates
+// below the desktop breakpoint and respects prefers-reduced-motion.
+// data-vaul-drawer-wrapper lets bottom sheets scale this screen back behind
+// them, exactly like a native iOS page sheet.
+function ScreenTransition({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation();
+  return (
+    <div key={pathname} className="route-screen bg-background" data-vaul-drawer-wrapper="">
+      {children}
+    </div>
+  );
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
@@ -77,6 +91,7 @@ const App = () => (
             <SubscriptionCallback />
             <OfflineBadge />
 
+            <ScreenTransition>
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
@@ -100,6 +115,7 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </ScreenTransition>
             <AppChrome />
             <PWAInstallPrompt />
           </BrowserRouter>

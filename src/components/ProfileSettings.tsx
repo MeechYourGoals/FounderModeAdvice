@@ -3,9 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Edit2, FolderPlus } from "lucide-react";
+import { Plus, Trash2, Edit2, FolderPlus, Folder as FolderIcon, ChevronRight, MoreHorizontal } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { triggerHapticFeedback } from "@/lib/capacitor";
 import { BookmarkFolderDialog } from "@/components/BookmarkFolderDialog";
 import { BookmarkedEpisodeCard } from "@/components/BookmarkedEpisodeCard";
 import { StartupProfileDialog } from "@/components/StartupProfileDialog";
@@ -74,6 +81,7 @@ export const ProfileSettings = ({
 
   // Bookmark state
   const [folders, setFolders] = useState<Folder[]>([]);
+  const [folderCounts, setFolderCounts] = useState<Record<string, number>>({});
   const [bookmarkedEpisodes, setBookmarkedEpisodes] = useState<BookmarkedEpisode[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [showFolderDialog, setShowFolderDialog] = useState(false);
@@ -233,6 +241,17 @@ export const ProfileSettings = ({
 
       if (error) throw error;
       setFolders(data || []);
+
+      // Per-folder episode counts for the list badges (single cheap query).
+      const { data: countRows } = await supabase
+        .from('bookmarked_episodes')
+        .select('folder_id')
+        .eq('user_id', user.id);
+      const counts: Record<string, number> = {};
+      for (const row of countRows ?? []) {
+        if (row.folder_id) counts[row.folder_id] = (counts[row.folder_id] ?? 0) + 1;
+      }
+      setFolderCounts(counts);
     } catch (error) {
       console.error("Error fetching folders:", error);
     }
@@ -441,6 +460,7 @@ export const ProfileSettings = ({
       if (error) throw error;
 
       toast({ title: "Bookmark removed" });
+      fetchFolders();
       if (selectedFolderId) {
         fetchBookmarksForFolder(selectedFolderId);
       }
@@ -534,13 +554,16 @@ export const ProfileSettings = ({
     return (
       <div className="space-y-4">
         {/* Switch between bookmark folders and the speaker directory */}
-        <div className="inline-flex w-full rounded-lg bg-muted p-1 text-sm">
+        <div className="inline-flex w-full rounded-[10px] bg-muted p-1 text-subhead">
           {(["folders", "speakers"] as const).map((view) => (
             <button
               key={view}
-              onClick={() => setBookmarkView(view)}
+              onClick={() => {
+                triggerHapticFeedback("light");
+                setBookmarkView(view);
+              }}
               className={cn(
-                "flex-1 rounded-md py-1.5 font-medium capitalize transition-colors",
+                "flex-1 rounded-lg py-1.5 font-medium capitalize transition-all duration-200 active:scale-[0.97]",
                 bookmarkView === view
                   ? "bg-background shadow-sm text-foreground"
                   : "text-muted-foreground hover:text-foreground"
@@ -565,7 +588,7 @@ export const ProfileSettings = ({
         ) : (
         <>
         <div className="flex justify-between items-center">
-          <h3 className="font-medium">My Folders</h3>
+          <h3 className="text-headline">My Folders</h3>
           <Button
             onClick={() => {
               setEditingFolder(null);
@@ -579,80 +602,125 @@ export const ProfileSettings = ({
         </div>
 
         {folders.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>No folders yet. Create one to organize your bookmarks!</p>
+          <div className="flex flex-col items-center gap-2 py-10 text-center">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <FolderPlus className="h-6 w-6" />
+            </span>
+            <p className="text-subhead font-medium">No folders yet</p>
+            <p className="text-footnote text-muted-foreground max-w-[240px]">
+              Create a folder to organize your saved episodes into playbooks.
+            </p>
           </div>
         ) : (
-          <ScrollArea className={condensed ? "h-48" : "h-64"}>
-            <div className="space-y-2">
-              {folders.map((folder) => (
-                <Card
-                  key={folder.id}
-                  className={`cursor-pointer transition-colors ${
-                    selectedFolderId === folder.id ? 'border-primary' : ''
-                  }`}
-                  onClick={() => {
-                    setSelectedFolderId(folder.id);
-                    fetchBookmarksForFolder(folder.id);
-                  }}
-                >
-                  <CardContent className="p-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-4 h-4 rounded-full"
-                          style={{ backgroundColor: folder.color }}
-                        />
-                        <div>
-                          <div className="font-medium">{folder.name}</div>
-                          {folder.description && (
-                            <div className="text-xs text-muted-foreground line-clamp-1">
-                              {folder.description}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex gap-1">
+          <ScrollArea className={condensed ? "h-56" : "h-72"}>
+            {/* iOS inset-grouped list: tinted folder glyphs, counts, chevrons,
+                inset hairline separators. Row actions live behind an ellipsis
+                menu so the whole row stays one big tap target. */}
+            <div className="ios-list bg-card shadow-sm">
+              {folders.map((folder) => {
+                const selected = selectedFolderId === folder.id;
+                const count = folderCounts[folder.id] ?? 0;
+                return (
+                  <div
+                    key={folder.id}
+                    role="button"
+                    tabIndex={0}
+                    className={cn(
+                      "flex w-full items-center gap-3 pl-3 pr-2 py-2.5 min-h-[52px] cursor-pointer text-left transition-colors",
+                      selected ? "bg-primary/[0.08]" : "active:bg-muted/70 hover:bg-muted/40",
+                    )}
+                    onClick={() => {
+                      triggerHapticFeedback("light");
+                      setSelectedFolderId(folder.id);
+                      fetchBookmarksForFolder(folder.id);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setSelectedFolderId(folder.id);
+                        fetchBookmarksForFolder(folder.id);
+                      }
+                    }}
+                  >
+                    <span
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+                      style={{ backgroundColor: `${folder.color}26`, color: folder.color }}
+                    >
+                      <FolderIcon className="h-[18px] w-[18px]" fill="currentColor" fillOpacity={0.3} />
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-subhead font-medium truncate">{folder.name}</div>
+                      {folder.description && (
+                        <div className="text-caption-1 text-muted-foreground truncate">{folder.description}</div>
+                      )}
+                    </div>
+                    <span className="text-footnote tabular-nums text-foreground-tertiary shrink-0">{count}</span>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8"
-                          onClick={(e) => {
-                            e.stopPropagation();
+                          className="h-8 w-8 shrink-0 text-muted-foreground"
+                          aria-label={`Actions for ${folder.name}`}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenuItem
+                          onClick={() => {
                             setEditingFolder(folder);
                             setShowFolderDialog(true);
                           }}
                         >
-                          <Edit2 className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteFolder(folder.id);
-                          }}
+                          <Edit2 className="h-4 w-4 mr-2" />
+                          Edit folder
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => handleDeleteFolder(folder.id)}
                         >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete folder
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <ChevronRight
+                      className={cn(
+                        "h-4 w-4 shrink-0 text-muted-foreground/50 transition-transform duration-200",
+                        selected && "rotate-90 text-primary",
+                      )}
+                    />
+                  </div>
+                );
+              })}
             </div>
           </ScrollArea>
         )}
 
         {selectedFolderId && (
-          <div className="space-y-3 pt-4 border-t">
-            <h4 className="font-medium">
-              {folders.find(f => f.id === selectedFolderId)?.name} Episodes
-            </h4>
+          <div key={selectedFolderId} className="space-y-3 pt-4 hairline-t animate-drill-in">
+            <div className="flex items-center gap-2">
+              <span
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md"
+                style={{
+                  backgroundColor: `${folders.find((f) => f.id === selectedFolderId)?.color ?? "#3b82f6"}26`,
+                  color: folders.find((f) => f.id === selectedFolderId)?.color ?? "#3b82f6",
+                }}
+              >
+                <FolderIcon className="h-3.5 w-3.5" fill="currentColor" fillOpacity={0.3} />
+              </span>
+              <h4 className="text-headline truncate">
+                {folders.find(f => f.id === selectedFolderId)?.name}
+              </h4>
+              <span className="text-footnote tabular-nums text-foreground-tertiary ml-auto shrink-0">
+                {bookmarkedEpisodes.length} saved
+              </span>
+            </div>
             {bookmarkedEpisodes.length === 0 ? (
               <div className="text-center py-6 text-muted-foreground">
-                <p>No episodes in this folder yet</p>
+                <p className="text-subhead">No episodes in this folder yet</p>
               </div>
             ) : (
               <ScrollArea className={condensed ? "h-64" : "h-96"}>
@@ -664,7 +732,10 @@ export const ProfileSettings = ({
                       folders={folders}
                       onView={() => onSelectEpisode?.(bookmark.episode_id)}
                       onRemove={() => handleRemoveBookmark(bookmark.id)}
-                      onUpdate={() => fetchBookmarksForFolder(selectedFolderId)}
+                      onUpdate={() => {
+                        fetchFolders();
+                        fetchBookmarksForFolder(selectedFolderId);
+                      }}
                     />
                   ))}
                 </div>

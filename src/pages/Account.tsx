@@ -103,10 +103,10 @@ const Account = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gradient-to-b from-background to-muted/20">
+    <div className="app-ambient h-screen flex flex-col bg-gradient-to-b from-background to-muted/20">
       {/* Mobile/Tablet header - relative top bar with safe area (Despia pattern) */}
       {isMobile ? (
-        <div className="glass-nav relative z-50 border-b border-border" style={{ paddingTop: 'var(--safe-area-top)' }}>
+        <div className="glass-nav hairline-b relative z-50" style={{ paddingTop: 'var(--safe-area-top)' }}>
           <div className="flex items-center justify-between px-4 py-3">
             <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="-ml-2">
               <ArrowLeft className="h-4 w-4 mr-2" />

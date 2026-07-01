@@ -539,6 +539,11 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
       toast({ title: "Could not load folders", description: "Folder data may be temporarily out of date.", variant: "destructive" });
     });
     const handleEpisodeAnalyzed = () => { fetchEpisodes(); };
+    // Pull-to-refresh on the home screen re-syncs both episodes and folders.
+    const handleLibraryRefresh = () => {
+      fetchEpisodes();
+      fetchFolders().catch(() => undefined);
+    };
     const handleHomeReset = () => {
       setSelectedTags(new Set());
       setSelectedIndustries(new Set());
@@ -551,9 +556,11 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
       setSearchParams({});
     };
     window.addEventListener("episodeAnalyzed", handleEpisodeAnalyzed);
+    window.addEventListener("libraryRefresh", handleLibraryRefresh);
     window.addEventListener("homeReset", handleHomeReset);
     return () => {
       window.removeEventListener("episodeAnalyzed", handleEpisodeAnalyzed);
+      window.removeEventListener("libraryRefresh", handleLibraryRefresh);
       window.removeEventListener("homeReset", handleHomeReset);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -746,7 +753,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
         <div className="glass p-4 sm:p-6 border-b space-y-4">
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
-              <h2 className="text-lg sm:text-2xl font-bold tracking-tight flex items-center gap-2.5">
+              <h2 className="text-title-3 sm:text-title-2 flex items-center gap-2.5">
                 <span className="flex h-8 w-8 sm:h-9 sm:w-9 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
                 </span>
