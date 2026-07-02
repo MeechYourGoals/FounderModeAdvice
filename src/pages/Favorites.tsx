@@ -267,6 +267,12 @@ const Favorites = () => {
       </header>
 
       <main className="container mx-auto max-w-7xl px-4 py-6 pb-24 grid gap-6 lg:grid-cols-[260px_1fr]">
+        <div className="hidden lg:flex lg:col-span-2 items-center justify-between gap-4 -mt-2 mb-2">
+          <h1 className="text-2xl font-semibold flex items-center gap-2">
+            <Star className="h-5 w-5 text-brand-red fill-brand-red" /> Favorites
+          </h1>
+          <FavoritesDrawer disabled={!paid} />
+        </div>
         <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
           <CollectionsSidebar
             activeId={activeCollectionId}
