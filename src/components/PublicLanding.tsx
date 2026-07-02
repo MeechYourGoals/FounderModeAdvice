@@ -184,9 +184,8 @@ export const PublicLanding = () => {
           <div className="max-w-5xl mx-auto">
             <Reveal>
               <p className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-primary mb-3">How it works</p>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-center mb-3">
-                From transcript to{" "}
-                <span className="font-display font-medium italic text-gradient">operating memo</span> in minutes
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-[-0.02em] text-center mb-3">
+                From transcript to operating memo in minutes
               </h2>
               <p className="mx-auto max-w-2xl text-center text-base sm:text-lg text-foreground/85 leading-relaxed">
                 Paste a founder talk, investor interview, operator breakdown, or strategy lecture. Add your company
