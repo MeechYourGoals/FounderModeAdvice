@@ -429,9 +429,8 @@ export const PublicLanding = () => {
                 }}
               />
               <div className="relative">
-                <h2 className="text-3xl font-bold tracking-tight sm:text-5xl">
-                  Build your private founder{" "}
-                  <span className="font-display font-medium italic">boardroom</span>
+                <h2 className="text-3xl font-semibold tracking-[-0.025em] sm:text-5xl">
+                  Build your private founder boardroom.
                 </h2>
                 <p className="mx-auto mt-4 max-w-xl text-lg text-primary-foreground/95">
                   Start with one video. Leave with a company-specific memo, risk map, action list, and a
