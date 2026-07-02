@@ -395,9 +395,8 @@ export const PublicLanding = () => {
           <div className="max-w-5xl mx-auto">
             <Reveal>
               <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary mb-3">FAQ</p>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
-                Common{" "}
-                <span className="font-display font-medium italic text-gradient">questions</span>.
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-[-0.02em]">
+                Common questions.
               </h2>
             </Reveal>
             <div className="mt-8 grid gap-4 md:grid-cols-2">
