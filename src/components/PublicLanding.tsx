@@ -214,9 +214,8 @@ export const PublicLanding = () => {
           <div className="max-w-5xl mx-auto">
             <Reveal>
               <p className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-primary mb-3">Your founder library</p>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-center max-w-3xl mx-auto">
-                A private boardroom that{" "}
-                <span className="font-display font-medium italic text-gradient">compounds</span>, not a feed you forget
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-[-0.02em] text-center max-w-3xl mx-auto">
+                A private boardroom that compounds, not a feed you forget
               </h2>
               <p className="mx-auto mt-4 max-w-2xl text-center text-base sm:text-lg text-foreground/85 leading-relaxed">
                 Founders watch hundreds of hours of talks and interviews — and the signal scatters across notebooks,
