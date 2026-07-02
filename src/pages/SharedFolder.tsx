@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Download, ExternalLink, Lightbulb, Loader2, LockKeyhole } from "lucide-react";
+import { SecondaryPageHeader } from "@/components/SecondaryPageHeader";
 import { useAuth } from "@/hooks/useAuth";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { ExportModal } from "@/components/ExportModal";
 import {
   getSharedFolder,
@@ -18,6 +20,7 @@ const SharedFolder = () => {
   const { folderId } = useParams<{ folderId: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const isMobile = useMediaQuery("(max-width: 1023px)");
   const [detail, setDetail] = useState<SharedFolderDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -44,14 +47,18 @@ const SharedFolder = () => {
 
   return (
     <div
-      className="h-screen overflow-y-auto bg-background p-6 md:p-12 pb-nav"
-      style={{ paddingTop: "calc(1.5rem + var(--safe-area-top))" }}
+      className="app-ambient h-screen overflow-y-auto bg-background pb-nav"
+      style={{ paddingTop: isMobile ? undefined : "calc(1.5rem + var(--safe-area-top))" }}
     >
-      <div className="max-w-4xl mx-auto">
-        <Button variant="ghost" onClick={() => navigate("/shared")} className="mb-6 -ml-2">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Shared with you
-        </Button>
+      <SecondaryPageHeader title="Shared folder" onBack={() => navigate("/shared")} backLabel="Shared" />
+
+      <div className="max-w-4xl mx-auto p-6 md:p-12">
+        {!isMobile && (
+          <Button variant="ghost" onClick={() => navigate("/shared")} className="mb-6 -ml-2">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Shared with you
+          </Button>
+        )}
 
         {loading || authLoading ? (
           <div className="flex items-center gap-2 py-12 text-muted-foreground">

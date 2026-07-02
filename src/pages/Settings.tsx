@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { AppNavMenu } from "@/components/AppNavMenu";
+import { SecondaryPageHeader } from "@/components/SecondaryPageHeader";
 import { AppLoadingScreen } from "@/components/AppLoadingScreen";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { triggerHapticFeedback } from "@/lib/capacitor";
@@ -20,7 +20,7 @@ import { SubscriptionSettingsCard } from "@/components/subscription";
 import { clearOfflineCache } from "@/lib/offlineCache";
 import { useToast } from "@/hooks/use-toast";
 import {
-  ArrowLeft, ChevronRight, Loader2, Shield, FileText, LifeBuoy, Mail,
+  ChevronRight, Loader2, Shield, FileText, LifeBuoy, Mail,
   RotateCcw, Building2, Globe, SlidersHorizontal, Sparkles, User, Users, Trash2, Info,
 } from "lucide-react";
 import {
@@ -79,17 +79,7 @@ const Settings = () => {
 
   return (
     <div className="app-ambient h-screen flex flex-col bg-gradient-to-b from-background to-muted/20">
-      {/* Header */}
-      <div className="glass-nav hairline-b relative z-50" style={{ paddingTop: "var(--safe-area-top)" }}>
-        <div className="flex items-center justify-between px-4 py-3">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="-ml-2">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-          <span className="font-semibold text-sm">Settings</span>
-          <AppNavMenu triggerVariant="ghost" />
-        </div>
-      </div>
+      <SecondaryPageHeader title="Settings" onBack={() => navigate("/")} />
 
       <div className="despia-scroll">
         <div

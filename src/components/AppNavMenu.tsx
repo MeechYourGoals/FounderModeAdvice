@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Bookmark,
@@ -64,6 +64,11 @@ export const AppNavMenu = ({
   const { signOut } = useAuth();
   const { setTheme } = useTheme();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
+
+  // Close the mobile sheet when navigating away.
+  useEffect(() => {
+    setOpen(false);
+  }, [location.pathname]);
 
   const close = () => setOpen(false);
 
