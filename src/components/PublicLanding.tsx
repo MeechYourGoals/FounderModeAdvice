@@ -291,9 +291,8 @@ export const PublicLanding = () => {
           <div className="max-w-4xl mx-auto space-y-10">
             <Reveal>
               <div className="text-center space-y-3">
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
-                  Watching is passive.{" "}
-                  <span className="font-display font-medium italic text-gradient">Operating</span> is the point
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-[-0.02em]">
+                  Watching is passive. Operating is the point.
                 </h2>
                 <p className="text-base sm:text-xl text-foreground/85 max-w-2xl mx-auto leading-relaxed">
                   Saved videos, generic summaries, and raw transcripts leave the work to you. Founder Mode Advice does the
