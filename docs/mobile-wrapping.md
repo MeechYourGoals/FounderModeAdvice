@@ -80,7 +80,7 @@ because their bridges are already wired.
 
 - [ ] Tab bar visible on Home / Saved / Speakers / Settings / Account, hidden on the auth screen
 - [ ] Tab bar clears the home indicator (safe area) and hides while typing
-- [ ] No pinch-zoom, no zoom on input focus, no pull-to-refresh
-- [ ] Status bar readable in both themes; splash matches `#0f1420`
+- [ ] No pinch-zoom, no zoom on input focus, no browser rubber-band pull-to-refresh (the app's own `PullToRefresh` on the home library is expected)
+- [ ] Status bar readable in both themes; splash matches `#0c0e15`
 - [ ] OAuth round-trips back into the app (deep link, not Safari)
 - [ ] Haptics fire on tab taps
