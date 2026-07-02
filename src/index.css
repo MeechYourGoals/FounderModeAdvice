@@ -608,3 +608,103 @@ body.keyboard-open .mobile-bottom-nav {
     background: transparent;
   }
 }
+
+/* ------------------------------------------------------------------------
+ * Founder Mode Advice marketing surface — bespoke utilities.
+ *
+ * These exist so the public landing page has a design system distinct from
+ * the in-app UI (and, deliberately, distinct from any "left-copy / right-
+ * dashboard-card" template feel). Everything below is opacity/transform-only
+ * and honors prefers-reduced-motion.
+ * -------------------------------------------------------------------- */
+@layer utilities {
+  /* Deep-navy hero field. NOT a grid — a single radial wash with a subtle
+     noise layer to break up flat gradient banding on OLED displays. */
+  .hero-field {
+    background:
+      radial-gradient(120% 90% at 80% -10%, hsl(var(--primary) / 0.18), transparent 60%),
+      radial-gradient(90% 70% at -10% 110%, hsl(224 90% 40% / 0.14), transparent 65%),
+      linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--background)) 100%);
+  }
+  .hero-glow {
+    pointer-events: none;
+    background: radial-gradient(45% 40% at 78% 22%, hsl(var(--primary) / 0.22), transparent 70%);
+    filter: blur(30px);
+    opacity: 0.9;
+  }
+
+  /* Hairline-bordered panel — replaces generic card treatment on the
+     landing surface. Two-tone edge (top light, bottom dark) mimics the
+     way frosted panels catch light in Linear/Arc/Raycast. */
+  .panel-hairline {
+    background: hsl(var(--card) / 0.72);
+    border: 1px solid hsl(var(--border) / 0.7);
+    box-shadow:
+      inset 0 1px 0 0 hsl(0 0% 100% / 0.04),
+      0 20px 60px -30px hsl(0 0% 0% / 0.55);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  /* Animated section divider — a 1px rule that draws in from the left as
+     the section enters the viewport. Purely decorative. */
+  .section-divider-animated {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg,
+      transparent 0%,
+      hsl(var(--border)) 20%,
+      hsl(var(--primary) / 0.4) 50%,
+      hsl(var(--border)) 80%,
+      transparent 100%);
+    opacity: 0.5;
+  }
+
+  /* Underline-sweep link/button treatment. Used for ghost CTAs where a
+     filled button would over-shout. */
+  .link-sweep {
+    position: relative;
+  }
+  .link-sweep::after {
+    content: "";
+    position: absolute;
+    left: 1.25rem;
+    right: 1.25rem;
+    bottom: 0.55rem;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.4;
+    transform: scaleX(0.3);
+    transform-origin: left center;
+    transition: transform 400ms cubic-bezier(0.2, 0.7, 0.2, 1), opacity 300ms;
+  }
+  .link-sweep:hover::after,
+  .link-sweep:focus-visible::after {
+    transform: scaleX(1);
+    opacity: 0.8;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .link-sweep::after { transition: none; }
+  }
+
+  /* Editorial use-case row — hover shifts the whole line rightward one
+     hair and warms the leading index number. */
+  .use-case-row {
+    transition: transform 320ms cubic-bezier(0.2, 0.7, 0.2, 1), background-color 240ms;
+  }
+  .use-case-row:hover {
+    transform: translateX(4px);
+    background: linear-gradient(90deg, hsl(var(--primary) / 0.05), transparent 60%);
+  }
+  .use-case-row:hover .use-case-index {
+    color: hsl(var(--primary));
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .use-case-row { transition: none; }
+    .use-case-row:hover { transform: none; }
+  }
+}
+
