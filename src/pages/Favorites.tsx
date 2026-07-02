@@ -19,6 +19,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AppLoadingScreen } from "@/components/AppLoadingScreen";
 import { ChevronLeft, Star, Tv, User as UserIcon, Tag, Sparkles, ExternalLink } from "lucide-react";
+import { AppNavMenu } from "@/components/AppNavMenu";
 import { BrandLogo } from "@/components/BrandLogo";
 import { SHORTCUT_TOPICS, normalizeTopics } from "@/lib/topics";
 import { useToast } from "@/hooks/use-toast";
@@ -247,7 +248,7 @@ const Favorites = () => {
   return (
     <div className="app-ambient min-h-screen bg-gradient-to-b from-background to-muted/20">
       <header
-        className="sticky top-0 z-40 glass-nav hairline-b"
+        className="sticky top-0 z-40 glass-nav hairline-b lg:hidden"
         style={{ paddingTop: "var(--safe-area-top)" }}
       >
         <div className="container mx-auto max-w-7xl px-4 py-3 flex items-center gap-3">
@@ -258,13 +259,20 @@ const Favorites = () => {
           <h1 className="text-lg font-semibold ml-2 flex items-center gap-2">
             <Star className="h-4 w-4 text-brand-red fill-brand-red" /> Favorites
           </h1>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-1">
             <FavoritesDrawer disabled={!paid} />
+            <AppNavMenu triggerVariant="ghost" />
           </div>
         </div>
       </header>
 
       <main className="container mx-auto max-w-7xl px-4 py-6 pb-24 grid gap-6 lg:grid-cols-[260px_1fr]">
+        <div className="hidden lg:flex lg:col-span-2 items-center justify-between gap-4 -mt-2 mb-2">
+          <h1 className="text-2xl font-semibold flex items-center gap-2">
+            <Star className="h-5 w-5 text-brand-red fill-brand-red" /> Favorites
+          </h1>
+          <FavoritesDrawer disabled={!paid} />
+        </div>
         <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
           <CollectionsSidebar
             activeId={activeCollectionId}

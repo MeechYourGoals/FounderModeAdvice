@@ -3,16 +3,14 @@ import { HeroSection } from "@/components/HeroSection";
 import { AnalysisForm } from "@/components/AnalysisForm";
 import { EpisodesTable } from "@/components/EpisodesTable";
 import { EpisodeDetail } from "@/components/EpisodeDetail";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { ProfileSettings } from "@/components/ProfileSettings";
-import { BrandLogo } from "@/components/BrandLogo";
+import { AppHeader } from "@/components/AppHeader";
 import { AppLoadingScreen } from "@/components/AppLoadingScreen";
 import { PullToRefresh } from "@/components/PullToRefresh";
 
 import { PublicLanding } from "@/components/PublicLanding";
 import { useAuth } from "@/hooks/useAuth";
-import { useSubscription } from "@/contexts/SubscriptionContext";
-import { Bookmark, LogOut, Briefcase, Menu, User, Settings, Users, Star, ChevronLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { PENDING_INVITE_KEY } from "@/services/folderSharing";
 import { PENDING_ANALYSIS_INVITE_KEY } from "@/services/analysisSharing";
 import { Button } from "@/components/ui/button";
@@ -23,41 +21,25 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { Card } from "@/components/ui/card";
 import { useNavigate, Navigate, useLocation } from "react-router-dom";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 import { shouldShowAppAuthFirst } from "@/lib/appMode";
 import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
 import { WalkthroughDialog } from "@/components/onboarding/WalkthroughDialog";
 import { useOnboarding } from "@/hooks/useOnboarding";
-import { ProfileSwitcher } from "@/components/ProfileSwitcher";
 
 const Index = () => {
   const [selectedEpisodeId, setSelectedEpisodeId] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"profiles" | "bookmarks" | "subscription">("profiles");
-  const [desktopPanel, setDesktopPanel] = useState<null | "profiles" | "bookmarks">(null);
   const [walkthroughOpen, setWalkthroughOpen] = useState(false);
 
-  const { user, loading, signOut } = useAuth();
-  const { subscription } = useSubscription();
+  const { user, loading } = useAuth();
   const { loading: onboardingLoading, completed: onboardingCompleted, complete: completeOnboarding } = useOnboarding();
   const navigate = useNavigate();
   const location = useLocation();
-  const isDesktop = useMediaQuery("(min-width: 1024px)");
   const isMobile = useMediaQuery("(max-width: 767px)");
   const analyzeRef = useRef<HTMLDivElement>(null);
 
@@ -153,152 +135,17 @@ const Index = () => {
       {/* Feature tour — chained from setup or replayed via Settings/Account */}
       <WalkthroughDialog open={walkthroughOpen} onOpenChange={setWalkthroughOpen} />
 
-      {/* Mobile & Tablet nav - relative top bar with safe area (Despia pattern) */}
-      {!isDesktop ? (
-        <div className="glass-nav hairline-b relative z-50" style={{ paddingTop: 'var(--safe-area-top)' }}>
-          <div className="flex items-center justify-between px-4 py-2">
-            <button onClick={() => { triggerHapticFeedback('light'); setSelectedEpisodeId(null); window.dispatchEvent(new Event("homeReset")); }} className="flex items-center hover:opacity-80 transition-opacity shrink-0" aria-label="Founder Mode Advice — home">
-              <BrandLogo className="h-8 w-auto" />
-            </button>
+      <AppHeader
+        variant="home"
+        onHomeClick={() => {
+          setSelectedEpisodeId(null);
+          window.dispatchEvent(new Event("homeReset"));
+        }}
+        onOpenPanel={(panel) => handleToggle(panel)}
+      />
 
-            <div className="flex items-center gap-1">
-              <ProfileSwitcher compact />
-              <ThemeToggle />
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <Menu className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={() => { triggerHapticFeedback('light'); handleToggle("profiles"); }}>
-                    <Briefcase className="h-4 w-4 mr-2" />
-                    Business Profiles
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { triggerHapticFeedback('light'); handleToggle("bookmarks"); }}>
-                    <Bookmark className="h-4 w-4 mr-2" />
-                    Bookmarks
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { triggerHapticFeedback('light'); setProfileOpen(false); navigate("/favorites"); }}>
-                    <Star className="h-4 w-4 mr-2" />
-                    Favorites
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { triggerHapticFeedback('light'); setProfileOpen(false); navigate("/shared"); }}>
-                    <Users className="h-4 w-4 mr-2" />
-                    Shared with me
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { triggerHapticFeedback('light'); setProfileOpen(false); navigate("/account"); }}>
-                    <User className="h-4 w-4 mr-2" />
-                    Account
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { triggerHapticFeedback('light'); setProfileOpen(false); navigate("/settings"); }}>
-                    <Settings className="h-4 w-4 mr-2" />
-                    Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { triggerHapticFeedback('light'); signOut(); }}>
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Sign Out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <>
-        {/* Desktop brand - fixed top-left */}
-        <button
-          onClick={() => { setSelectedEpisodeId(null); window.dispatchEvent(new Event("homeReset")); }}
-          className="fixed top-4 left-4 z-50 flex items-center hover:opacity-80 transition-opacity"
-          aria-label="Founder Mode Advice — home"
-        >
-          <BrandLogo className="h-10 w-auto" />
-        </button>
-        {/* Desktop nav */}
-        <div className="fixed top-4 right-4 z-50 flex gap-2 items-center">
-          <ProfileSwitcher />
-
-          <Popover
-            open={desktopPanel === "profiles"}
-            onOpenChange={(open) => setDesktopPanel(open ? "profiles" : null)}
-          >
-            <PopoverTrigger asChild>
-              <Button
-                variant={desktopPanel === "profiles" ? "default" : "outline"}
-                size="sm"
-                onClick={() => triggerHapticFeedback('light')}
-              >
-                <Briefcase className="h-4 w-4 mr-2" />
-                Business Profiles
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[min(420px,calc(100vw-2rem))] mr-4 p-0" align="end" sideOffset={8}>
-              <div className="max-h-[calc(100vh-100px)] overflow-hidden p-4">
-                <ScrollArea className="h-full max-h-[calc(100vh-140px)]">
-                  <ProfileSettings
-                    key="profiles"
-                    view="profiles"
-                    onSelectEpisode={setSelectedEpisodeId}
-                    onCloseRequest={() => setDesktopPanel(null)}
-                    condensed={true}
-                  />
-                </ScrollArea>
-              </div>
-            </PopoverContent>
-          </Popover>
-
-          <Popover
-            open={desktopPanel === "bookmarks"}
-            onOpenChange={(open) => setDesktopPanel(open ? "bookmarks" : null)}
-          >
-            <PopoverTrigger asChild>
-              <Button
-                variant={desktopPanel === "bookmarks" ? "default" : "outline"}
-                size="sm"
-                onClick={() => triggerHapticFeedback('light')}
-              >
-                <Bookmark className="h-4 w-4 mr-2" />
-                Bookmarks
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[min(420px,calc(100vw-2rem))] mr-4 p-0" align="end" sideOffset={8}>
-               <div className="max-h-[calc(100vh-100px)] overflow-hidden p-4">
-                <ScrollArea className="h-full max-h-[calc(100vh-140px)]">
-                  <ProfileSettings
-                    key="bookmarks"
-                    view="bookmarks"
-                    onSelectEpisode={setSelectedEpisodeId}
-                    onCloseRequest={() => setDesktopPanel(null)}
-                    condensed={true}
-                  />
-                </ScrollArea>
-              </div>
-            </PopoverContent>
-          </Popover>
-
-          <Button variant="outline" size="sm" onClick={() => navigate("/favorites")}>
-            <Star className="h-4 w-4 mr-2" />
-            Favorites
-          </Button>
-
-          <Button variant="outline" size="sm" onClick={() => navigate("/shared")}>
-            <Users className="h-4 w-4 mr-2" />
-            Shared
-          </Button>
-
-          <Button variant="outline" size="sm" onClick={() => signOut()}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Sign Out
-          </Button>
-
-          <Button variant="outline" size="sm" onClick={() => navigate("/settings")} aria-label="Settings">
-            <Settings className="h-4 w-4" />
-          </Button>
-
-          <ThemeToggle />
-        </div>
-        </>
-      )}
+      {/* Spacer for the fixed desktop header bar */}
+      <div className="hidden lg:block h-14 shrink-0" aria-hidden />
 
 
       {/* Slide-over panel for Profiles/Bookmarks (used by the bottom-nav tray,

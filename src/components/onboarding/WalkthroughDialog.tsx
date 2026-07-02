@@ -63,7 +63,7 @@ const SLIDES: WalkthroughSlide[] = [
     body: "The “Analyzing as” lens tailors each memo to one of your businesses — or go Universal for general takeaways.",
     findIt: {
       mobile: "The blue button in the middle of the bottom bar.",
-      desktop: "The profile switcher in the top-right corner.",
+      desktop: "The profile switcher next to the menu (☰) in the top bar.",
     },
     navSlot: "lens",
   },
@@ -73,7 +73,7 @@ const SLIDES: WalkthroughSlide[] = [
     body: "Add each company once — stage, industry, what you're building — and every memo adapts automatically.",
     findIt: {
       mobile: "Profiles, first tab in the bottom bar.",
-      desktop: "Business Profiles, top right.",
+      desktop: "Business Profiles, in the menu (☰).",
     },
     navSlot: "profiles",
   },
@@ -83,7 +83,7 @@ const SLIDES: WalkthroughSlide[] = [
     body: "Bookmark memos into folders by topic or business, and star the founders, channels, and topics you keep coming back to.",
     findIt: {
       mobile: "Saved, second tab in the bottom bar — Favorites lives in the menu.",
-      desktop: "Bookmarks and Favorites, top right.",
+      desktop: "Bookmarks and Favorites, in the menu (☰).",
     },
     navSlot: "saved",
   },
@@ -93,7 +93,7 @@ const SLIDES: WalkthroughSlide[] = [
     body: "Send folders or single analyses to teammates. Anything shared with you lands in Shared.",
     findIt: {
       mobile: "Shared, fourth tab in the bottom bar.",
-      desktop: "Shared, top right.",
+      desktop: "Shared, in the menu (☰).",
     },
     navSlot: "shared",
   },
@@ -112,7 +112,7 @@ const SLIDES: WalkthroughSlide[] = [
     body: "Default profile, notifications, plan & billing — and you can replay this walkthrough from Settings anytime.",
     findIt: {
       mobile: "Settings, last tab in the bottom bar.",
-      desktop: "The gear icon, top right.",
+      desktop: "Settings, in the menu (☰).",
     },
     navSlot: "settings",
   },

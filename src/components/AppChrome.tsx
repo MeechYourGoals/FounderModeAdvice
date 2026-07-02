@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { AppHeader } from "@/components/AppHeader";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { captureScreen, identifyUser, resetAnalyticsUser } from "@/services/analytics";
 import { syncPushUser } from "@/services/pushService";
@@ -43,5 +44,17 @@ export const AppChrome = () => {
   const hideNav = loading || !user || NAV_HIDDEN_ROUTES.includes(pathname);
   if (hideNav) return null;
 
-  return <MobileBottomNav />;
+  const isHome = pathname === "/";
+
+  return (
+    <>
+      {!isHome && (
+        <>
+          <AppHeader variant="desktop-only" />
+          <div className="hidden lg:block h-14 shrink-0" aria-hidden />
+        </>
+      )}
+      <MobileBottomNav />
+    </>
+  );
 };
