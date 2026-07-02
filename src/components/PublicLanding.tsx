@@ -336,9 +336,8 @@ export const PublicLanding = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 md:items-stretch">
                 <div className="space-y-4 flex flex-col">
                   <BadgeLabel>Public Youtube video in. Operating leverage out.</BadgeLabel>
-                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
-                    You don&apos;t need a boardroom of advisors to{" "}
-                    <span className="font-display font-medium italic text-gradient">learn like you have one</span>.
+                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-[-0.02em]">
+                    You don&apos;t need a boardroom of advisors to learn like you have one.
                   </h2>
                   <p className="text-base sm:text-lg text-foreground/90 leading-relaxed">
                     The best founders and operators have shared thousands of hours of hard-won lessons in public
