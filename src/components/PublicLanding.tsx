@@ -367,9 +367,8 @@ export const PublicLanding = () => {
             <Reveal>
               <div className="text-center space-y-3 mb-10 sm:mb-14">
                 <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">Pricing</p>
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
-                  Pricing that scales with how much you{" "}
-                  <span className="font-display font-medium italic text-gradient">operate</span>
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-[-0.02em]">
+                  Pricing that scales with how much you operate
                 </h2>
                 <p className="text-base sm:text-xl text-foreground/85 max-w-2xl mx-auto">
                   Start with a free analysis. Upgrade when your library becomes part of how you run the company.
