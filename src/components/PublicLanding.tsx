@@ -144,9 +144,8 @@ export const PublicLanding = () => {
               <p className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-primary mb-3">
                 Why it&apos;s different
               </p>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-center max-w-3xl mx-auto">
-                Not another AI summary. A{" "}
-                <span className="font-display font-medium italic text-gradient">source-grounded operating system</span>.
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-[-0.02em] text-center max-w-3xl mx-auto">
+                Not another AI summary. A source-grounded operating system.
               </h2>
             </Reveal>
             <div className="mt-10 sm:mt-14 grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
