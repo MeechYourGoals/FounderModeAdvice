@@ -1,54 +1,106 @@
-## Goal
-Make `/` (the public marketing page) read as work by a senior product-marketing designer, not as a Lovable template. Remove the visible "AI tell" (italic-serif word swapped into a blue gradient), retype the hero, replace generic lucide glyphs with bespoke marks, and layer in the motion polish the current page is missing. Keep every existing section, prop, route, and CTA intact.
+## Diagnosis: the missing "Use cases" section
 
-## 1. Copy + hero headline
-- **Replace the H1** in `src/components/PublicLanding.tsx` (line 97–100) with:
-  > **Build your boardroom, then instill their insights.**
-  Rendered as one weight, one family, no italic swap, no gradient span. Sub-eyebrow ("Transcript-grounded founder intelligence") and body paragraph stay.
-- No other copy changes — only the accent treatment changes.
+`src/components/PublicLanding.tsx` currently renders the "Built for the decisions founders actually face" grid inline. On the live site it's either scrolled past unnoticed or visually collapsing into the surrounding card rhythm — it's not gated by data/auth, not conditionally hidden, not routed away. Root cause is **presentation, not availability**: it reads as one more generic 3-card grid, so it disappears into the page.
 
-## 2. Kill the italic-serif-gradient accent pattern (the "AI tell")
-Every `<span className="font-display font-medium italic text-gradient">…</span>` gets removed. The word stays; only the styling is dropped so the whole headline reads in one voice.
+Fix: extract it into a first-class section with its own visual language and anchor (`#use-cases`), promoted in the section rhythm and linked from the hero secondary CTA so it's discoverable.
 
-Files + line refs already located:
-- `src/components/PublicLanding.tsx` — lines 99, 150, 191, 222, 277, 301, 347, 379, 408, 443 (10 headline accents), plus the italic display numerals at 552 and 561 (step numbers) → switch to plain sans, muted-foreground, tabular-nums.
-- `src/components/HeroSection.tsx` — line 28 ("Advice") → plain.
-- `src/components/marketing/SampleDemo.tsx` — line 42 ("in action") → plain.
+## Rebuild scope
 
-To keep the page from going flat once the italics are gone, hierarchy gets rebuilt with:
-- Tighter tracking + heavier weight on primary headings (`tracking-[-0.02em] font-semibold`).
-- Small-caps eyebrows above each section, single accent color line under the eyebrow (a 24px rule, not a chip).
-- One brand-blue underline sweep on hover for key links only — no per-word recoloring.
+Full rebuild of `src/components/PublicLanding.tsx` into a distinct Founder Mode Advice visual system. Nothing about routing, auth, CTAs, Paddle checkout, or analytics changes. Copy stays as-is unless a layout beat needs a shorter line.
 
-## 3. Bespoke glyph system (replace generic lucide icons)
-Right now section marks and feature bullets use stock `Check`, `Target`, `MessageSquare`, `ShieldCheck`, `Layers`, `ScrollText`, `X`. Replace with a small in-repo SVG glyph set (`src/components/marketing/glyphs/`) that shares one stroke language:
-- 1.25px stroke, square caps, 20×20 viewBox, single-color `currentColor`.
-- 6 marks: `TranscriptGlyph`, `BoardroomGlyph`, `SignalGlyph`, `MemoGlyph`, `LibraryGlyph`, `GuardrailGlyph`.
-- Lucide icons stay for functional UI (nav arrows, close buttons, form affordances). Only marketing-surface icons swap.
+## New page architecture
 
-## 4. Motion + interaction polish (Claude Fable-tier feel)
-Introduce a small, disciplined motion layer — not confetti.
-- **Scroll reveals**: keep existing `Reveal`, but add a companion `ParallaxLayer` (translateY driven by `useScroll` from framer-motion) for the hero grid, mesh, and the SampleDemo product screen so background layers drift at different rates.
-- **Hero orchestration**: staggered word-by-word entrance on the H1 (opacity + 8px y, 40ms stagger, easeOut), then eyebrow, body, CTAs — one cinematic entrance, not per-section confetti.
-- **Section transitions**: as each section enters the viewport, its eyebrow rule animates from 0 → 24px width (300ms), heading fades in, supporting card group staggers in with 60ms delay.
-- **Card hover**: feature cards get a shared `hover:` treatment — 1px border brightens to `border-primary/40`, subtle inner-glow via `shadow-[inset_0_1px_0_hsl(var(--primary)/0.12)]`, and a 4px translateY. Removes today's flat static feel.
-- **Use-cases carousel**: convert the current static "Built for the decisions founders actually face" grid into a horizontally-snapping carousel with drag + arrow controls (Embla, already in the dep tree via shadcn's `carousel`). Auto-advance disabled; keyboard + swipe supported.
-- **Pricing hover**: highlighted tier lifts + gains a soft ambient glow; other tiers dim to 70% opacity so the eye lands on the recommended plan.
-- **Section dividers**: replace hard borders with a thin animated gradient hairline that draws in on reveal.
+```
+Hero                    → scroll-driven Transcript → Memo transformation
+Proof strip             → 3 signal lines, hairline dividers, no cards
+How it works            → 4 numbered beats, monospace step index, connective vertical rule
+Use cases (RESTORED)    → editorial 2-column list, not a card grid; anchor #use-cases
+Sample demo             → existing <SampleDemo/>, reframed with an eyebrow + hairline
+Boardroom vs. feed      → side-by-side comparison rail
+Pricing                 → existing <PricingPlans/> wrapped in a quieter shell
+FAQ / closing CTA       → single-column, generous negative space
+Footer
+```
 
-All motion respects `prefers-reduced-motion` (framer-motion's `useReducedMotion` short-circuits to no transform, only opacity).
+## Signature hero: Transcript → Memo
 
-## 5. Sample demo — on-brand color pass
-`src/lib/sampleDemoData.ts` line 58 uses `#22c55e` (green) for the "Defense Partnerships" folder chip, which is what the user is seeing bleed through the demo video. Swap to the brand-consistent palette already used elsewhere in that file: `#2563eb` (primary blue), `#14b8a6` (teal), `#e11d48` (rose), `#f97316` (amber), `#8b5cf6` (violet). New value: `#0ea5e9` (sky) — stays inside the cool-blue family and reads as "on brand" against the rest.
-Audit the demo scene rendering for any hardcoded `emerald`/`green` Tailwind classes at the same time; drop them for `primary` / `sky` tokens.
+Left rail is a live-typing transcript column (monospace, low-contrast). As the user scrolls the hero (pinned via `position: sticky` on a tall container, driven by `useScroll` from framer-motion which is already in the tree), transcript lines fade/translate out and get replaced, in sequence, by:
 
-## 6. Not in scope
-- No changes to auth, pricing tiers, DB, edge functions, favicons, or app shell.
-- No new npm dependencies beyond what's already in the project (Embla + framer-motion are already installed).
-- The in-app product surfaces (`/library`, `/favorites`, etc.) are untouched — this is a marketing-page overhaul only.
+1. **Citations** — timestamped chips pulled from the transcript lines
+2. **Risks** — 2 red-outline callouts
+3. **Actions** — checkbox-styled action items
+4. **Founder question** — a single italicized prompt
+5. **Decision brief** — a compact memo card assembles from the fragments above
+
+Right rail holds the H1 ("Build your boardroom, then instill their insights.") and CTAs; both stay static while the left rail transforms. On mobile and under `prefers-reduced-motion` the transformation degrades to a static 2-panel "transcript / brief" side-by-side — no scroll pinning.
+
+## Visual system — deliberately not SeatMap Sentry
+
+- **Layout DNA**: right-heavy hero (headline on the right, artifact on the left) — opposite of the SeatMap left-copy/right-mockup pattern. No square product-card in the hero. No dark grid background.
+- **Background**: single deep-navy field (`hsl(222 47% 6%)`) with a low-opacity radial gradient anchor top-right; a slow-drift noise texture layer at 4% opacity. No neon grid, no floating orbs.
+- **Section rhythm**: full-bleed sections separated by a 1px animated gradient hairline that draws in on reveal (already stubbed as `.hairline` in `index.css`).
+- **Cards**: replace rounded soft cards with **hairline-bordered panels** (1px `border-white/8`, no shadow, subtle inner top highlight `shadow-[inset_0_1px_0_hsl(var(--primary)/0.08)]`). No glassmorphism.
+- **Eyebrows**: existing `.eyebrow-rule` (small-caps + 24px underline) already added; reused on every section.
+- **Typography**: keep current stack (no new font install). Enforce `tracking-[-0.02em] font-semibold` on H1/H2, `text-[15px] leading-relaxed` for body. No italic-serif accent words (already removed last turn — plan preserves that).
+- **Interactive surfaces**: nav links get a story-link underline sweep; CTAs get a 1px primary-tinted border on hover + 2px translateY; cards get border brighten + 4px translateY; use-case rows get a left-edge accent bar on hover.
+
+## Motion system
+
+- `Reveal` (existing) drives section entrances. Hero words stagger in via a new small `HeroWords` component (opacity + 8px y, 40ms stagger). All motion respects `useReducedMotion`.
+- Scroll-pinned hero uses `useScroll({ target, offset: ["start start","end start"] })` + `useTransform` to sequence transcript→memo fragments across five keyframe bands.
+- Passive listeners only; cleanup on unmount. No mouse-move parallax on mobile.
+- Cursor-reactive background: a single 400px radial glow following the cursor on desktop, throttled with `requestAnimationFrame`, disabled below `lg` and under reduced-motion.
+
+## Use-cases section (the restore)
+
+Editorial two-column list, not a card grid:
+
+- Left column: eyebrow "USE CASES" + H2 "The decisions founders actually face" + one-line lead.
+- Right column: 6 rows, each a hairline-divided line with a bespoke inline glyph, a bold headline, a one-line supporting phrase, and a subtle `→` that animates right on hover. Anchor id `use-cases`; hero secondary CTA scrolls to it.
+- Content preserved from current implementation.
+
+## Files touched
+
+- `src/components/PublicLanding.tsx` — full rebuild.
+- `src/components/marketing/HeroTranscriptMemo.tsx` — **new**, scroll-driven hero artifact.
+- `src/components/marketing/UseCasesList.tsx` — **new**, editorial list.
+- `src/components/marketing/SectionShell.tsx` — **new**, shared eyebrow + hairline + reveal wrapper (kills repetition).
+- `src/components/marketing/glyphs/` — **new**, 6 bespoke 20×20 SVG glyphs (`Transcript`, `Boardroom`, `Signal`, `Memo`, `Library`, `Guardrail`) sharing one stroke language.
+- `src/index.css` — add `.panel-hairline`, `.link-sweep`, `.section-divider-animated`; retire unused `.text-gradient` calls on marketing routes.
+- `src/components/HeroSection.tsx` — untouched (in-app hero, not marketing).
+- `src/components/marketing/SampleDemo.tsx` — minor: wrap in new `SectionShell`.
+- Dead code removal: any inline card variants replaced by `SectionShell` + `panel-hairline` get deleted from `PublicLanding.tsx`; no orphan imports left.
+
+## Out of scope (explicit)
+
+- No new npm deps. Framer Motion + Embla + shadcn already installed.
+- No changes to `HeroSection`, in-app product surfaces, auth, Paddle, Supabase schema, edge functions, SEO metadata, or routes.
+- No font install. No WebGL/Three.js. No particle field.
+- No copy rewrites beyond line-break tightening where a new layout beat requires it.
 
 ## Technical notes
-- **Files touched**: `src/components/PublicLanding.tsx`, `src/components/HeroSection.tsx`, `src/components/marketing/SampleDemo.tsx`, `src/components/marketing/HeroProductScene.tsx`, `src/lib/sampleDemoData.ts`, plus new files under `src/components/marketing/glyphs/` and one new `src/components/marketing/ParallaxLayer.tsx`.
-- **CSS**: `src/index.css` — retire the `.text-gradient` usage on marketing surfaces (leave the utility for possible future use), add `.eyebrow-rule` and `.hairline` utilities for the new hierarchy.
-- **Verification**: `tsgo` typecheck, capture the rebuilt page at 1440px + 390px via Playwright, and confirm zero remaining `font-display font-medium italic text-gradient` on the marketing route.
-- **Rollback**: single revert restores current landing.
+
+- Scroll-pin implemented with a `min-h-[220vh]` container + `sticky top-0 h-screen` inner; `useScroll` scoped to the container ref. This keeps the rest of the page fully scrollable and avoids body-scroll hijacking.
+- Cursor glow lives in a single portal-less `<div>` under the hero, `pointer-events-none`, `mix-blend-screen`, opacity capped at 0.12.
+- All new components are pure presentational; no data fetching, no Supabase calls, no auth checks.
+- `prefers-reduced-motion`: `useReducedMotion()` short-circuits transforms; opacity-only fades remain. Transcript→memo becomes a static 2-panel layout.
+- Accessibility: transcript panel is `aria-hidden` (decorative); memo fragments are real headings/lists so screen readers get the real content. Keyboard focus rings preserved (`focus-visible:ring-2 ring-primary/60`).
+
+## Verification
+
+1. `tsgo` typecheck (auto-run by harness).
+2. Playwright script at 1440×900 and 390×844: assert `#use-cases` is in the DOM and visible, hero H1 renders once, no console errors, `document.body.scrollHeight` grows with scroll, CTAs `/auth` and `#use-cases` resolve.
+3. Manual: reduced-motion emulation via Chromium flag; confirm static hero fallback.
+4. Grep sweep: zero remaining `font-display .* italic .* text-gradient` on marketing routes.
+
+## Rollback
+
+Single-revert: `PublicLanding.tsx` + new files under `src/components/marketing/`. No DB, no config, no route changes to undo.
+
+## Definition of done
+
+- Use-cases section visible and anchored at `#use-cases`.
+- Hero uses the transcript→memo composition; SeatMap Sentry pattern gone.
+- Reduced-motion honored; no console errors; mobile has no horizontal overflow.
+- Existing CTAs, auth, Paddle, and analytics untouched.
+- No new dependencies.
