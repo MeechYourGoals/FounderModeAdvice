@@ -548,7 +548,7 @@ const ProofCard = ({ index, icon, title, description }: { index: string; icon: R
 
 const StepCard = ({ step, title, description }: { step: string; title: string; description: string }) => (
   <div className="glass elevate-hover relative h-full overflow-hidden rounded-2xl p-5 sm:p-6 hover:border-primary/30">
-    <span aria-hidden className="font-display block text-3xl sm:text-4xl font-medium italic leading-none text-primary/25">
+    <span aria-hidden className="block text-xs font-semibold uppercase tracking-[0.18em] leading-none text-primary/70 tabular-nums">
       {step}
     </span>
     <h3 className="mt-3 sm:mt-4 font-semibold text-base sm:text-lg">{title}</h3>
