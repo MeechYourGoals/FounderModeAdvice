@@ -1,0 +1,3 @@
+## 2025-05-15 - [EpisodesTable & useMediaQuery Optimizations]
+**Learning:** Consolidating multiple O(N) `useMemo` passes into a single iteration significantly reduces overhead when dealing with large datasets. Pre-calculating derived data like tags and using Map-based lookups for relational data (like folders) prevents O(N^2) complexity in rendering loops. For hooks like `useMediaQuery`, lazy state initializers must be SSR-safe by checking for `typeof window !== 'undefined'`.
+**Action:** Always look for opportunities to batch data derivation and replace O(N) lookups in loops with Map-based O(1) lookups. Ensure SSR safety when accessing browser APIs in initial state.
