@@ -9,7 +9,6 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { AppLoadingScreen } from "@/components/AppLoadingScreen";
 import { UsageDisplay, PricingPlans } from "@/components/subscription";
 import { ArrowLeft, LogOut, Mail, Calendar, RotateCcw, Shield, FileText, Trash2, ExternalLink, LifeBuoy } from "lucide-react";
-import { useOnboarding } from "@/hooks/useOnboarding";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -34,12 +33,9 @@ const Account = () => {
   const { toast } = useToast();
   const isMobile = useMediaQuery("(max-width: 767px)");
   const [isDeleting, setIsDeleting] = useState(false);
-  const { restart: restartOnboarding } = useOnboarding();
-
-  const handleReplayTour = async () => {
+  const handleReplayTour = () => {
     triggerHapticFeedback('light');
-    await restartOnboarding();
-    navigate("/");
+    navigate("/", { state: { action: "walkthrough" } });
   };
 
   useEffect(() => {
@@ -172,7 +168,7 @@ const Account = () => {
                 </Button>
                 <Button variant="ghost" onClick={handleReplayTour}>
                   <RotateCcw className="h-4 w-4 mr-2" />
-                  Replay Product Tour
+                  Replay App Walkthrough
                 </Button>
               </div>
             </CardContent>
