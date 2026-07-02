@@ -94,9 +94,8 @@ export const PublicLanding = () => {
                   </span>
                 </Reveal>
                 <Reveal delay={80}>
-                  <h1 className="mt-6 text-[2.75rem] leading-[1.04] sm:text-6xl lg:text-[4.25rem] font-bold tracking-tight text-foreground">
-                    Turn founder videos into{" "}
-                    <span className="font-display font-medium italic text-gradient">operating decisions</span>.
+                  <h1 className="mt-6 text-[2.75rem] leading-[1.04] sm:text-6xl lg:text-[4.25rem] font-semibold tracking-[-0.025em] text-foreground">
+                    Build your boardroom, then instill their insights.
                   </h1>
                 </Reveal>
                 <Reveal delay={160}>
