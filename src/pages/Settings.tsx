@@ -11,6 +11,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { SecondaryPageHeader } from "@/components/SecondaryPageHeader";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { AppLoadingScreen } from "@/components/AppLoadingScreen";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { triggerHapticFeedback } from "@/lib/capacitor";
