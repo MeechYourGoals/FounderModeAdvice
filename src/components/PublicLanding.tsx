@@ -268,9 +268,8 @@ export const PublicLanding = () => {
             <div className="max-w-5xl mx-auto">
               <Reveal>
                 <p className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-primary mb-3">Use cases</p>
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-center max-w-3xl mx-auto">
-                  Built for the decisions founders{" "}
-                  <span className="font-display font-medium italic text-gradient">actually face</span>
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-[-0.02em] text-center max-w-3xl mx-auto">
+                  Built for the decisions founders actually face
                 </h2>
               </Reveal>
               <div className="mt-10 sm:mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
