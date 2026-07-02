@@ -812,6 +812,7 @@ export type Database = {
           completed: boolean
           completed_at: string | null
           created_at: string
+          inspirations: Json
           updated_at: string
           user_id: string
         }
@@ -819,6 +820,7 @@ export type Database = {
           completed?: boolean
           completed_at?: string | null
           created_at?: string
+          inspirations?: Json
           updated_at?: string
           user_id: string
         }
@@ -826,6 +828,7 @@ export type Database = {
           completed?: boolean
           completed_at?: string | null
           created_at?: string
+          inspirations?: Json
           updated_at?: string
           user_id?: string
         }
