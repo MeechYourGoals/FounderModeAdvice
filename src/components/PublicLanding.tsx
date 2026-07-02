@@ -539,7 +539,7 @@ const ProofCard = ({ index, icon, title, description }: { index: string; icon: R
       <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
         {icon}
       </span>
-      <span aria-hidden className="font-display text-2xl font-medium italic text-foreground/10">{index}</span>
+      <span aria-hidden className="text-xs font-semibold uppercase tracking-[0.18em] text-foreground/40 tabular-nums">{index}</span>
     </div>
     <h3 className="mt-4 text-lg font-semibold tracking-tight">{title}</h3>
     <p className="mt-2 text-sm sm:text-base text-foreground/80 leading-relaxed">{description}</p>
