@@ -76,7 +76,7 @@ async function syncStatusBarWithTheme() {
 
     await StatusBar.setStyle({ style: darkTheme ? Style.Dark : Style.Light });
     if (isAndroid) {
-      await StatusBar.setBackgroundColor({ color: darkTheme ? '#0f1420' : '#fbfcfe' });
+      await StatusBar.setBackgroundColor({ color: darkTheme ? '#0c0e15' : '#fbfcfe' });
     }
   } catch (error) {
     console.log('Status bar styling not available');
