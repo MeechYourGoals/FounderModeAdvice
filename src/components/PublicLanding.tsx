@@ -94,9 +94,8 @@ export const PublicLanding = () => {
                   </span>
                 </Reveal>
                 <Reveal delay={80}>
-                  <h1 className="mt-6 text-[2.75rem] leading-[1.04] sm:text-6xl lg:text-[4.25rem] font-bold tracking-tight text-foreground">
-                    Turn founder videos into{" "}
-                    <span className="font-display font-medium italic text-gradient">operating decisions</span>.
+                  <h1 className="mt-6 text-[2.75rem] leading-[1.04] sm:text-6xl lg:text-[4.25rem] font-semibold tracking-[-0.025em] text-foreground">
+                    Build your boardroom, then instill their insights.
                   </h1>
                 </Reveal>
                 <Reveal delay={160}>
@@ -145,9 +144,8 @@ export const PublicLanding = () => {
               <p className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-primary mb-3">
                 Why it&apos;s different
               </p>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-center max-w-3xl mx-auto">
-                Not another AI summary. A{" "}
-                <span className="font-display font-medium italic text-gradient">source-grounded operating system</span>.
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-[-0.02em] text-center max-w-3xl mx-auto">
+                Not another AI summary. A source-grounded operating system.
               </h2>
             </Reveal>
             <div className="mt-10 sm:mt-14 grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
@@ -185,10 +183,9 @@ export const PublicLanding = () => {
         <section className="container mx-auto px-4 pt-14 sm:pt-20 md:pt-24 pb-8 sm:pb-10">
           <div className="max-w-5xl mx-auto">
             <Reveal>
-              <p className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-primary mb-3">How it works</p>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-center mb-3">
-                From transcript to{" "}
-                <span className="font-display font-medium italic text-gradient">operating memo</span> in minutes
+              <p className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-primary mb-3 eyebrow-rule">How it works</p>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-[-0.02em] text-center mb-3">
+                From transcript to operating memo in minutes
               </h2>
               <p className="mx-auto max-w-2xl text-center text-base sm:text-lg text-foreground/85 leading-relaxed">
                 Paste a founder talk, investor interview, operator breakdown, or strategy lecture. Add your company
@@ -216,10 +213,9 @@ export const PublicLanding = () => {
         <section className="container mx-auto px-4 py-12 sm:py-16 md:py-24">
           <div className="max-w-5xl mx-auto">
             <Reveal>
-              <p className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-primary mb-3">Your founder library</p>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-center max-w-3xl mx-auto">
-                A private boardroom that{" "}
-                <span className="font-display font-medium italic text-gradient">compounds</span>, not a feed you forget
+              <p className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-primary mb-3 eyebrow-rule">Your founder library</p>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-[-0.02em] text-center max-w-3xl mx-auto">
+                A private boardroom that compounds, not a feed you forget
               </h2>
               <p className="mx-auto mt-4 max-w-2xl text-center text-base sm:text-lg text-foreground/85 leading-relaxed">
                 Founders watch hundreds of hours of talks and interviews — and the signal scatters across notebooks,
@@ -271,10 +267,9 @@ export const PublicLanding = () => {
           <div className="container mx-auto px-4">
             <div className="max-w-5xl mx-auto">
               <Reveal>
-                <p className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-primary mb-3">Use cases</p>
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-center max-w-3xl mx-auto">
-                  Built for the decisions founders{" "}
-                  <span className="font-display font-medium italic text-gradient">actually face</span>
+                <p className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-primary mb-3 eyebrow-rule">Use cases</p>
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-[-0.02em] text-center max-w-3xl mx-auto">
+                  Built for the decisions founders actually face
                 </h2>
               </Reveal>
               <div className="mt-10 sm:mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
@@ -296,9 +291,8 @@ export const PublicLanding = () => {
           <div className="max-w-4xl mx-auto space-y-10">
             <Reveal>
               <div className="text-center space-y-3">
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
-                  Watching is passive.{" "}
-                  <span className="font-display font-medium italic text-gradient">Operating</span> is the point
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-[-0.02em]">
+                  Watching is passive. Operating is the point.
                 </h2>
                 <p className="text-base sm:text-xl text-foreground/85 max-w-2xl mx-auto leading-relaxed">
                   Saved videos, generic summaries, and raw transcripts leave the work to you. Founder Mode Advice does the
@@ -342,9 +336,8 @@ export const PublicLanding = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 md:items-stretch">
                 <div className="space-y-4 flex flex-col">
                   <BadgeLabel>Public Youtube video in. Operating leverage out.</BadgeLabel>
-                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
-                    You don&apos;t need a boardroom of advisors to{" "}
-                    <span className="font-display font-medium italic text-gradient">learn like you have one</span>.
+                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-[-0.02em]">
+                    You don&apos;t need a boardroom of advisors to learn like you have one.
                   </h2>
                   <p className="text-base sm:text-lg text-foreground/90 leading-relaxed">
                     The best founders and operators have shared thousands of hours of hard-won lessons in public
@@ -373,10 +366,9 @@ export const PublicLanding = () => {
           <div className="max-w-5xl mx-auto">
             <Reveal>
               <div className="text-center space-y-3 mb-10 sm:mb-14">
-                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">Pricing</p>
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
-                  Pricing that scales with how much you{" "}
-                  <span className="font-display font-medium italic text-gradient">operate</span>
+                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary eyebrow-rule">Pricing</p>
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-[-0.02em]">
+                  Pricing that scales with how much you operate
                 </h2>
                 <p className="text-base sm:text-xl text-foreground/85 max-w-2xl mx-auto">
                   Start with a free analysis. Upgrade when your library becomes part of how you run the company.
@@ -402,10 +394,9 @@ export const PublicLanding = () => {
         <section className="container mx-auto px-4 py-12 sm:py-16">
           <div className="max-w-5xl mx-auto">
             <Reveal>
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary mb-3">FAQ</p>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
-                Common{" "}
-                <span className="font-display font-medium italic text-gradient">questions</span>.
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary mb-3 eyebrow-rule left">FAQ</p>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-[-0.02em]">
+                Common questions.
               </h2>
             </Reveal>
             <div className="mt-8 grid gap-4 md:grid-cols-2">
@@ -438,9 +429,8 @@ export const PublicLanding = () => {
                 }}
               />
               <div className="relative">
-                <h2 className="text-3xl font-bold tracking-tight sm:text-5xl">
-                  Build your private founder{" "}
-                  <span className="font-display font-medium italic">boardroom</span>
+                <h2 className="text-3xl font-semibold tracking-[-0.025em] sm:text-5xl">
+                  Build your private founder boardroom.
                 </h2>
                 <p className="mx-auto mt-4 max-w-xl text-lg text-primary-foreground/95">
                   Start with one video. Leave with a company-specific memo, risk map, action list, and a
@@ -549,7 +539,7 @@ const ProofCard = ({ index, icon, title, description }: { index: string; icon: R
       <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
         {icon}
       </span>
-      <span aria-hidden className="font-display text-2xl font-medium italic text-foreground/10">{index}</span>
+      <span aria-hidden className="text-xs font-semibold uppercase tracking-[0.18em] text-foreground/40 tabular-nums">{index}</span>
     </div>
     <h3 className="mt-4 text-lg font-semibold tracking-tight">{title}</h3>
     <p className="mt-2 text-sm sm:text-base text-foreground/80 leading-relaxed">{description}</p>
@@ -558,7 +548,7 @@ const ProofCard = ({ index, icon, title, description }: { index: string; icon: R
 
 const StepCard = ({ step, title, description }: { step: string; title: string; description: string }) => (
   <div className="glass elevate-hover relative h-full overflow-hidden rounded-2xl p-5 sm:p-6 hover:border-primary/30">
-    <span aria-hidden className="font-display block text-3xl sm:text-4xl font-medium italic leading-none text-primary/25">
+    <span aria-hidden className="block text-xs font-semibold uppercase tracking-[0.18em] leading-none text-primary/70 tabular-nums">
       {step}
     </span>
     <h3 className="mt-3 sm:mt-4 font-semibold text-base sm:text-lg">{title}</h3>

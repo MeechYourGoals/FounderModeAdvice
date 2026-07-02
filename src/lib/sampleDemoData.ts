@@ -55,7 +55,7 @@ export const SAMPLE_BUSINESS_PROFILES: DemoBusinessProfile[] = [
     description:
       "A seed-stage company developing long-endurance unmanned systems for remote sensing, disaster response, and defense logistics. The team is balancing technical validation, regulatory strategy, capital planning, and early government partnership development.",
     folders: [
-      { id: "defense-partnerships", title: "Defense Partnerships", color: "#22c55e" },
+      { id: "defense-partnerships", title: "Defense Partnerships", color: "#0ea5e9" },
       { id: "regulatory-path", title: "Regulatory Path", color: "#f97316" },
       { id: "prototype-roadmap", title: "Prototype Roadmap", color: "#8b5cf6" },
     ],

@@ -283,20 +283,57 @@ All colors MUST be HSL.
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Editorial display serif — marketing headlines only, never app chrome */
+  /* Editorial display serif — retained utility, no longer used on marketing headlines */
   .font-display {
     font-family: "Fraunces", "New York", Georgia, "Times New Roman", serif;
     font-optical-sizing: auto;
     letter-spacing: -0.02em;
   }
 
-  /* Brand-blue gradient text for accent words */
+  /* Brand-blue gradient text — retained utility, no longer used on marketing headlines */
   .text-gradient {
     background: var(--gradient-text);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
     color: transparent;
+  }
+
+  /* Eyebrow hairline — small colored rule under a section eyebrow label */
+  .eyebrow-rule::after {
+    content: "";
+    display: block;
+    width: 28px;
+    height: 1px;
+    margin: 10px auto 0;
+    background: linear-gradient(90deg, hsl(var(--primary) / 0.9), hsl(var(--primary) / 0.15));
+    transform-origin: left center;
+    animation: eyebrow-draw 700ms ease-out both;
+  }
+  .eyebrow-rule.left::after { margin-left: 0; margin-right: 0; }
+
+  @keyframes eyebrow-draw {
+    from { transform: scaleX(0); opacity: 0; }
+    to   { transform: scaleX(1); opacity: 1; }
+  }
+
+  /* Refined card lift — replaces the flat static cards without shouting */
+  .card-lift {
+    transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+                border-color 260ms ease,
+                box-shadow 260ms ease;
+  }
+  .card-lift:hover {
+    transform: translateY(-3px);
+    border-color: hsl(var(--primary) / 0.35);
+    box-shadow: 0 12px 40px -18px hsl(var(--primary) / 0.35),
+                inset 0 1px 0 hsl(var(--primary) / 0.12);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .eyebrow-rule::after { animation: none; transform: none; }
+    .card-lift { transition: none; }
+    .card-lift:hover { transform: none; }
   }
 
   /* Film-grain overlay — kills flat-gradient banding, adds tactility.
