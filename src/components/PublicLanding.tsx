@@ -183,7 +183,7 @@ export const PublicLanding = () => {
         <section className="container mx-auto px-4 pt-14 sm:pt-20 md:pt-24 pb-8 sm:pb-10">
           <div className="max-w-5xl mx-auto">
             <Reveal>
-              <p className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-primary mb-3">How it works</p>
+              <p className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-primary mb-3 eyebrow-rule">How it works</p>
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-[-0.02em] text-center mb-3">
                 From transcript to operating memo in minutes
               </h2>
@@ -213,7 +213,7 @@ export const PublicLanding = () => {
         <section className="container mx-auto px-4 py-12 sm:py-16 md:py-24">
           <div className="max-w-5xl mx-auto">
             <Reveal>
-              <p className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-primary mb-3">Your founder library</p>
+              <p className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-primary mb-3 eyebrow-rule">Your founder library</p>
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-[-0.02em] text-center max-w-3xl mx-auto">
                 A private boardroom that compounds, not a feed you forget
               </h2>
@@ -267,7 +267,7 @@ export const PublicLanding = () => {
           <div className="container mx-auto px-4">
             <div className="max-w-5xl mx-auto">
               <Reveal>
-                <p className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-primary mb-3">Use cases</p>
+                <p className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-primary mb-3 eyebrow-rule">Use cases</p>
                 <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-[-0.02em] text-center max-w-3xl mx-auto">
                   Built for the decisions founders actually face
                 </h2>
@@ -366,7 +366,7 @@ export const PublicLanding = () => {
           <div className="max-w-5xl mx-auto">
             <Reveal>
               <div className="text-center space-y-3 mb-10 sm:mb-14">
-                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">Pricing</p>
+                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary eyebrow-rule">Pricing</p>
                 <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-[-0.02em]">
                   Pricing that scales with how much you operate
                 </h2>
@@ -394,7 +394,7 @@ export const PublicLanding = () => {
         <section className="container mx-auto px-4 py-12 sm:py-16">
           <div className="max-w-5xl mx-auto">
             <Reveal>
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary mb-3">FAQ</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary mb-3 eyebrow-rule left">FAQ</p>
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-[-0.02em]">
                 Common questions.
               </h2>
