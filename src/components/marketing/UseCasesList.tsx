@@ -23,8 +23,8 @@ export const UseCasesList = ({
             The decisions founders actually face.
           </h2>
           <p className="mt-5 text-[15px] leading-relaxed text-foreground/80 max-w-md">
-            Every analysis is scoped to a specific decision \u2014 not a generic
-            summary of what the speaker said. Choose the workstream you\u2019re
+            Every analysis is scoped to a specific decision — not a generic
+            summary of what the speaker said. Choose the workstream you're
             in, then paste the video.
           </p>
         </div>

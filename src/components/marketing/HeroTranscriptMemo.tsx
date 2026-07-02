@@ -153,7 +153,7 @@ export const HeroTranscriptMemo = ({
               </Button>
             </div>
             <p className="mt-6 text-sm text-foreground/60">
-              Free analysis \u00b7 no card required \u00b7 web, iOS, Android
+              Free analysis · no card required · web, iOS, Android
             </p>
 
             {/* Stage indicator — five ticks that fill as the user scrolls.
@@ -295,7 +295,7 @@ const ArtifactStack = ({
               Decision brief
             </p>
             <h3 className="mt-1 text-[17px] font-semibold tracking-[-0.01em]">
-              Seed B2B SaaS \u00b7 GTM reset
+              Seed B2B SaaS · GTM reset
             </h3>
           </div>
           <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
