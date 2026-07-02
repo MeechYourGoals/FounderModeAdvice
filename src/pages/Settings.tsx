@@ -22,7 +22,7 @@ import { clearOfflineCache } from "@/lib/offlineCache";
 import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft, ChevronRight, Loader2, Shield, FileText, LifeBuoy, Mail,
-  RotateCcw, Building2, Globe, SlidersHorizontal, User, Users, Trash2, Info,
+  RotateCcw, Building2, Globe, SlidersHorizontal, Sparkles, User, Users, Trash2, Info,
 } from "lucide-react";
 import {
   getLibraryPrefs, setLibraryPrefs, SORT_LABELS, VIEW_LABELS,
@@ -62,7 +62,12 @@ const Settings = () => {
     setPrefs(setLibraryPrefs(patch));
   };
 
-  const handleReplayTour = async () => {
+  const handleReplayWalkthrough = () => {
+    triggerHapticFeedback("light");
+    navigate("/", { state: { action: "walkthrough" } });
+  };
+
+  const handleRedoSetup = async () => {
     triggerHapticFeedback("light");
     await restartOnboarding();
     navigate("/");
@@ -223,10 +228,14 @@ const Settings = () => {
               <CardHeader>
                 <CardTitle>Getting started</CardTitle>
               </CardHeader>
-              <CardContent>
-                <Button variant="ghost" className="justify-start w-full" onClick={handleReplayTour}>
+              <CardContent className="space-y-0.5">
+                <Button variant="ghost" className="justify-start w-full" onClick={handleReplayWalkthrough}>
                   <RotateCcw className="h-4 w-4 mr-2" />
-                  Replay product tour
+                  Replay app walkthrough
+                </Button>
+                <Button variant="ghost" className="justify-start w-full" onClick={handleRedoSetup}>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Redo quick setup
                 </Button>
               </CardContent>
             </Card>

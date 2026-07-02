@@ -40,7 +40,8 @@ import { Card } from "@/components/ui/card";
 import { useNavigate, Navigate, useLocation } from "react-router-dom";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 import { shouldShowAppAuthFirst } from "@/lib/appMode";
-import { OnboardingDialog } from "@/components/onboarding/OnboardingDialog";
+import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
+import { WalkthroughDialog } from "@/components/onboarding/WalkthroughDialog";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { ProfileSwitcher } from "@/components/ProfileSwitcher";
 
@@ -49,6 +50,7 @@ const Index = () => {
   const [profileOpen, setProfileOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"profiles" | "bookmarks" | "subscription">("profiles");
   const [desktopPanel, setDesktopPanel] = useState<null | "profiles" | "bookmarks">(null);
+  const [walkthroughOpen, setWalkthroughOpen] = useState(false);
 
   const { user, loading, signOut } = useAuth();
   const { subscription } = useSubscription();
@@ -78,6 +80,10 @@ const Index = () => {
       setProfileOpen(false);
       setSelectedEpisodeId(null);
       requestAnimationFrame(scrollToAnalyze);
+    } else if (state.action === "walkthrough") {
+      // Settings/Account "Replay app walkthrough" lands here.
+      setProfileOpen(false);
+      setWalkthroughOpen(true);
     }
     // Clear the state so the same tap can re-trigger later.
     navigate(".", { replace: true, state: null });
@@ -133,10 +139,19 @@ const Index = () => {
 
   return (
     <div className="app-ambient h-screen flex flex-col bg-gradient-to-b from-background to-muted/20">
-      {/* First-run product tour — shows once per user until manually restarted */}
+      {/* First-run setup intake — shows once per user until restarted from Settings */}
       {user && !onboardingLoading && onboardingCompleted === false && (
-        <OnboardingDialog open onClose={completeOnboarding} />
+        <OnboardingFlow
+          open
+          onComplete={(showWalkthrough) => {
+            completeOnboarding();
+            if (showWalkthrough) setWalkthroughOpen(true);
+          }}
+        />
       )}
+
+      {/* Feature tour — chained from setup or replayed via Settings/Account */}
+      <WalkthroughDialog open={walkthroughOpen} onOpenChange={setWalkthroughOpen} />
 
       {/* Mobile & Tablet nav - relative top bar with safe area (Despia pattern) */}
       {!isDesktop ? (

@@ -5,6 +5,7 @@ import { useActiveProfile } from "@/contexts/ActiveProfileContext";
 import { STARTER_VIDEOS } from "@/lib/starterVideos";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 import { HighlightedFounders } from "@/components/HighlightedFounders";
+import { InspirationRecommendations } from "@/components/InspirationRecommendations";
 
 /**
  * First-run activation state for the analyzed-videos library. Nudges the user to
@@ -81,6 +82,9 @@ export const LibraryEmptyState = () => {
           </button>
         ))}
       </div>
+
+      {/* Personalized recommendations from the onboarding "who inspires you?" picks */}
+      <InspirationRecommendations />
 
       {/* "Who do I look up?" inspiration — founders to search on YouTube */}
       <HighlightedFounders />
