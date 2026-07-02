@@ -10,9 +10,8 @@ import { Separator } from "@/components/ui/separator";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { AppNavMenu } from "@/components/AppNavMenu";
 import { AppLoadingScreen } from "@/components/AppLoadingScreen";
-import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 import { useOnboarding } from "@/hooks/useOnboarding";
@@ -88,7 +87,7 @@ const Settings = () => {
             Back
           </Button>
           <span className="font-semibold text-sm">Settings</span>
-          <ThemeToggle />
+          <AppNavMenu triggerVariant="ghost" />
         </div>
       </div>
 

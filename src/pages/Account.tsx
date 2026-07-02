@@ -5,7 +5,7 @@ import { useSubscription } from "@/contexts/SubscriptionContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { AppNavMenu } from "@/components/AppNavMenu";
 import { AppLoadingScreen } from "@/components/AppLoadingScreen";
 import { UsageDisplay, PricingPlans } from "@/components/subscription";
 import { ArrowLeft, LogOut, Mail, Calendar, RotateCcw, Shield, FileText, Trash2, ExternalLink, LifeBuoy } from "lucide-react";
@@ -109,14 +109,10 @@ const Account = () => {
               Back
             </Button>
             <span className="font-semibold text-sm">Account</span>
-            <ThemeToggle />
+            <AppNavMenu triggerVariant="ghost" />
           </div>
         </div>
-      ) : (
-        <div className="fixed top-4 right-4 z-50">
-          <ThemeToggle />
-        </div>
-      )}
+      ) : null}
 
       <div className="despia-scroll">
       <div className="container mx-auto px-4 pt-4 md:pt-8 max-w-4xl" style={{ paddingBottom: isMobile ? 'calc(5rem + var(--safe-area-bottom))' : '2rem' }}>

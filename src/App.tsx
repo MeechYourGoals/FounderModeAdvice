@@ -91,6 +91,7 @@ const App = () => (
             <SubscriptionCallback />
             <OfflineBadge />
 
+            <AppChrome />
             <ScreenTransition>
             <Routes>
               <Route path="/" element={<Index />} />
@@ -116,7 +117,6 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
             </ScreenTransition>
-            <AppChrome />
             <PWAInstallPrompt />
           </BrowserRouter>
         </TooltipProvider>
