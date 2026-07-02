@@ -23,9 +23,8 @@ export const HeroSection = () => {
       <div aria-hidden className="bg-grid absolute inset-0" />
       <div className="container relative mx-auto px-4 py-10 sm:py-14">
         <div className="max-w-4xl mx-auto text-center space-y-3 sm:space-y-4">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-foreground animate-slide-up">
-            Founder Mode{" "}
-            <span className="font-display font-medium italic text-gradient">Advice</span>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-[-0.025em] text-foreground animate-slide-up">
+            Founder Mode Advice
           </h1>
           <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto animate-slide-up">
             Paste a founder, operator, or investor video. Get a transcript-grounded operating memo —
