@@ -5,7 +5,7 @@ import { useSubscription } from "@/contexts/SubscriptionContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { AppNavMenu } from "@/components/AppNavMenu";
+import { SecondaryPageHeader } from "@/components/SecondaryPageHeader";
 import { AppLoadingScreen } from "@/components/AppLoadingScreen";
 import { UsageDisplay, PricingPlans } from "@/components/subscription";
 import { ArrowLeft, LogOut, Mail, Calendar, RotateCcw, Shield, FileText, Trash2, ExternalLink, LifeBuoy } from "lucide-react";
@@ -101,18 +101,7 @@ const Account = () => {
   return (
     <div className="app-ambient h-screen flex flex-col bg-gradient-to-b from-background to-muted/20">
       {/* Mobile/Tablet header - relative top bar with safe area (Despia pattern) */}
-      {isMobile ? (
-        <div className="glass-nav hairline-b relative z-50" style={{ paddingTop: 'var(--safe-area-top)' }}>
-          <div className="flex items-center justify-between px-4 py-3">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="-ml-2">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-            <span className="font-semibold text-sm">Account</span>
-            <AppNavMenu triggerVariant="ghost" />
-          </div>
-        </div>
-      ) : null}
+      <SecondaryPageHeader title="Account" onBack={() => navigate("/")} />
 
       <div className="despia-scroll">
       <div className="container mx-auto px-4 pt-4 md:pt-8 max-w-4xl" style={{ paddingBottom: isMobile ? 'calc(5rem + var(--safe-area-bottom))' : '2rem' }}>

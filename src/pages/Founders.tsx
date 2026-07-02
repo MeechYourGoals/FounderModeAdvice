@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Users, ArrowLeft } from "lucide-react";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { AppNavMenu } from "@/components/AppNavMenu";
 import { Button } from "@/components/ui/button";
 import { SpeakerDirectory } from "@/components/SpeakerDirectory";
 
@@ -25,7 +25,7 @@ export default function Founders() {
            </div>
            <div className="flex gap-2">
              <Button variant="outline" onClick={() => navigate('/')} className="hidden md:flex">Back to Dashboard</Button>
-             <ThemeToggle />
+             <AppNavMenu triggerVariant="outline" />
            </div>
          </div>
        </div>

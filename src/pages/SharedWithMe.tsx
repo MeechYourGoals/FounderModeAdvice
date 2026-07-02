@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, FolderOpen, Loader2, Users, Lightbulb } from "lucide-react";
+import { SecondaryPageHeader } from "@/components/SecondaryPageHeader";
 import { useAuth } from "@/hooks/useAuth";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { listSharedFolders, type SharedFolderSummary } from "@/services/folderSharing";
 import { listSharedAnalyses, type SharedAnalysisSummary } from "@/services/analysisSharing";
 import { getAnalysisProfileLabel } from "@/lib/analysisProfile";
@@ -12,6 +14,7 @@ import { getAnalysisProfileLabel } from "@/lib/analysisProfile";
 const SharedWithMe = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const isMobile = useMediaQuery("(max-width: 1023px)");
   const [folders, setFolders] = useState<SharedFolderSummary[]>([]);
   const [analyses, setAnalyses] = useState<SharedAnalysisSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,14 +35,18 @@ const SharedWithMe = () => {
 
   return (
     <div
-      className="app-ambient h-screen overflow-y-auto bg-background p-6 md:p-12 pb-nav"
-      style={{ paddingTop: "calc(1.5rem + var(--safe-area-top))" }}
+      className="app-ambient h-screen overflow-y-auto bg-background pb-nav"
+      style={{ paddingTop: isMobile ? undefined : "calc(1.5rem + var(--safe-area-top))" }}
     >
-      <div className="max-w-3xl mx-auto">
-        <Button variant="ghost" onClick={() => navigate("/")} className="mb-8 -ml-2">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
+      <SecondaryPageHeader title="Shared" onBack={() => navigate("/")} />
+
+      <div className="max-w-3xl mx-auto p-6 md:p-12">
+        {!isMobile && (
+          <Button variant="ghost" onClick={() => navigate("/")} className="mb-8 -ml-2">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+        )}
 
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary mb-3">Collaboration</p>
         <h1 className="text-4xl font-bold tracking-tight mb-2">
