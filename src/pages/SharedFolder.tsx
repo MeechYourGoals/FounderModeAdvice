@@ -3,7 +3,7 @@ import { useNavigate, useParams, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Download, ExternalLink, Lightbulb, Loader2, LockKeyhole } from "lucide-react";
+import { ArrowLeft, Download, ExternalLink, Lightbulb, Loader2, LockKeyhole, MessageSquare } from "lucide-react";
 import { SecondaryPageHeader } from "@/components/SecondaryPageHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
@@ -121,17 +121,28 @@ const SharedFolder = () => {
                             .join(" · ") || "Analyzed video"}
                         </p>
                       </div>
-                      {ep.url && (
-                        <a
-                          href={ep.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="shrink-0 text-muted-foreground hover:text-primary"
-                          aria-label="Open original video"
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 px-2.5 text-xs"
+                          onClick={() => navigate(`/shared-analysis/${ep.id}`)}
                         >
-                          <ExternalLink className="h-4 w-4" />
-                        </a>
-                      )}
+                          <MessageSquare className="mr-1.5 h-3.5 w-3.5" />
+                          Open &amp; discuss
+                        </Button>
+                        {ep.url && (
+                          <a
+                            href={ep.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-primary"
+                            aria-label="Open original video"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        )}
+                      </div>
                     </div>
 
                     {Array.isArray(ep.lessons) && ep.lessons.length > 0 ? (

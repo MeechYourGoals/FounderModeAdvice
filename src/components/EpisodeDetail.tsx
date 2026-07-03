@@ -12,6 +12,9 @@ import { useSubscription } from "@/contexts/SubscriptionContext";
 import { VideoChatSheet } from "@/components/VideoChatSheet";
 import { ExportModal } from "@/components/ExportModal";
 import { AnalysisShareDialog } from "@/components/AnalysisShareDialog";
+import { InsightComments } from "@/components/InsightComments";
+import { useInsightComments } from "@/hooks/useInsightComments";
+import { hasSharing } from "@/types/subscription";
 import { getAnalysisProfileLabel, isUniversalAnalysis } from "@/lib/analysisProfile";
 import {
   AlertDialog,
@@ -200,7 +203,8 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
   const [mobileInsightTab, setMobileInsightTab] = useState<"lessons" | "personalized">("lessons");
   const [shareOpen, setShareOpen] = useState(false);
   const { toast } = useToast();
-  const { canAnalyzeVideo, refreshSubscription } = useSubscription();
+  const { canAnalyzeVideo, refreshSubscription, subscription } = useSubscription();
+  const commentsApi = useInsightComments(episodeId);
 
   const fetchEpisodeDetails = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -444,6 +448,13 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
     );
   }
 
+  // Insight collaboration: owners need the Boardroom plan to start a thread;
+  // collaborators viewing shared content may always participate. RLS enforces
+  // the same rules server-side.
+  const isEpisodeOwner = episode.analyzed_by === currentUserId;
+  const ownerNeedsUpgrade = isEpisodeOwner && !hasSharing(subscription.tier);
+  const canComment = !ownerNeedsUpgrade;
+
   return (
     <div className="space-y-4 sm:space-y-6 animate-slide-up">
       <Button variant="ghost" onClick={onBack} className="mb-2 sm:mb-4 min-h-[44px] sm:min-h-0 -ml-2">
@@ -612,6 +623,14 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
                      initialTags={lesson.lesson_tags?.map(lt => lt.tags).filter(Boolean) as {id: string, name: string}[] || []}
                      onUpdate={fetchEpisodeDetails}
                   />
+                  <InsightComments
+                    api={commentsApi}
+                    insightType="lesson"
+                    insightId={lesson.id}
+                    canComment={canComment}
+                    ownerNeedsUpgrade={ownerNeedsUpgrade}
+                    isOwner={isEpisodeOwner}
+                  />
                 </div>
               ))}
             </div>
@@ -679,6 +698,14 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
                         <div className="mt-3">
                           <ScorePill label="Relevance" score={insight.relevance_score} />
                         </div>
+                        <InsightComments
+                          api={commentsApi}
+                          insightType="personalized_insight"
+                          insightId={insight.id}
+                          canComment={canComment}
+                          ownerNeedsUpgrade={ownerNeedsUpgrade}
+                          isOwner={isEpisodeOwner}
+                        />
                       </div>
                     </div>
                   </div>
@@ -708,6 +735,14 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
                   <div className="mt-2">
                     <ScorePill label="Relevance" score={callout.relevance_score} />
                   </div>
+                  <InsightComments
+                    api={commentsApi}
+                    insightType="callout"
+                    insightId={callout.id}
+                    canComment={canComment}
+                    ownerNeedsUpgrade={ownerNeedsUpgrade}
+                    isOwner={isEpisodeOwner}
+                  />
                 </div>
               </div>
             ))}

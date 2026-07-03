@@ -28,6 +28,10 @@ const USER_OWNED_TABLES = [
 ] as const;
 
 const USER_ANALYSIS_TABLES = [
+  // Mentions of this user in other people's comments (mentions inside the
+  // user's own comments cascade when insight_comments rows are removed).
+  { table: "insight_comment_mentions", column: "mentioned_user_id" },
+  { table: "insight_comments", column: "author_user_id" },
   { table: "episodes", column: "analyzed_by" },
   // Invites the user sent (invites on their own folders also cascade above).
   { table: "folder_invites", column: "invited_by_user_id" },

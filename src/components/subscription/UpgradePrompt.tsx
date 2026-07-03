@@ -14,9 +14,11 @@ interface UpgradePromptProps {
 export function UpgradePrompt({ message, feature, onUpgrade, compact = false }: UpgradePromptProps) {
   const { upgradeTo } = useSubscription();
 
-  // Ask-the-video chat and export are Boardroom-only; everything else upgrades to The C-Suite first.
+  // Ask-the-video chat, export, and sharing/collaboration are Boardroom-only
+  // (sharing is enforced server-side via user_has_boardroom_plan); everything
+  // else upgrades to The C-Suite first.
   const targetTier: 'seed' | 'series_z' =
-    feature === 'videoChat' || feature === 'export' ? 'series_z' : 'seed';
+    feature === 'videoChat' || feature === 'export' || feature === 'sharing' ? 'series_z' : 'seed';
 
   const handleUpgrade = async () => {
     if (onUpgrade) {

@@ -124,7 +124,7 @@ export const AnalysisShareDialog = ({ episodeId, episodeTitle, open, onOpenChang
             <Users className="h-4 w-4" /> Share analysis
           </DialogTitle>
           <DialogDescription>
-            Invite teammates or advisors to view “{episodeTitle}” in read-only mode.
+            Invite teammates or advisors to view “{episodeTitle}”, comment on individual insights, and tag each other in the discussion.
           </DialogDescription>
         </DialogHeader>
 

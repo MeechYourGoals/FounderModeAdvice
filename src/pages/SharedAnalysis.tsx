@@ -9,6 +9,8 @@ import { ArrowLeft, ExternalLink, Lightbulb, Loader2 } from "lucide-react";
 import { SecondaryPageHeader } from "@/components/SecondaryPageHeader";
 import { getAnalysisProfileLabel } from "@/lib/analysisProfile";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { InsightComments } from "@/components/InsightComments";
+import { useInsightComments } from "@/hooks/useInsightComments";
 
 const SharedAnalysis = () => {
   const { episodeId } = useParams<{ episodeId: string }>();
@@ -19,6 +21,9 @@ const SharedAnalysis = () => {
   const [episode, setEpisode] = useState<any>(null);
   const [lessons, setLessons] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+  // Invited collaborators may read and join insight threads; RLS scopes
+  // everything to episodes actually shared with them.
+  const commentsApi = useInsightComments(episodeId ?? null);
 
   useEffect(() => {
     if (!episodeId || authLoading || !user) return;
@@ -33,7 +38,7 @@ const SharedAnalysis = () => {
         .single(),
       supabase
         .from("lessons")
-        .select("id, lesson_text, category, personalized_insights(personalized_text)")
+        .select("id, lesson_text, category, personalized_insights(id, personalized_text)")
         .eq("episode_id", episodeId)
         .order("impact_score", { ascending: false }),
     ])
@@ -101,13 +106,19 @@ const SharedAnalysis = () => {
                   <div key={lesson.id} className="rounded-xl border border-border/60 bg-muted/20 p-4">
                     <div className="flex items-start gap-2">
                       <Lightbulb className="h-4 w-4 mt-0.5 text-primary shrink-0" />
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <p className="text-sm leading-relaxed">{lesson.lesson_text}</p>
                         {lesson.personalized_insights?.[0]?.personalized_text && (
                           <p className="mt-2 text-xs text-muted-foreground">
                             {lesson.personalized_insights[0].personalized_text}
                           </p>
                         )}
+                        <InsightComments
+                          api={commentsApi}
+                          insightType="lesson"
+                          insightId={lesson.id}
+                          canComment
+                        />
                       </div>
                     </div>
                   </div>

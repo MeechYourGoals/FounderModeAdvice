@@ -187,9 +187,9 @@ export const PublicLanding = () => {
             <Reveal delay={240}>
               <ValueCard
                 icon={<ShieldCheck className="w-4 h-4" />}
-                title="Share a single folder"
-                badge="Paid plans"
-                description="Boardroom members can invite teammates or advisors to view specific insights and folders — without exposing the rest of the workspace."
+                title="Collaborate with your team"
+                badge="Boardroom"
+                description="Invite teammates or advisors to a single analysis or a whole folder. They can add notes, comment on individual insights, and tag each other — without seeing the rest of your workspace."
               />
             </Reveal>
           </div>
