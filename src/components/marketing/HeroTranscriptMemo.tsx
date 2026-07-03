@@ -47,9 +47,7 @@ const FOUNDER_QUESTION =
 
 type Stage = 0 | 1 | 2 | 3 | 4;
 
-const prefersReduced = () =>
-  typeof window !== "undefined" &&
-  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const prefersReduced = () => false;
 
 export const HeroTranscriptMemo = ({
   onPrimary,
