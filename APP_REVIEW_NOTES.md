@@ -64,7 +64,7 @@ select cron.schedule(
   '0 13 * * *',
   $$
   select net.http_post(
-    url := 'https://rmkvryjmxvmueiyqsgar.supabase.co/functions/v1/send-daily-prompt',
+    url := 'https://iffcuueutmsusgdfekvm.supabase.co/functions/v1/send-daily-prompt',
     headers := '{"Content-Type": "application/json", "apikey": "<SUPABASE_ANON_KEY>"}'::jsonb,
     body := '{}'::jsonb
   );
