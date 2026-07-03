@@ -1,0 +1,3 @@
+## 2025-05-14 - [EpisodesTable Optimization]
+**Learning:** Consolidating multiple derived data passes (founders, companies, years, tags) into a single `useMemo` iteration significantly reduces computation overhead from O(4N) to O(N). Additionally, pre-calculating nested data (tags) during the initial fetch phase converts repeated O(N) traversals in filtering, sorting, and rendering into O(1) property lookups. Replacing `.find()` lookups with a `Map` during rendering also improves frame consistency for large lists.
+**Action:** Always check for repeated iterations over the same large dataset and look for opportunities to consolidate them into a single pass. Pre-calculate deeply nested or complex derived properties at the data-source level when possible.
