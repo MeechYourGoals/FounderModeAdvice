@@ -251,13 +251,6 @@ All colors MUST be HSL.
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
   }
-  @media (prefers-reduced-motion: reduce) {
-    .elevate-hover,
-    .elevate-hover:hover {
-      transform: none;
-      transition: none;
-    }
-  }
 
   .safe-area-inset {
     padding-top: var(--safe-area-top);
@@ -330,11 +323,6 @@ All colors MUST be HSL.
                 inset 0 1px 0 hsl(var(--primary) / 0.12);
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .eyebrow-rule::after { animation: none; transform: none; }
-    .card-lift { transition: none; }
-    .card-lift:hover { transform: none; }
-  }
 
   /* Film-grain overlay — kills flat-gradient banding, adds tactility.
      Apply to a positioned parent; the grain never intercepts input. */
@@ -373,13 +361,6 @@ All colors MUST be HSL.
     opacity: 1;
     transform: translateY(0);
   }
-  @media (prefers-reduced-motion: reduce) {
-    .reveal {
-      opacity: 1;
-      transform: none;
-      transition: none;
-    }
-  }
 
   /* Gentle vertical float for hero ornaments */
   .animate-float {
@@ -391,12 +372,6 @@ All colors MUST be HSL.
   @keyframes float {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-10px); }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .animate-float,
-    .animate-float-delayed {
-      animation: none;
-    }
   }
 
   /* Faint technical grid for premium hero/section backdrops. Edge-masked so it
@@ -425,12 +400,6 @@ All colors MUST be HSL.
     transform: translateX(-130%);
     animation: sheen 4.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   }
-  @media (prefers-reduced-motion: reduce) {
-    .sheen::after {
-      animation: none;
-      opacity: 0;
-    }
-  }
   @keyframes sheen {
     0% { transform: translateX(-130%); }
     55%, 100% { transform: translateX(230%); }
@@ -443,9 +412,6 @@ All colors MUST be HSL.
   @keyframes pulse-live {
     0%, 100% { opacity: 1; box-shadow: 0 0 0 0 hsl(var(--success) / 0.5); }
     50% { opacity: 0.7; box-shadow: 0 0 0 4px hsl(var(--success) / 0); }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .pulse-live { animation: none; }
   }
 
   /* Ambient top glow — a faint brand-blue aurora anchored above the fold.
@@ -542,11 +508,6 @@ All colors MUST be HSL.
     transform: translateX(0);
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .route-screen {
-    animation: none;
-  }
-}
 
 /* PWA standalone & Despia native mode adjustments */
 @media (display-mode: standalone) {
@@ -576,11 +537,6 @@ All colors MUST be HSL.
 body.keyboard-open .mobile-bottom-nav {
   transform: translateY(110%);
   pointer-events: none;
-}
-@media (prefers-reduced-motion: reduce) {
-  .mobile-bottom-nav {
-    transition: none;
-  }
 }
 
 /* Improve touch targets on mobile - use min-h-11 (44px) for primary actions */
@@ -686,9 +642,6 @@ body.keyboard-open .mobile-bottom-nav {
     transform: scaleX(1);
     opacity: 0.8;
   }
-  @media (prefers-reduced-motion: reduce) {
-    .link-sweep::after { transition: none; }
-  }
 
   /* Editorial use-case row — hover shifts the whole line rightward one
      hair and warms the leading index number. */
@@ -701,10 +654,6 @@ body.keyboard-open .mobile-bottom-nav {
   }
   .use-case-row:hover .use-case-index {
     color: hsl(var(--primary));
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .use-case-row { transition: none; }
-    .use-case-row:hover { transform: none; }
   }
 }
 
