@@ -68,6 +68,7 @@ interface Episode {
         } | null;
     }[];
   }[];
+  computedTags?: string[];
 }
 
 interface EpisodeFolder {
@@ -127,6 +128,11 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<ViewMode>(() => getLibraryPrefs().viewMode);
 
+  // Folder lookup map for O(1) metadata access
+  const foldersMap = useMemo(() => {
+    return new Map<string, EpisodeFolder>(folders.map(f => [f.id, f]));
+  }, [folders]);
+
 
   // Initialize filters & view from URL
   useEffect(() => {
@@ -143,10 +149,11 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
 
   const parseIndustries = (industryString: string | null | undefined): string[] => {
     if (!industryString) return [];
-    return [...new Set(industryString.split(/[,\/]/).map(i => i.trim()).filter(Boolean))];
+    return [...new Set(industryString.split(/[,/]/).map(i => i.trim()).filter(Boolean))];
   };
 
   const getEpisodeTags = (ep: Episode): string[] => {
+    if (ep.computedTags) return ep.computedTags;
     const names = new Set<string>();
     ep.lessons?.forEach(l => l.lesson_tags?.forEach(lt => {
       const n = lt.tags?.name?.trim();
@@ -191,32 +198,26 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     });
   };
 
-  // Derive unique options
-  const uniqueFounders = useMemo(() => {
-    const s = new Set<string>();
-    allEpisodes.forEach(ep => ep.founder_names?.split(',').forEach(n => s.add(n.trim())));
-    return Array.from(s).sort();
-  }, [allEpisodes]);
+  // Consolidated O(N) pass for all facets
+  const libraryFacets = useMemo(() => {
+    const founders = new Set<string>();
+    const companies = new Set<string>();
+    const years = new Set<string>();
+    const tagCounts = new Map<string, number>();
 
-  const uniqueCompanies = useMemo(() => {
-    const s = new Set<string>();
-    allEpisodes.forEach(ep => ep.companies?.name && s.add(ep.companies.name));
-    return Array.from(s).sort();
-  }, [allEpisodes]);
-
-  const uniqueYears = useMemo(() => {
-    const s = new Set<string>();
-    allEpisodes.forEach(ep => ep.release_date && s.add(ep.release_date.slice(0, 4)));
-    return Array.from(s).sort().reverse();
-  }, [allEpisodes]);
-
-  // Unique tags with counts, sorted by frequency desc
-  const uniqueTags = useMemo(() => {
-    const counts = new Map<string, number>();
     allEpisodes.forEach(ep => {
-      getEpisodeTags(ep).forEach(t => counts.set(t, (counts.get(t) || 0) + 1));
+      ep.founder_names?.split(',').forEach(n => founders.add(n.trim()));
+      if (ep.companies?.name) companies.add(ep.companies.name);
+      if (ep.release_date) years.add(ep.release_date.slice(0, 4));
+      getEpisodeTags(ep).forEach(t => tagCounts.set(t, (tagCounts.get(t) || 0) + 1));
     });
-    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+
+    return {
+      uniqueFounders: Array.from(founders).sort(),
+      uniqueCompanies: Array.from(companies).sort(),
+      uniqueYears: Array.from(years).sort().reverse(),
+      uniqueTags: Array.from(tagCounts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    };
   }, [allEpisodes]);
 
   // Filter → Sort → Paginate
@@ -233,10 +234,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
 
     // Folder Filter
     if (selectedFolderId) {
-      const episodeIdsInFolder = Object.entries(folderAssignments)
-        .filter(([, folderIds]) => folderIds.includes(selectedFolderId))
-        .map(([epId]) => epId);
-      result = result.filter(ep => episodeIdsInFolder.includes(ep.id));
+      result = result.filter(ep => (folderAssignments[ep.id] || []).includes(selectedFolderId));
     }
 
     // Tag Filter (OR semantics, case-insensitive)
@@ -351,7 +349,18 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
 
       const { data, error } = await query;
       if (error) throw error;
-      setAllEpisodes(data || []);
+
+      // Pre-calculate tags for O(1) access during render/filter/sort
+      const episodesWithTags = (data || []).map(ep => {
+        const tagSet = new Set<string>();
+        ep.lessons?.forEach(l => l.lesson_tags?.forEach(lt => {
+          const n = lt.tags?.name?.trim();
+          if (n) tagSet.add(n);
+        }));
+        return { ...ep, computedTags: Array.from(tagSet) };
+      });
+
+      setAllEpisodes(episodesWithTags);
     } catch (error) {
       console.error("Error fetching episodes:", error);
     } finally {
@@ -380,7 +389,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     if (assignmentsError) throw assignmentsError;
 
     const map: Record<string, string[]> = {};
-    ((assignments || []) as any[]).forEach((a: any) => {
+    ((assignments || []) as { episode_id: string; folder_id: string }[]).forEach((a) => {
       if (!map[a.episode_id]) map[a.episode_id] = [];
       map[a.episode_id].push(a.folder_id);
     });
@@ -416,7 +425,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
 
       const { data, error } = await supabase
         .from("episode_folders")
-        .insert(names.map(name => ({ user_id: user.id, name })) as any)
+        .insert(names.map(name => ({ user_id: user.id, name })))
         .select("id, name, color")
         .order("name", { ascending: true });
 
@@ -434,8 +443,9 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
       setBulkFolderNames([""]);
       await fetchFolders();
       toast({ title: names.length === 1 ? "Folder created" : `Created ${names.length} folders` });
-    } catch (error: any) {
-      toast({ title: "Could not create folders", description: error?.message || "Please try again.", variant: "destructive" });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Please try again.";
+      toast({ title: "Could not create folders", description: message, variant: "destructive" });
     } finally {
       setCreatingFolders(false);
     }
@@ -458,7 +468,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
       if (rows.length > 0) {
         const { error: moveError } = await supabase
           .from("episode_folder_assignments")
-          .insert(rows as any);
+          .insert(rows);
         if (moveError) {
           toast({ title: "Couldn't move episodes", description: moveError.message, variant: "destructive" });
           return;
@@ -502,12 +512,13 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
       } else {
         const { error } = await supabase
           .from("episode_folder_assignments")
-          .insert({ user_id: user.id, episode_id: episodeId, folder_id: folderId } as any);
+          .insert({ user_id: user.id, episode_id: episodeId, folder_id: folderId });
         if (error) throw error;
       }
       await fetchFolders();
-    } catch (error: any) {
-      toast({ title: "Couldn't update folder", description: error?.message || "Please try again.", variant: "destructive" });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Please try again.";
+      toast({ title: "Couldn't update folder", description: message, variant: "destructive" });
     }
   };
 
@@ -630,7 +641,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
   // Mobile card view for each episode
   const MobileEpisodeCard = ({ episode }: { episode: Episode }) => {
     const episodeFolders = (folderAssignments[episode.id] || [])
-      .map(fId => folders.find(f => f.id === fId))
+      .map(fId => foldersMap.get(fId))
       .filter(Boolean);
 
     return (
@@ -810,7 +821,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Speakers</SelectItem>
-                  {uniqueFounders.map(f => (
+                  {libraryFacets.uniqueFounders.map(f => (
                     <SelectItem key={f} value={f}>{f}</SelectItem>
                   ))}
                 </SelectContent>
@@ -822,7 +833,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Companies</SelectItem>
-                  {uniqueCompanies.map(c => (
+                  {libraryFacets.uniqueCompanies.map(c => (
                     <SelectItem key={c} value={c}>{c}</SelectItem>
                   ))}
                 </SelectContent>
@@ -834,7 +845,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Years</SelectItem>
-                  {uniqueYears.map(y => (
+                  {libraryFacets.uniqueYears.map(y => (
                     <SelectItem key={y} value={y}>{y}</SelectItem>
                   ))}
                 </SelectContent>
@@ -862,10 +873,10 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
         </div>
 
         {/* Tag filter chip bar */}
-        {uniqueTags.length > 0 && (
+        {libraryFacets.uniqueTags.length > 0 && (
           <div className="px-4 sm:px-6 py-2 border-b bg-muted/10 flex items-center gap-2 overflow-x-auto scroll-touch">
             <Tag className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            {uniqueTags.slice(0, 24).map(([name, count]) => (
+            {libraryFacets.uniqueTags.slice(0, 24).map(([name, count]) => (
               <Badge
                 key={name}
                 variant={selectedTags.has(name) ? "default" : "outline"}
@@ -949,8 +960,8 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
         {viewMode === "tag" ? (
           <div>
             {(selectedTags.size > 0
-              ? uniqueTags.filter(([n]) => selectedTags.has(n))
-              : uniqueTags
+              ? libraryFacets.uniqueTags.filter(([n]) => selectedTags.has(n))
+              : libraryFacets.uniqueTags
             ).map(([tagName]) => {
               const eps = filteredEpisodes.filter(ep => getEpisodeTags(ep).some(t => t.toLowerCase() === tagName.toLowerCase()));
               if (eps.length === 0) return null;
@@ -965,7 +976,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                 </div>
               );
             })}
-            {uniqueTags.length === 0 && (
+            {libraryFacets.uniqueTags.length === 0 && (
               <div className="p-8 text-center text-sm text-muted-foreground">No tags yet. Analyze an episode to start tagging.</div>
             )}
           </div>
@@ -1027,7 +1038,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
               <TableBody>
                 {paginatedEpisodes.map((episode) => {
                   const episodeFolders = (folderAssignments[episode.id] || [])
-                    .map(fId => folders.find(f => f.id === fId))
+                    .map(fId => foldersMap.get(fId))
                     .filter(Boolean);
 
                   return (
@@ -1388,7 +1399,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
               .filter(([, ids]) => ids.includes(selectedFolderId))
               .map(([epId]) => epId)
           : undefined}
-        scopeLabel={selectedFolderId ? folders.find(f => f.id === selectedFolderId)?.name : undefined}
+        scopeLabel={selectedFolderId ? foldersMap.get(selectedFolderId)?.name : undefined}
         open={exportModalOpen}
         onOpenChange={setExportModalOpen}
       />
