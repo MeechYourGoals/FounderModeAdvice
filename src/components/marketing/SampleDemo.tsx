@@ -1,5 +1,13 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  m,
+  useInView,
+  staggerParent,
+  riseChild,
+  VIEWPORT_ONCE,
+  SPRING_SOFT,
+} from "@/components/marketing/motion";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -26,6 +34,20 @@ import demoVideoAsset from "@/assets/demo-video.mp4.asset.json";
  */
 export const SampleDemo = () => {
   const [videoOpen, setVideoOpen] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoInView = useInView(videoRef, { amount: 0.35 });
+
+  // The 4.6MB demo loop only downloads and plays while it's actually on
+  // screen — it never competes with the hero animations for bandwidth.
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    if (videoInView) {
+      void el.play().catch(() => undefined);
+    } else {
+      el.pause();
+    }
+  }, [videoInView]);
 
   return (
     <section
@@ -33,32 +55,44 @@ export const SampleDemo = () => {
       className="container mx-auto px-4 pt-4 sm:pt-6 md:pt-8 pb-12 sm:pb-16 md:pb-24 scroll-mt-20"
     >
       <div className="max-w-5xl mx-auto">
-        <div className="text-center space-y-3 mb-8 sm:mb-10">
-          <div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+        <m.div
+          className="text-center space-y-3 mb-8 sm:mb-10"
+          variants={staggerParent(0.09)}
+          initial="hidden"
+          whileInView="visible"
+          viewport={VIEWPORT_ONCE}
+        >
+          <m.div variants={riseChild} className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
             Illustrative sample — not a real analysis
-          </div>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-[-0.02em]">
+          </m.div>
+          <m.h2 variants={riseChild} className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-[-0.02em]">
             See it in action.
-          </h2>
-          <p className="text-base sm:text-xl text-foreground/90 max-w-2xl mx-auto">
+          </m.h2>
+          <m.p variants={riseChild} className="text-base sm:text-xl text-foreground/90 max-w-2xl mx-auto">
             Here's what an operating memo looks like for a seed-stage B2B SaaS founder —
             your output adapts to your own company, industry, and stage.
-          </p>
-        </div>
+          </m.p>
+        </m.div>
 
-        {/* Embedded demo video */}
-        <div className="mb-6 overflow-hidden rounded-2xl border border-border/60 shadow-elegant bg-card">
+        {/* Embedded demo video — scale-in bloom, plays only while visible */}
+        <m.div
+          className="mb-6 overflow-hidden rounded-2xl border border-border/60 shadow-elegant bg-card"
+          initial={{ opacity: 0, scale: 0.96 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={VIEWPORT_ONCE}
+          transition={SPRING_SOFT}
+        >
           <video
+            ref={videoRef}
             src={demoVideoAsset.url}
             className="w-full h-auto"
-            autoPlay
             muted
             loop
             playsInline
-            preload="metadata"
+            preload="none"
             aria-label="Founder Mode Advice product demo"
           />
-        </div>
+        </m.div>
 
         {/* Sample "analyzed video" header — play button opens video modal */}
         <div className="glass rounded-2xl p-4 sm:p-5 mb-4 flex items-center gap-3">

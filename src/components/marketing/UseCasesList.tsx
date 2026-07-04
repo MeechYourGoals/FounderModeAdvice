@@ -1,5 +1,11 @@
 import { ArrowUpRight } from "lucide-react";
-import { Reveal } from "@/hooks/useReveal";
+import {
+  m,
+  staggerParent,
+  riseChild,
+  VIEWPORT_ONCE,
+  EASE_IOS,
+} from "@/components/marketing/motion";
 
 /**
  * Editorial two-column use-cases list. Deliberately not a card grid — the
@@ -14,7 +20,12 @@ export const UseCasesList = ({
 }) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-10 lg:gap-16">
-      <Reveal>
+      <m.div
+        initial={{ opacity: 0, x: -24 }}
+        whileInView={{ opacity: 1, x: 0 }}
+        viewport={VIEWPORT_ONCE}
+        transition={{ duration: 0.7, ease: EASE_IOS }}
+      >
         <div className="lg:sticky lg:top-24">
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary eyebrow-rule left">
             Use cases
@@ -28,12 +39,17 @@ export const UseCasesList = ({
             in, then paste the video.
           </p>
         </div>
-      </Reveal>
+      </m.div>
 
-      <ul className="divide-y divide-border/60 border-y border-border/60">
+      <m.ul
+        className="divide-y divide-border/60 border-y border-border/60"
+        variants={staggerParent(0.06)}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.15 }}
+      >
         {USE_CASES.map((u, i) => (
-          <li key={u.title}>
-            <Reveal delay={i * 60}>
+          <m.li key={u.title} variants={riseChild}>
               <button
                 type="button"
                 onClick={onSelect}
@@ -55,10 +71,9 @@ export const UseCasesList = ({
                   aria-hidden
                 />
               </button>
-            </Reveal>
-          </li>
+          </m.li>
         ))}
-      </ul>
+      </m.ul>
     </div>
   );
 };

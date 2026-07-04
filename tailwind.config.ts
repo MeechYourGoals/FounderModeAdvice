@@ -83,6 +83,7 @@ export default {
           "Roboto",
           "sans-serif",
         ],
+        display: ["Fraunces", "New York", "Georgia", "Times New Roman", "serif"],
       },
       /* Apple HIG type scale (Dynamic Type "Large" defaults). Weight is baked
          in so headers read native without stacking font-* utilities. */
@@ -163,6 +164,10 @@ export default {
           from: { opacity: "0", transform: "translateX(24px)" },
           to: { opacity: "1", transform: "translateX(0)" },
         },
+        "float-soft": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-5px)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -173,6 +178,7 @@ export default {
         "screen-in": "screen-in 0.35s cubic-bezier(0.32, 0.72, 0, 1)",
         "tab-pop": "tab-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)",
         "drill-in": "drill-in 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
+        "float-soft": "float-soft 6s ease-in-out infinite",
       },
     },
   },

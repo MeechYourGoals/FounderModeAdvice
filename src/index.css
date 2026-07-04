@@ -276,14 +276,15 @@ All colors MUST be HSL.
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Editorial display serif — retained utility, no longer used on marketing headlines */
+  /* Editorial display serif — used for hero accent phrases on the marketing
+     landing and for editorial accents inside the app. */
   .font-display {
     font-family: "Fraunces", "New York", Georgia, "Times New Roman", serif;
     font-optical-sizing: auto;
     letter-spacing: -0.02em;
   }
 
-  /* Brand-blue gradient text — retained utility, no longer used on marketing headlines */
+  /* Brand-blue gradient text — used on hero accent phrases. */
   .text-gradient {
     background: var(--gradient-text);
     -webkit-background-clip: text;
@@ -654,6 +655,101 @@ body.keyboard-open .mobile-bottom-nav {
   }
   .use-case-row:hover .use-case-index {
     color: hsl(var(--primary));
+  }
+
+  /* ---------------------------------------------------------------------
+   * "iOS 27" overhaul additions. All transform/opacity-only; the only
+   * persistent backdrop-filter surface on the landing is .nav-capsule.
+   * ------------------------------------------------------------------- */
+
+  /* Aurora background — three slow-drifting brand-blue radial blobs.
+     Softness comes from the gradient falloff itself (NOT filter: blur),
+     so the compositor never rasterizes a filter layer. Pure CSS = zero
+     JS ticks while scrolling. */
+  .aurora-blob {
+    position: absolute;
+    border-radius: 9999px;
+    will-change: transform;
+  }
+  .aurora-blob-1 {
+    width: 60vmax;
+    height: 60vmax;
+    top: -22vmax;
+    right: -14vmax;
+    background: radial-gradient(closest-side, hsl(var(--primary) / 0.16), transparent 72%);
+    animation: aurora-drift-1 36s ease-in-out infinite alternate;
+  }
+  .aurora-blob-2 {
+    width: 52vmax;
+    height: 52vmax;
+    bottom: -20vmax;
+    left: -16vmax;
+    background: radial-gradient(closest-side, hsl(224 90% 55% / 0.12), transparent 70%);
+    animation: aurora-drift-2 48s ease-in-out infinite alternate;
+  }
+  .aurora-blob-3 {
+    width: 44vmax;
+    height: 44vmax;
+    top: 34%;
+    left: 28%;
+    background: radial-gradient(closest-side, hsl(199 90% 60% / 0.09), transparent 70%);
+    animation: aurora-drift-3 60s ease-in-out infinite alternate;
+  }
+  @keyframes aurora-drift-1 {
+    from { transform: translate3d(0, 0, 0) scale(1) rotate(0deg); }
+    to   { transform: translate3d(-9vmax, 7vmax, 0) scale(1.18) rotate(24deg); }
+  }
+  @keyframes aurora-drift-2 {
+    from { transform: translate3d(0, 0, 0) scale(1.05); }
+    to   { transform: translate3d(10vmax, -8vmax, 0) scale(0.92); }
+  }
+  @keyframes aurora-drift-3 {
+    from { transform: translate3d(0, 0, 0) scale(0.95); }
+    to   { transform: translate3d(-7vmax, -9vmax, 0) scale(1.15); }
+  }
+
+  /* Floating centered nav capsule — the single blurred glass surface. */
+  .nav-capsule {
+    background: hsl(var(--background) / 0.72);
+    border: 1px solid hsl(var(--border) / 0.75);
+    box-shadow:
+      inset 0 1px 0 0 hsl(0 0% 100% / 0.06),
+      0 12px 40px -18px hsl(0 0% 0% / 0.5);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+  }
+
+  /* Overflow-clip wrapper for hero word-cascade reveals. */
+  .mask-line {
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: bottom;
+  }
+
+  /* Montage insight card — solid background (no backdrop-filter) because
+     these cards spring/float constantly; blur layers would tax Safari. */
+  .montage-card {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border) / 0.8);
+    box-shadow:
+      inset 0 1px 0 0 hsl(0 0% 100% / 0.05),
+      0 24px 70px -32px hsl(0 0% 0% / 0.6);
+  }
+
+  /* Final CTA — slow drifting radial highlight inside the primary panel. */
+  .cta-aurora {
+    position: absolute;
+    inset: -40%;
+    background:
+      radial-gradient(40% 35% at 30% 30%, hsl(0 0% 100% / 0.14), transparent 70%),
+      radial-gradient(45% 40% at 75% 70%, hsl(199 90% 70% / 0.2), transparent 72%);
+    animation: cta-drift 24s ease-in-out infinite alternate;
+    will-change: transform;
+    pointer-events: none;
+  }
+  @keyframes cta-drift {
+    from { transform: translate3d(-4%, -3%, 0) rotate(0deg) scale(1); }
+    to   { transform: translate3d(4%, 3%, 0) rotate(8deg) scale(1.08); }
   }
 }
 
