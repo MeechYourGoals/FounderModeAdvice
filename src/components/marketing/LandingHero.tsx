@@ -82,9 +82,9 @@ export const LandingHero = ({ onPrimary, onSecondary }: LandingHeroProps) => {
           </m.p>
 
           <h1 className="mx-auto max-w-3xl text-[2.4rem] leading-[1.06] tracking-[-0.03em] sm:text-6xl md:text-[4.2rem] font-semibold text-foreground">
-            <CascadeLine text="Build your boardroom" baseDelay={0.12} className="block" />
+            <CascadeLine text="Build Your Boardroom" baseDelay={0.12} className="block" />
             <CascadeLine
-              text="from videos you already watch."
+              text="Then Instill Their Insights"
               baseDelay={0.38}
               className="block mt-1.5"
               wordClassName="font-display italic font-medium text-gradient pr-[0.06em]"
