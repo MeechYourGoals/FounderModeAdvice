@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { HeroSection } from "@/components/HeroSection";
 import { AnalysisForm } from "@/components/AnalysisForm";
 import { EpisodesTable } from "@/components/EpisodesTable";
@@ -8,7 +8,11 @@ import { AppHeader } from "@/components/AppHeader";
 import { AppLoadingScreen } from "@/components/AppLoadingScreen";
 import { PullToRefresh } from "@/components/PullToRefresh";
 
-import { PublicLanding } from "@/components/PublicLanding";
+// Lazy boundary: the marketing landing (and its motion animation library)
+// ships as its own async chunk so the authed app shell stays lean.
+const PublicLanding = lazy(() =>
+  import("@/components/PublicLanding").then((mod) => ({ default: mod.PublicLanding })),
+);
 import { useAuth } from "@/hooks/useAuth";
 import { ChevronLeft } from "lucide-react";
 import { PENDING_INVITE_KEY } from "@/services/folderSharing";
@@ -102,7 +106,13 @@ const Index = () => {
   // Unauthenticated: installed app/PWA/native users go straight to the auth screen,
   // while regular browser visitors still see the marketing homepage.
   if (!loading && !user) {
-    return shouldShowAppAuthFirst() ? <Navigate to="/auth" replace /> : <PublicLanding />;
+    return shouldShowAppAuthFirst() ? (
+      <Navigate to="/auth" replace />
+    ) : (
+      <Suspense fallback={<div className="h-screen bg-background" />}>
+        <PublicLanding />
+      </Suspense>
+    );
   }
 
   if (loading) {
