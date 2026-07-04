@@ -39,7 +39,7 @@ export const Footer = () => {
       style={{ paddingBottom: "calc(1.5rem + var(--safe-area-bottom))" }}
     >
       <div className="container mx-auto px-4">
-        <div className="grid gap-8 sm:grid-cols-[1.4fr_repeat(3,minmax(0,1fr))] sm:gap-6">
+        <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-[1.4fr_repeat(4,minmax(0,1fr))] sm:gap-6">
           <div className="space-y-3">
             <BrandLogo className="h-9 w-auto" />
             <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
