@@ -379,24 +379,30 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      // New analysis exists — now retire the old one. Insights hang off the
-      // old lessons; lesson_tags cascade on lesson delete.
-      const lessonIds = lessons.map(l => l.id);
-      if (lessonIds.length > 0) {
-        await supabase.from('personalized_insights').delete().in('lesson_id', lessonIds);
-      }
-      await supabase.from('lessons').delete().eq('episode_id', episodeId);
-      await supabase.from('chavel_callouts').delete().eq('episode_id', episodeId);
-      await supabase.from('episodes').delete().eq('id', episodeId);
+      // New analysis exists — retire the old one. Lessons, callouts, and
+      // (via lessons) personalized_insights all cascade on episode delete,
+      // so one verified delete covers everything.
+      const { error: deleteError } = await supabase
+        .from('episodes')
+        .delete()
+        .eq('id', episodeId);
 
       await refreshSubscription();
 
-      toast({
-        title: "Re-analysis complete",
-        description: "The episode has been re-analyzed with your current profile.",
-      });
+      if (deleteError) {
+        console.error('Failed to remove previous analysis after re-analyze:', deleteError);
+        toast({
+          title: "Re-analysis complete",
+          description: "The new analysis is saved, but the previous copy couldn't be removed. You can delete it from your library.",
+        });
+      } else {
+        toast({
+          title: "Re-analysis complete",
+          description: "The episode has been re-analyzed with your current profile.",
+        });
+      }
 
-      // The old episode row is gone either way — always leave this screen.
+      // The replacement analysis exists — leave this screen either way.
       onBack();
     } catch (error: any) {
       console.error('Re-analysis error:', error);
