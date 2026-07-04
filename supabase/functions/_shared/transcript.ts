@@ -190,7 +190,7 @@ export const canonicalizeVideoUrl = async (input: string): Promise<string> => {
     // Follow up to 3 redirects on known short-link hosts.
     for (let i = 0; i < 3; i++) {
       if (!SHORT_LINK_HOSTS.has(u.hostname.toLowerCase())) break;
-      const res = await fetch(current, { method: "HEAD", redirect: "follow" });
+      const res = await safeFetch(current, { method: "HEAD" }, 3);
       if (res.url && res.url !== current) {
         current = res.url;
         u = new URL(current);
