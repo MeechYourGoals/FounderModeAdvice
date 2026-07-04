@@ -117,6 +117,22 @@ const App = () => (
               <Route path="/shared/:folderId" element={<SharedFolder />} />
               <Route path="/shared-analysis/:episodeId" element={<SharedAnalysis />} />
               <Route path="/favorites" element={<Favorites />} />
+              <Route
+                path="/scenarios"
+                element={<Suspense fallback={null}><ScenariosHub /></Suspense>}
+              />
+              <Route
+                path="/scenarios/:slug"
+                element={<Suspense fallback={null}><ScenarioPage /></Suspense>}
+              />
+              <Route
+                path="/blog"
+                element={<Suspense fallback={null}><BlogIndex /></Suspense>}
+              />
+              <Route
+                path="/blog/:slug"
+                element={<Suspense fallback={null}><BlogPost /></Suspense>}
+              />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
