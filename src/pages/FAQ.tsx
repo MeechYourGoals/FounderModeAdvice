@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 const FAQS: { q: string; a: React.ReactNode }[] = [
   {
@@ -9,7 +10,7 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
   },
   {
     q: "Do I need an account to analyze a video?",
-    a: "Yes. Creating a free account takes a few seconds and lets us save your analyses, profiles, and folders. The free plan includes a few analyses per month with no credit card required.",
+    a: "Yes. Creating a free account takes a few seconds and lets us save your analyses, profiles, and folders. The free plan includes 3 analyses per month with no credit card required.",
   },
   {
     q: "Who is Founder Mode Advice for?",
@@ -58,6 +59,8 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
 ];
 
 const FAQ = () => {
+  usePageMeta({ title: "FAQ", description: "Answers on supported videos, plans, pricing, cancellation, and how transcript-grounded analysis works.", path: "/faq" });
+
   const navigate = useNavigate();
 
   return (

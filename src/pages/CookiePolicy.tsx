@@ -1,8 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 const CookiePolicy = () => {
+  usePageMeta({ title: "Cookie Policy", description: "How Founder Mode Advice uses cookies and similar technologies.", path: "/cookies" });
+
   const navigate = useNavigate();
 
   return (

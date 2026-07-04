@@ -3,8 +3,11 @@ import { Users, ArrowLeft } from "lucide-react";
 import { AppNavMenu } from "@/components/AppNavMenu";
 import { Button } from "@/components/ui/button";
 import { SpeakerDirectory } from "@/components/SpeakerDirectory";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 export default function Founders() {
+  usePageMeta({ title: "Founder Directory", description: "Browse founders, investors, and operators whose talks founders analyze most.", path: "/founders" });
+
   const navigate = useNavigate();
 
   return (

@@ -1,1 +1,38 @@
 project_id = "iffcuueutmsusgdfekvm"
+# Per-function JWT policy, pinned in source control so deploys can't drift.
+# Webhooks/cron are called by external services with no Supabase JWT — they
+# authenticate themselves (Paddle/Stripe signature verification, CRON_SECRET).
+[functions.payments-webhook]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.send-daily-prompt]
+verify_jwt = false
+
+# App-facing functions require a JWT at the platform edge (they additionally
+# do their own auth.getUser() checks internally).
+[functions.analyze-episode]
+verify_jwt = true
+
+[functions.video-chat]
+verify_jwt = true
+
+[functions.parse-deck]
+verify_jwt = true
+
+[functions.create-checkout-session]
+verify_jwt = true
+
+[functions.create-portal-session]
+verify_jwt = true
+
+[functions.delete-user-account]
+verify_jwt = true
+
+[functions.sync-revenuecat-subscription]
+verify_jwt = true
+
+[functions.get-paddle-price]
+verify_jwt = true

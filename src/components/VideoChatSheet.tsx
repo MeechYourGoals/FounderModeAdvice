@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Bot, Download, Loader2, Lock, MessageSquare, RefreshCw, Send, ShieldCheck, User } from "lucide-react";
-import jsPDF from "jspdf";
+import type jsPDFType from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -41,12 +41,14 @@ const SUGGESTED_QUESTIONS = [
 ];
 
 /** Build a PDF of the chat: AI summary on top, full Q&A transcript below. */
-const buildChatPdf = (
+const buildChatPdf = async (
   title: string,
   summary: string,
   messages: VideoChatMessage[],
-): { blob: Blob; filename: string } => {
-  const doc = new jsPDF();
+): Promise<{ blob: Blob; filename: string }> => {
+  // Loaded on demand — PDF export is rare and jsPDF is heavy.
+  const { default: jsPDF } = await import("jspdf");
+  const doc: jsPDFType = new jsPDF();
   const marginX = 14;
   const maxWidth = 180;
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -216,7 +218,7 @@ export const VideoChatSheet = ({ videoId, videoTitle }: VideoChatSheetProps) => 
       if (data?.error) throw new Error(data.error);
 
       const summary: string = data?.summary || "";
-      const { blob, filename } = buildChatPdf(videoTitle, summary, messages);
+      const { blob, filename } = await buildChatPdf(videoTitle, summary, messages);
       const result = await saveOrShareBlob(blob, filename, "application/pdf", isDespia());
       toast({
         title: result === "shared" ? "Summary ready" : "Summary downloaded",

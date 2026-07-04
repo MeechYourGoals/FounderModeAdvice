@@ -32,6 +32,7 @@ const projectRoot = path.resolve(__dirname, "..");
 const DEFAULT_URLS = [
   "https://id-preview--3d30aa39-abcb-406b-9441-e7a7f14b5734.lovable.app",
   "https://foundermodeadvice.lovable.app",
+  "https://foundermodeadvice.com",
 ];
 
 const TIMEOUT_MS = Number(process.env.VERIFY_TIMEOUT_MS ?? 180_000); // 3 min

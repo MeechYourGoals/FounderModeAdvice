@@ -79,13 +79,13 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     } catch (err) {
       console.error('Failed to fetch subscription', err);
       setError('Failed to load subscription info');
-      // Default to free tier on error
+      // Default to free tier on error (limits mirror TIER_LIMITS.free)
       setSubscription({
         tier: 'free',
         limits: {
           profiles: { max: 1, used: 0 },
           bookmarks: { max: 5, used: 0 },
-          analyses: { max: 4, used: 0 },
+          analyses: { max: 3, used: 0 },
         },
         isActive: true,
       });
@@ -186,10 +186,14 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       await presentCustomerCenterService();
       await refreshSubscription();
     } else {
-      // Redirect to Stripe Customer Portal
+      // Redirect to the billing portal (Paddle for web purchases; Stripe for
+      // legacy customers — create-portal-session picks the right provider).
       const portalUrl = await getStripePortalUrl();
       if (portalUrl) {
         window.location.href = portalUrl;
+      } else {
+        // Surface to the caller (Account shows a toast) instead of silently doing nothing.
+        throw new Error('No billing portal available for this account');
       }
     }
   }, [isNative, isDespiaApp, refreshSubscription]);

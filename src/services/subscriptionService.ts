@@ -11,7 +11,7 @@ import {
 import { isDespia, launchDespiaPaywall } from './despiaService';
 
 /** Founder/Super Admin emails with unlimited access - no feature limits */
-const FOUNDER_EMAILS = ['ccamechi@gmail.com', 'test@test.com'];
+const FOUNDER_EMAILS = ['ccamechi@gmail.com'];
 
 /** RevenueCat API key — platform-specific and mandatory for native builds. */
 function getRevenueCatApiKey(): string {

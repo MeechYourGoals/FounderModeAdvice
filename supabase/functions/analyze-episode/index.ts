@@ -155,7 +155,7 @@ serve(async (req) => {
           .single();
 
         const tier = (subscription?.tier || 'free') as keyof typeof TIER_LIMITS;
-        const maxAnalyses = TIER_LIMITS[tier]?.analyses || 4;
+        const maxAnalyses = TIER_LIMITS[tier]?.analyses ?? TIER_LIMITS.free.analyses;
 
         // Get current month usage
         const { data: usage } = await supabase

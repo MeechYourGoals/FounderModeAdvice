@@ -1,8 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 const AccountDeletion = () => {
+  usePageMeta({ title: "Delete Your Account", description: "How to permanently delete your Founder Mode Advice account and data.", path: "/account-deletion", noindex: true });
+
   const navigate = useNavigate();
 
   return (

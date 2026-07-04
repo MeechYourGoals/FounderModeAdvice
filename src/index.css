@@ -753,3 +753,23 @@ body.keyboard-open .mobile-bottom-nav {
   }
 }
 
+
+/* ------------------------------------------------------------------ */
+/* Reduced motion: stop all continuous decorative animations. The     */
+/* aurora/float/sheen/pulse loops run indefinitely on the landing     */
+/* page; users who ask for reduced motion (or whose battery saver     */
+/* sets it) get the static composition instead. One-shot entrance     */
+/* transitions handled by motion.tsx are already gated in JS.         */
+/* ------------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  .animate-float,
+  .animate-float-delayed,
+  .sheen::after,
+  .pulse-live,
+  .aurora-blob-1,
+  .aurora-blob-2,
+  .aurora-blob-3,
+  .cta-aurora {
+    animation: none !important;
+  }
+}

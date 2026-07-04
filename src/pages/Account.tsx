@@ -33,6 +33,7 @@ const Account = () => {
   const { toast } = useToast();
   const isMobile = useMediaQuery("(max-width: 767px)");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isBillingBusy, setIsBillingBusy] = useState(false);
   const handleReplayTour = () => {
     triggerHapticFeedback('light');
     navigate("/", { state: { action: "walkthrough" } });
@@ -51,7 +52,9 @@ const Account = () => {
   };
 
   const handleRestore = async () => {
+    if (isBillingBusy) return;
     triggerHapticFeedback('medium');
+    setIsBillingBusy(true);
     try {
       await restorePurchases();
       toast({
@@ -64,6 +67,25 @@ const Account = () => {
         description: "Could not restore purchases. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsBillingBusy(false);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    if (isBillingBusy) return;
+    triggerHapticFeedback('light');
+    setIsBillingBusy(true);
+    try {
+      await manageSubscription();
+    } catch (error) {
+      toast({
+        title: "Couldn't open subscription management",
+        description: "Please try again in a moment.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsBillingBusy(false);
     }
   };
 
@@ -172,12 +194,12 @@ const Account = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
-                <Button variant="outline" onClick={() => { triggerHapticFeedback('light'); manageSubscription(); }}>
-                  Manage Subscription
+                <Button variant="outline" disabled={isBillingBusy} onClick={handleManageSubscription}>
+                  {isBillingBusy ? "Opening..." : "Manage Subscription"}
                 </Button>
                 {isNative && (
                   <div className="text-center">
-                    <Button variant="ghost" size="sm" onClick={handleRestore}>
+                    <Button variant="ghost" size="sm" disabled={isBillingBusy} onClick={handleRestore}>
                       <RotateCcw className="h-4 w-4 mr-2" />
                       Restore Purchases
                     </Button>
@@ -201,7 +223,7 @@ const Account = () => {
 
                 {isNative && subscription?.tier === "free" && (
                   <div className="mt-6 text-center">
-                    <Button variant="outline" onClick={handleRestore}>
+                    <Button variant="outline" disabled={isBillingBusy} onClick={handleRestore}>
                       <RotateCcw className="h-4 w-4 mr-2" />
                       Restore Purchases
                     </Button>

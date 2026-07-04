@@ -34,6 +34,7 @@ const ScenarioPage = lazy(() => import("./pages/ScenarioPage"));
 const BlogIndex = lazy(() => import("./pages/BlogIndex"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
 import { OfflineBadge } from "@/components/OfflineBadge";
+import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import { AppChrome } from "@/components/AppChrome";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
@@ -82,6 +83,7 @@ function ScreenTransition({ children }: { children: ReactNode }) {
 }
 
 const App = () => (
+  <AppErrorBoundary>
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
       <AuthProvider>
@@ -145,6 +147,7 @@ const App = () => (
       </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
+  </AppErrorBoundary>
 );
 
 export default App;

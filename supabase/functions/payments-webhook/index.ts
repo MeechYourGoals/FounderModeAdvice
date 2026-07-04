@@ -37,6 +37,7 @@ async function upsertSubscription(data: any, env: PaddleEnv) {
 
   const tier = productIdToTier(productId);
 
+  // Record the raw subscription in every environment (audit trail)…
   await getSupabase().from('subscriptions').upsert(
     {
       user_id: userId,
@@ -54,7 +55,15 @@ async function upsertSubscription(data: any, env: PaddleEnv) {
     { onConflict: 'paddle_subscription_id' },
   );
 
-  // Mirror into existing user_subscriptions tier so feature gating works.
+  // …but only mirror into user_subscriptions (the table all feature gating
+  // reads) for live purchases. Sandbox test-card purchases granting real
+  // entitlements is an abuse vector; set PADDLE_ALLOW_SANDBOX_ENTITLEMENTS=true
+  // on a staging project to test paid flows end-to-end.
+  if (env !== 'live' && Deno.env.get('PADDLE_ALLOW_SANDBOX_ENTITLEMENTS') !== 'true') {
+    console.log(`Skipping user_subscriptions mirror for ${env} subscription ${id}`);
+    return;
+  }
+
   const isActive = status === 'active' || status === 'trialing';
   await getSupabase().from('user_subscriptions').upsert(
     {
@@ -75,6 +84,12 @@ async function handleCanceled(data: any, env: PaddleEnv) {
     .eq('paddle_subscription_id', id)
     .eq('environment', env);
 
+  // Same environment gate as upsertSubscription: a sandbox cancel must not
+  // downgrade a real (live) subscriber's gating tier.
+  if (env !== 'live' && Deno.env.get('PADDLE_ALLOW_SANDBOX_ENTITLEMENTS') !== 'true') {
+    return;
+  }
+
   const userId = customData?.userId;
   if (userId) {
     await getSupabase()
@@ -89,7 +104,15 @@ Deno.serve(async (req) => {
     return new Response('Method not allowed', { status: 405 });
   }
   const url = new URL(req.url);
-  const env = (url.searchParams.get('env') || 'sandbox') as PaddleEnv;
+  // Default to LIVE: if the production Paddle dashboard omits ?env=live the
+  // worst case is a sandbox test event failing verification — not live
+  // customer payments being silently verified against the sandbox secret
+  // and never provisioned. Sandbox endpoints must opt in with ?env=sandbox.
+  const envParam = url.searchParams.get('env');
+  if (envParam && envParam !== 'live' && envParam !== 'sandbox') {
+    return new Response('Unknown env', { status: 400 });
+  }
+  const env = (envParam || 'live') as PaddleEnv;
 
   try {
     const event = await verifyWebhook(req, env);

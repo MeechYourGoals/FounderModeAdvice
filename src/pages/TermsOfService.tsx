@@ -1,8 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 const TermsOfService = () => {
+  usePageMeta({ title: "Terms of Service", description: "The terms that govern your use of Founder Mode Advice.", path: "/terms-of-service" });
+
   const navigate = useNavigate();
 
   return (

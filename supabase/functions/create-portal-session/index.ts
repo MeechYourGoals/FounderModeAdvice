@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { gatewayFetch } from '../_shared/paddle.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,6 +29,43 @@ serve(async (req) => {
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) return jsonError('Unauthorized', 401);
+
+    // Web purchases run through Paddle, so check for a Paddle subscription
+    // first and send those users to Paddle's customer portal. The Stripe
+    // portal below remains for legacy Stripe-billed customers.
+    const { data: paddleSub } = await supabase
+      .from('subscriptions')
+      .select('paddle_customer_id, paddle_subscription_id, status')
+      .eq('user_id', user.id)
+      .eq('environment', 'live')
+      .in('status', ['active', 'trialing', 'past_due'])
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (paddleSub?.paddle_customer_id) {
+      const portalRes = await gatewayFetch(
+        'live',
+        `/customers/${paddleSub.paddle_customer_id}/portal-sessions`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            subscription_ids: paddleSub.paddle_subscription_id
+              ? [paddleSub.paddle_subscription_id]
+              : [],
+          }),
+        },
+      );
+      const portal = await portalRes.json();
+      const url = portal?.data?.urls?.general?.overview;
+      if (!portalRes.ok || !url) {
+        console.error('Paddle portal session error:', portalRes.status, portal?.error ?? portal);
+        return jsonError('Could not open billing portal. Please try again.', 502);
+      }
+      return new Response(JSON.stringify({ url }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const stripeApiKey = Deno.env.get('STRIPE_SECRET_KEY');
     if (!stripeApiKey) {

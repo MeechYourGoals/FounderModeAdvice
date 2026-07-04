@@ -1,8 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 const Contact = () => {
+  usePageMeta({ title: "Contact", description: "Get in touch with the Founder Mode Advice team.", path: "/contact" });
+
   const navigate = useNavigate();
 
   return (

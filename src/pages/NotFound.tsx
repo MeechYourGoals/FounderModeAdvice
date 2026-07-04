@@ -3,8 +3,10 @@ import { useEffect } from "react";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BrandLogo } from "@/components/BrandLogo";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 const NotFound = () => {
+  usePageMeta({ title: "Page not found", noindex: true });
   const location = useLocation();
 
   useEffect(() => {

@@ -53,43 +53,19 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "apple-touch-icon.png", "pwa-192x192.png"],
-      manifest: {
-        name: "Founder Mode Advice",
-        short_name: "Founder Mode",
-        description: "Turn business, founder, and leadership videos into personalized advice for your company, industry, and stage.",
-        theme_color: "#0c0e15",
-        background_color: "#0c0e15",
-        display: "standalone",
-        display_override: ["window-controls-overlay", "standalone", "minimal-ui"],
-        orientation: "any",
-        scope: "/",
-        start_url: "/",
-        categories: ["productivity", "education"],
-        prefer_related_applications: false,
-        icons: [
-          {
-            src: "/pwa-192x192.png",
-            sizes: "192x192",
-            type: "image/png",
-          },
-          {
-            src: "/pwa-512x512.png",
-            sizes: "512x512",
-            type: "image/png",
-          },
-          {
-            src: "/pwa-512x512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "any maskable",
-          },
-        ],
-      },
+      // Single source of truth is public/manifest.webmanifest (richer: app id,
+      // shortcuts, lang). Generating a second manifest here collided with it on
+      // the same output filename with divergent contents (orientation,
+      // start_url, categories), so whichever won was nondeterministic.
+      manifest: false,
       devOptions: {
         enabled: false,
       },
       workbox: {
         globPatterns: ["**/*.{js,css,ico,png,svg,jpg,jpeg,webp,woff,woff2}"],
+        // The social-preview image is only fetched by link scrapers — don't
+        // make every PWA install download ~0.9 MB it will never render.
+        globIgnores: ["**/og-image.png"],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         navigateFallbackDenylist: [/^\/~oauth/],
         // Do not runtime-cache Supabase REST/Auth/Functions/Storage responses here.

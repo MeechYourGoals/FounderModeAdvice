@@ -50,11 +50,11 @@ export const MONTAGE_CARDS: MontageCard[] = [
 
 export const MONTAGE_COMMENT = {
   author: "A",
-  text: "This is exactly our Q3 pricing call — let's run the test.",
+  text: "This is the VP-of-Sales call we keep debating — read this first.",
   mention: "@alex",
 } as const;
 
-export const MONTAGE_FOLDER = "Saved to Fundraising" as const;
+export const MONTAGE_FOLDER = "Saved to GTM" as const;
 
 /** Phase schedule in ms from cycle start. Phase 6 triggers the loop reset. */
 export const MONTAGE_TIMELINE: { at: number; phase: number }[] = [

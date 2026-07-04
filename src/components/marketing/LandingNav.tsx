@@ -22,7 +22,10 @@ const NAV_LINKS = [
 
 interface LandingNavProps {
   onNavigate: (id: string) => void;
+  /** Primary acquisition CTA — lands on the Sign Up tab. */
   onAuth: () => void;
+  /** Returning-user entry — lands on the Sign In tab. Falls back to onAuth. */
+  onSignIn?: () => void;
   onHome: () => void;
 }
 
@@ -32,7 +35,7 @@ interface LandingNavProps {
  * once the page scrolls. The capsule is the landing page's single persistent
  * backdrop-filter surface — keep it that way for Safari's sake.
  */
-export const LandingNav = ({ onNavigate, onAuth, onHome }: LandingNavProps) => {
+export const LandingNav = ({ onNavigate, onAuth, onSignIn, onHome }: LandingNavProps) => {
   const [condensed, setCondensed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const container = useLandingScrollRef() ?? undefined;
@@ -111,14 +114,14 @@ export const LandingNav = ({ onNavigate, onAuth, onHome }: LandingNavProps) => {
               variant="ghost"
               size="sm"
               className="hidden md:inline-flex rounded-full"
-              onClick={onAuth}
+              onClick={onSignIn ?? onAuth}
             >
               Sign In
             </Button>
 
             <m.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.95 }} transition={SPRING_SOFT}>
               <Button size="sm" className="rounded-full px-4 h-9 sm:h-8" onClick={onAuth}>
-                <span className="md:hidden">Sign In</span>
+                <span className="md:hidden">Start free</span>
                 <span className="hidden md:inline">Analyze a video</span>
                 <ArrowRight className="ml-1.5 h-4 w-4 hidden md:inline-block" />
               </Button>
@@ -151,7 +154,7 @@ export const LandingNav = ({ onNavigate, onAuth, onHome }: LandingNavProps) => {
                       className="text-[15px] font-medium text-foreground/85"
                       onClick={() => {
                         setMenuOpen(false);
-                        onAuth();
+                        (onSignIn ?? onAuth)();
                       }}
                     >
                       Sign In

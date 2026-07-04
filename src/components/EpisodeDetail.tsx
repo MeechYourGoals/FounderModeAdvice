@@ -353,21 +353,10 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
 
       const profile = profiles?.[0];
 
-      // Delete old personalized insights (linked to old lessons)
-      const lessonIds = lessons.map(l => l.id);
-      if (lessonIds.length > 0) {
-        await supabase.from('personalized_insights').delete().in('lesson_id', lessonIds);
-      }
-
-      // Delete old lessons and callouts (tags will cascade delete due to schema setup if properly configured, but safe to leave tags alone as they are M:N)
-      // Actually lesson_tags cascades on lesson delete.
-      await supabase.from('lessons').delete().eq('episode_id', episodeId);
-      await supabase.from('chavel_callouts').delete().eq('episode_id', episodeId);
-
-      // Delete the episode itself so analyze-episode can recreate it
-      await supabase.from('episodes').delete().eq('id', episodeId);
-
-      // Re-run analysis
+      // Run the new analysis FIRST. The old memo is only deleted after the
+      // replacement exists, so a failed/timed-out analysis can't destroy the
+      // user's existing analysis (episodes.url has no unique constraint, so
+      // both rows can briefly coexist).
       const startupProfile = profile ? {
         company_name: profile.company_name,
         company_website: profile.company_website,
@@ -390,16 +379,31 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
+      // New analysis exists — retire the old one. Lessons, callouts, and
+      // (via lessons) personalized_insights all cascade on episode delete,
+      // so one verified delete covers everything.
+      const { error: deleteError } = await supabase
+        .from('episodes')
+        .delete()
+        .eq('id', episodeId);
+
       await refreshSubscription();
 
-      toast({
-        title: "Re-analysis complete",
-        description: "The episode has been re-analyzed with your current profile.",
-      });
-
-      if (data?.episodeId) {
-        onBack();
+      if (deleteError) {
+        console.error('Failed to remove previous analysis after re-analyze:', deleteError);
+        toast({
+          title: "Re-analysis complete",
+          description: "The new analysis is saved, but the previous copy couldn't be removed. You can delete it from your library.",
+        });
+      } else {
+        toast({
+          title: "Re-analysis complete",
+          description: "The episode has been re-analyzed with your current profile.",
+        });
       }
+
+      // The replacement analysis exists — leave this screen either way.
+      onBack();
     } catch (error: any) {
       console.error('Re-analysis error:', error);
       toast({
@@ -452,7 +456,10 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
   // collaborators viewing shared content may always participate. RLS enforces
   // the same rules server-side.
   const isEpisodeOwner = episode.analyzed_by === currentUserId;
-  const ownerNeedsUpgrade = isEpisodeOwner && !hasSharing(subscription.tier);
+  // `subscription` is null while SubscriptionProvider is still resolving —
+  // treat that as "needs upgrade" (comment box hidden) rather than crashing;
+  // it flips to the real value as soon as the tier loads.
+  const ownerNeedsUpgrade = isEpisodeOwner && !(subscription && hasSharing(subscription.tier));
   const canComment = !ownerNeedsUpgrade;
 
   return (
