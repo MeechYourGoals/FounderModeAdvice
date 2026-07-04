@@ -203,7 +203,6 @@ export const OnboardingFlow = ({ open, onComplete }: OnboardingFlowProps) => {
           window.dispatchEvent(new Event("profilesChanged"));
         }
       }
-      await saveInspirations(selected);
       triggerHapticFeedback("success");
       finishedRef.current = true;
       onComplete(showWalkthrough);

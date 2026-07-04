@@ -1,8 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 const PrivacyPolicy = () => {
+  usePageMeta({ title: "Privacy Policy", description: "How Founder Mode Advice collects, uses, and protects your data.", path: "/privacy-policy" });
+
   const navigate = useNavigate();
 
   return (

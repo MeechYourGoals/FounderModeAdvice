@@ -35,6 +35,18 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  // This endpoint pushes to EVERY opted-in user, so it must not be publicly
+  // triggerable. The scheduler (pg_cron / external cron) must send the shared
+  // secret: set CRON_SECRET in the function's env and include an
+  // `x-cron-secret` header on the scheduled request. Fails closed when unset.
+  const cronSecret = Deno.env.get("CRON_SECRET");
+  if (!cronSecret || req.headers.get("x-cron-secret") !== cronSecret) {
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
   try {
     const oneSignalAppId = Deno.env.get("ONESIGNAL_APP_ID");
     const oneSignalKey = Deno.env.get("ONESIGNAL_REST_API_KEY");

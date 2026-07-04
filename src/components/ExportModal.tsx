@@ -4,8 +4,6 @@ import { Button } from "@/components/ui/button";
 import { FileJson, FileText, FileSpreadsheet, FileDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import { useDespia } from "@/hooks/use-despia";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { hasExport } from "@/types/subscription";
@@ -230,6 +228,12 @@ export const ExportModal = ({ episodeId, episodeIds, scopeLabel, open, onOpenCha
   const exportPDF = async () => {
     setExporting(true);
     try {
+      // jsPDF (+autotable) is ~350 KB minified — load it only when a PDF
+      // export is actually requested instead of shipping it in the app shell.
+      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+        import("jspdf"),
+        import("jspdf-autotable"),
+      ]);
       const data = await getExportArray();
       const doc = new jsPDF();
       let y = 20;

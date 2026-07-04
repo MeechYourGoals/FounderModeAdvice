@@ -1,8 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 const RefundPolicy = () => {
+  usePageMeta({ title: "Refund Policy", description: "Billing, renewals, and refunds for Founder Mode Advice subscriptions.", path: "/refund-policy" });
+
   const navigate = useNavigate();
 
   return (

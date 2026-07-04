@@ -13,8 +13,10 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { lovable } from "@/integrations/lovable/index";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 import { isLovablePreview, getOAuthRedirectUrl, shouldShowAppAuthFirst } from "@/lib/appMode";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 const Auth = () => {
+  usePageMeta({ title: "Sign in or create your account", path: "/auth", noindex: true });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -234,7 +236,7 @@ const Auth = () => {
             <span className="font-display font-medium italic text-gradient">Welcome</span>
           </CardTitle>
           <CardDescription className="text-center">
-            Sign in to manage your bookmarks and profiles
+            Create a free account to analyze your first video — no credit card required
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -328,7 +330,7 @@ const Auth = () => {
             </div>
           </div>
 
-          <Tabs defaultValue="signin" className="w-full">
+          <Tabs defaultValue={searchParams.get("mode") === "signup" ? "signup" : "signin"} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Sign In</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>

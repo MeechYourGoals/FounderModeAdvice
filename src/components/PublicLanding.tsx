@@ -63,7 +63,8 @@ const faqChild: Variants = {
 export const PublicLanding = () => {
   const navigate = useNavigate();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const goToAuth = () => navigate("/auth");
+  // Landing CTAs are acquisition intent — land on the Sign Up tab, not Sign In.
+  const goToAuth = () => navigate("/auth?mode=signup");
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   };
@@ -74,7 +75,7 @@ export const PublicLanding = () => {
       <LandingScrollContext.Provider value={scrollRef}>
         <div className="h-screen flex flex-col bg-background">
           <ScrollProgress />
-          <LandingNav onNavigate={scrollTo} onAuth={goToAuth} onHome={scrollToTop} />
+          <LandingNav onNavigate={scrollTo} onAuth={goToAuth} onSignIn={() => navigate("/auth")} onHome={scrollToTop} />
 
           {/* Scrollable content (Despia pattern) */}
           <div ref={scrollRef} className="despia-scroll relative">
@@ -269,7 +270,7 @@ export const PublicLanding = () => {
                           <MiniFeature
                             icon={<ShieldCheck className="w-4 h-4" />}
                             title="Public video in"
-                            description="Paste a founder, investor, operator, strategy, or leadership video from YouTube, Vimeo, LinkedIn, X, or any public podcast or web video URL."
+                            description="Paste a founder, investor, operator, strategy, or leadership video from YouTube, TikTok, Instagram Reels, X, Vimeo, LinkedIn, or any public podcast or web video URL."
                           />
                         </m.div>
                         <m.div variants={riseChild}>
@@ -420,7 +421,7 @@ export const PublicLanding = () => {
 const FAQS = [
   {
     q: "What kinds of videos work?",
-    a: "Founder interviews, investor talks, operator deep-dives, and strategy lectures — from any public link: YouTube, Vimeo, LinkedIn, X, or a podcast MP3. Private or login-gated posts aren't supported.",
+    a: "Founder interviews, investor talks, operator deep-dives, and strategy lectures — from any public link: YouTube, TikTok, Instagram Reels, X, Vimeo, LinkedIn, or a podcast MP3. Private or login-gated posts aren't supported.",
   },
   {
     q: "How is this different from a generic AI summary?",
@@ -432,7 +433,7 @@ const FAQS = [
   },
   {
     q: "Is the free plan actually useful?",
-    a: "Yes. The free plan includes real analyses every month with the full memo view. Upgrade when you want more volume, more profiles, and the transcript-grounded Q&A.",
+    a: "Yes. The free plan includes 3 full analyses every month with the complete memo view. Upgrade when you want more volume, more profiles, and the transcript-grounded Q&A.",
   },
   {
     q: "How do I cancel?",

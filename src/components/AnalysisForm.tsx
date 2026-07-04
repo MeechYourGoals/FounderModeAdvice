@@ -63,9 +63,12 @@ export const AnalysisForm = () => {
   const profileLimit = subscription?.limits.profiles.max || 1;
   const canBatchProfiles = subscription ? canBatchAnalyzeProfiles(subscription.tier) : false;
 
+  // Depend on the derived limit, not the subscription object — refreshSubscription()
+  // creates a new object after every analysis, which would re-fetch profiles each time.
   useEffect(() => {
     fetchSavedProfiles();
-  }, [subscription]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileLimit]);
 
   useEffect(() => {
     if (canBatchProfiles) {
@@ -106,6 +109,7 @@ export const AnalysisForm = () => {
     const handler = (e: Event) => {
       const url = (e as CustomEvent<{ url: string }>).detail?.url;
       if (!url) return;
+      if (isAnalyzing) return; // an analysis is already running — ignore repeat taps
       setEpisodeUrl(url);
       const analysisCheck = canAnalyzeVideo();
       if (!analysisCheck.allowed) {
@@ -121,7 +125,7 @@ export const AnalysisForm = () => {
     window.addEventListener("analyzeUrl", handler as EventListener);
     return () => window.removeEventListener("analyzeUrl", handler as EventListener);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeProfile]);
+  }, [activeProfile, isAnalyzing]);
 
   const handleQuickImport = (e: React.MouseEvent) => {
     e.preventDefault();

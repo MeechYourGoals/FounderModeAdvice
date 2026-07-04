@@ -9,6 +9,7 @@ import {
 } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { clearOfflineCache } from "@/lib/offlineCache";
 
 interface AuthContextValue {
   user: User | null;
@@ -37,16 +38,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Register the listener FIRST so we never miss an event fired during restore.
+    let listenerFired = false;
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      listenerFired = true;
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
       setLoading(false);
     });
 
-    // THEN restore any persisted session from storage.
+    // THEN restore any persisted session from storage. If the listener has
+    // already delivered a (possibly newer) session, don't overwrite it with
+    // this potentially stale snapshot.
     supabase.auth.getSession().then(({ data: { session: existing } }) => {
+      if (listenerFired) return;
       setSession(existing);
       setUser(existing?.user ?? null);
       setLoading(false);
@@ -56,10 +62,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    const userId = user?.id;
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
-  }, []);
+    // Shared-device hygiene: drop this user's offline analyses/bookmarks and
+    // per-user preference keys so the next sign-in can't surface them.
+    try {
+      await clearOfflineCache();
+      if (userId) {
+        localStorage.removeItem(`fma_active_profile_${userId}`);
+        localStorage.removeItem(`fma_onboarding_complete_${userId}`);
+      }
+    } catch (err) {
+      console.warn("Post-signout cache cleanup failed", err);
+    }
+  }, [user]);
 
   const deleteAccount = useCallback(async () => {
     if (!user) return { error: new Error("No user logged in") };
