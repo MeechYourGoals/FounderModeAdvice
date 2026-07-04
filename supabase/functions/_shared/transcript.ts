@@ -49,6 +49,122 @@ export const detectPlatform = (urlString: string): Platform => {
   }
 };
 
+// ---------------------------------------------------------------------------
+// SSRF guard
+// ---------------------------------------------------------------------------
+// User-supplied URLs reach fetch() in canonicalizeVideoUrl + fetchOEmbedOrOg.
+// Without a guard, a caller could point the edge runtime at internal IPs
+// (169.254.169.254 metadata, 10/8, 127/8, etc.). assertPublicUrl() rejects
+// non-http(s) schemes, literal-IP hostnames, and any hostname whose DNS
+// resolution touches a private/reserved range. safeFetch() runs the check on
+// the initial URL AND every redirect hop (we replace `redirect: "follow"`
+// with a bounded manual follow).
+
+const PRIVATE_V4_CIDRS: Array<[number, number]> = [
+  // [network, prefix bits]
+  [ipv4ToInt("0.0.0.0"), 8],
+  [ipv4ToInt("10.0.0.0"), 8],
+  [ipv4ToInt("100.64.0.0"), 10],   // CGNAT
+  [ipv4ToInt("127.0.0.0"), 8],
+  [ipv4ToInt("169.254.0.0"), 16],  // link-local incl. metadata
+  [ipv4ToInt("172.16.0.0"), 12],
+  [ipv4ToInt("192.0.0.0"), 24],
+  [ipv4ToInt("192.0.2.0"), 24],
+  [ipv4ToInt("192.168.0.0"), 16],
+  [ipv4ToInt("198.18.0.0"), 15],
+  [ipv4ToInt("198.51.100.0"), 24],
+  [ipv4ToInt("203.0.113.0"), 24],
+  [ipv4ToInt("224.0.0.0"), 4],     // multicast
+  [ipv4ToInt("240.0.0.0"), 4],     // reserved
+];
+
+function ipv4ToInt(ip: string): number {
+  return ip.split(".").reduce((acc, o) => (acc << 8) + Number(o), 0) >>> 0;
+}
+
+function isPrivateV4(ip: string): boolean {
+  if (!/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(ip)) return false;
+  const n = ipv4ToInt(ip);
+  return PRIVATE_V4_CIDRS.some(([net, bits]) => {
+    const mask = bits === 0 ? 0 : (~0 << (32 - bits)) >>> 0;
+    return (n & mask) === (net & mask);
+  });
+}
+
+function isPrivateV6(ip: string): boolean {
+  const lower = ip.toLowerCase();
+  if (lower === "::1" || lower === "::" ) return true;
+  if (lower.startsWith("fc") || lower.startsWith("fd")) return true; // fc00::/7
+  if (lower.startsWith("fe8") || lower.startsWith("fe9") ||
+      lower.startsWith("fea") || lower.startsWith("feb")) return true; // fe80::/10
+  if (lower.startsWith("ff")) return true; // multicast
+  // IPv4-mapped ::ffff:a.b.c.d
+  const mapped = lower.match(/^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
+  if (mapped && isPrivateV4(mapped[1])) return true;
+  return false;
+}
+
+async function assertPublicUrl(raw: string): Promise<URL> {
+  let u: URL;
+  try { u = new URL(raw); } catch { throw new Error(`Invalid URL: ${raw}`); }
+  if (u.protocol !== "http:" && u.protocol !== "https:") {
+    throw new Error(`Blocked URL scheme: ${u.protocol}`);
+  }
+  const host = u.hostname.replace(/^\[|\]$/g, "");
+  // Literal IP? check directly.
+  if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host)) {
+    if (isPrivateV4(host)) throw new Error(`Blocked private IP: ${host}`);
+    return u;
+  }
+  if (host.includes(":")) {
+    if (isPrivateV6(host)) throw new Error(`Blocked private IPv6: ${host}`);
+    return u;
+  }
+  // Hostname: resolve and verify every address.
+  try {
+    const records = await Promise.allSettled([
+      Deno.resolveDns(host, "A"),
+      Deno.resolveDns(host, "AAAA"),
+    ]);
+    const addrs: string[] = [];
+    for (const r of records) if (r.status === "fulfilled") addrs.push(...r.value);
+    if (addrs.length === 0) {
+      // Fail closed: no resolution → refuse rather than let fetch() do it.
+      throw new Error(`Could not resolve host: ${host}`);
+    }
+    for (const a of addrs) {
+      if (isPrivateV4(a) || isPrivateV6(a)) {
+        throw new Error(`Host ${host} resolves to blocked address ${a}`);
+      }
+    }
+  } catch (e) {
+    // Re-throw our own errors; wrap unexpected ones.
+    if (e instanceof Error && e.message.startsWith("Blocked ")) throw e;
+    if (e instanceof Error && e.message.startsWith("Could not resolve")) throw e;
+    throw new Error(`DNS check failed for ${host}: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  return u;
+}
+
+/** fetch() replacement that re-validates every redirect hop. */
+async function safeFetch(input: string, init: RequestInit = {}, maxRedirects = 5): Promise<Response> {
+  let current = input;
+  for (let i = 0; i <= maxRedirects; i++) {
+    await assertPublicUrl(current);
+    const res = await fetch(current, { ...init, redirect: "manual" });
+    if (res.status >= 300 && res.status < 400) {
+      const loc = res.headers.get("location");
+      if (!loc) return res;
+      current = new URL(loc, current).toString();
+      // Drain body so Deno doesn't leak the connection.
+      await res.arrayBuffer().catch(() => {});
+      continue;
+    }
+    return res;
+  }
+  throw new Error(`Too many redirects: ${input}`);
+}
+
 /** Short-link hosts that 30x-redirect to the canonical video URL. */
 const SHORT_LINK_HOSTS = new Set([
   "vm.tiktok.com",
@@ -74,7 +190,7 @@ export const canonicalizeVideoUrl = async (input: string): Promise<string> => {
     // Follow up to 3 redirects on known short-link hosts.
     for (let i = 0; i < 3; i++) {
       if (!SHORT_LINK_HOSTS.has(u.hostname.toLowerCase())) break;
-      const res = await fetch(current, { method: "HEAD", redirect: "follow" });
+      const res = await safeFetch(current, { method: "HEAD" }, 3);
       if (res.url && res.url !== current) {
         current = res.url;
         u = new URL(current);
@@ -148,7 +264,7 @@ export const fetchOEmbedOrOg = async (
     }
 
     // OG scrape fallback for everything else (and oEmbed failures)
-    const res = await fetch(url, {
+    const res = await safeFetch(url, {
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36",

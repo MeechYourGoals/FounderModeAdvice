@@ -1,153 +1,61 @@
-## Goal
 
-Add two new content surfaces to Founder Mode Advice, modeled on ChravelApp's `/use-cases` + `/blog` system, but branded to FMA (deep navy + primary accent, no gold). Keep the existing landing `#use-cases` "decisions founders face" list untouched — the new **Scenarios** system is the "who this is for" surface (personas), and **Blog** is long-form editorial.
+## What I'll do in code
 
-## Architecture
+### 1. Apply the `user_subscriptions.status` migration
+Confirmed via `information_schema`: the `status` column is **missing** in production (only 11 columns present). The file `supabase/migrations/20260704190000_add_user_subscriptions_status.sql` exists in the repo but was never executed against the DB. Every write from `payments-webhook`, `sync-revenuecat-subscription`, and `get_or_create_subscription()` is currently failing silently → paid users never upgrade.
 
-```
-src/pages/
-  ScenariosHub.tsx            new — /scenarios
-  ScenarioPage.tsx            new — /scenarios/:slug
-  BlogIndex.tsx               new — /blog
-  BlogPost.tsx                new — /blog/:slug
+I'll run the migration via the migration tool (idempotent `ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'active'`).
 
-src/components/marketing/editorial/
-  ArticleShell.tsx            <main> wrapper + ambient primary tint + max-w container
-  ArticleHeader.tsx           kicker + H1 + dek + breadcrumb
-  EditorialKicker.tsx         small-caps eyebrow with hairline
-  ProseBody.tsx               typed section-block renderer (p/h2/ul/quote/callout)
-  ScenarioCard.tsx
-  PostCard.tsx
-  RelatedRail.tsx             cross-links Scenario ↔ Blog
+### 2. Redeploy the 4 edge functions
+`payments-webhook`, `create-portal-session`, `send-daily-prompt`, `analyze-episode` — via `supabase--deploy_edge_functions`. Lovable's autodeploy usually handles this, but I'll force it to be safe.
 
-src/lib/content/
-  scenarios.ts                typed Scenario[] registry (source of truth)
-  blog.ts                     typed BlogPost[] registry
-  seoJsonLd.ts                siteIdentity / breadcrumb / itemList / article / faq builders
-  readingTime.ts              estimateReadingMinutes()
+### 3. Harden `analyze-episode` SSRF
+The exposure is in `supabase/functions/_shared/transcript.ts`:
+- Line 77: `fetch(current, { method: "HEAD", redirect: "follow" })` on caller-supplied URL
+- Line 151: `fetch(url, ...)` on caller-supplied URL
 
-src/App.tsx                   add 4 lazy public routes
-src/main.tsx                  wrap in <HelmetProvider>
-src/components/PublicLanding.tsx
-                              add "Scenarios" section (3 featured + link to /scenarios)
-src/components/marketing/LandingNav.tsx
-src/components/Footer.tsx     add Scenarios + Blog links
-public/sitemap.xml            add /scenarios, /blog, and every slug
-index.html                    remove <link rel="canonical"> (per-route owns canonical)
-package.json                  + react-helmet-async
-```
+Both are reachable from `analyze-episode`. Fix: add a shared `assertPublicUrl(url)` guard that runs before every user-URL fetch:
+- Require `http:`/`https:` only (reject `file:`, `gopher:`, `ftp:`, etc.)
+- Reject hostnames that are literal IPs
+- DNS-resolve the hostname; reject if any resolved address is private/loopback/link-local/reserved (RFC1918, 127/8, 169.254/16, ::1, fc00::/7, fe80::/10, metadata 169.254.169.254)
+- On redirect follow: re-check each hop (so we drop `redirect: "follow"` and implement a bounded manual follow that re-validates)
 
-Content lives as typed TS records (same pattern as ChravelApp's `src/lib/blog.ts`). No CMS, no MDX build step.
+Applied at both fetch sites. No behavior change for legitimate public YouTube/podcast URLs.
 
-## Scenario data model
+## What only you can do (walkthroughs)
 
-```ts
-type Scenario = {
-  slug: string;                    // 'yc-founder-batch-prep'
-  persona: string;                 // 'YC founder, current batch'
-  cardTitle: string;               // 'From batch to demo day'
-  cardTagline: string;
-  cardCtaLabel: string;
-  stakes: string;                  // "What's actually on the line"
-  decisionsFaced: string[];        // 4–6 concrete decisions
-  sampleAnalysisPrompt: string;    // the exact question they'd paste
-  sampleMemoBullets: string[];     // 3–5 bullets of FMA output
-  recommendedOperators: string[];  // names from src/lib/founders.ts
-  faq: { q: string; a: string }[];
-  datePublished: string;
-  updatedAt?: string;
-};
-```
+### A. `CRON_SECRET` for `send-daily-prompt`
+The function now returns 401 unless the caller sends header `x-cron-secret: <value>` matching the `CRON_SECRET` env var. Until you set both sides, daily push is dead (which is fine pre-launch).
 
-**Launch set (8 scenarios):**
+Steps:
+1. **Backend → Edge Functions → Secrets** → add `CRON_SECRET` = a random 32+ char string. I can generate & store it for you via the generate_secret tool — say the word.
+2. Update the scheduler that hits `/functions/v1/send-daily-prompt`:
+   - **If pg_cron:** re-run the cron.schedule SQL with `headers` including `"x-cron-secret": "<same value>"` alongside the existing `apikey`/`Content-Type`. Because this SQL embeds a secret, do it in **Backend → SQL editor**, not a migration.
+   - **If external cron (GitHub Actions, Cloudflare, EasyCron, etc.):** add the `x-cron-secret` header to the scheduled HTTP request; store the secret in that platform's secret store.
 
-1. `yc-founder-batch-prep` — YC founder mid-batch
-2. `series-b-fundraise` — Series B, defending metrics
-3. `mom-and-pop-car-wash` — local operator scaling like PE
-4. `fortune-500-downsizing` — F500 CEO running a RIF
-5. `bootstrapped-solo-founder` — profitable, no board
-6. `first-vp-sales-hire` — hiring & org-design
-7. `pricing-repricing` — repricing existing SaaS
-8. `board-meeting-prep` — quarterly deck + asks
+### B. Paddle live webhook URL + API key
+1. **Paddle dashboard → Developer tools → Notifications** → the **live** endpoint's URL must end in `?env=live`. The handler now defaults to live if omitted, but explicit is the contract.
+2. **Backend → Edge Functions → Secrets**: confirm `PADDLE_LIVE_API_KEY` is set (fetch_secrets shows only `PADDLE_LIVE_API_KEY` managed by connector — good). `create-portal-session` will 502 without it when a live Paddle customer opens the portal.
 
-## Blog data model
+## Decisions I need from you
 
-```ts
-type BlogPost = {
-  slug: string;
-  h1: string;
-  title: string; description: string;    // SEO
-  datePublished: string;
-  excerpt: string;
-  sections: Array<
-    | { kind: 'p'; text: string }
-    | { kind: 'h2'; text: string }
-    | { kind: 'ul'; items: string[] }
-    | { kind: 'quote'; text: string; attribution?: string }
-    | { kind: 'callout'; title: string; body: string }
-  >;
-  relatedScenarios?: string[];
-};
-```
+1. **Rate limits on `video-chat` and `parse-deck`.** The Lovable backend has no standard rate-limiting primitive. Options:
+   - **(a)** Ad-hoc per-user cap in a new `public.rate_limits(user_id, key, window_start, count)` table with a security-definer function — ~30 lines, adds a DB row per call. Cheap but real.
+   - **(b)** Skip until proper infra exists (documented gap).
+   - Pick (a) or (b).
 
-**Launch set (4 posts):**
+2. **PostHog identify email trait.** You said web analytics is out of scope, so I'm skipping it. Confirm you want it left alone.
 
-1. "How to pressure-test a Series B narrative in a weekend"
-2. "The operator library, not the podcast feed"
-3. "Turning a 90-minute YC talk into a 1-page decision memo"
-4. "Downsizing with dignity: what F500 CEOs get wrong that founders get right"
+3. **`CRON_SECRET`** — want me to generate & store it now, or will you pick the value?
 
-## Visual system (FMA, not ChravelApp)
-
-- Reuse existing tokens: navy field, `primary` accent, hairline borders, `eyebrow-rule` small-caps.
-- **No gold.** Where ChravelApp uses `gold-*`, we use `hsl(var(--primary))` and `hsl(var(--primary)/.7)`.
-- Reuse `SectionShell`, `panel-hairline`, `link-sweep`, and `motion.tsx` primitives from `src/components/marketing/`.
-- Ambient masthead: single top radial in primary at ~9% opacity.
-- Cards: hairline-bordered panels, no glass, subtle inner top highlight.
-- Motion: `MReveal` + `staggerParent` + `riseChild`. Animations stay on (owner reversed reduced-motion gating; don't re-add).
-- Typography: existing stack. H1 `tracking-[-0.025em] font-semibold`. Body `text-[15px] leading-relaxed`.
-
-## SEO
-
-- Adopt `react-helmet-async` (single new dep). Wrap app once in `<HelmetProvider>`.
-- Each hub + slug page emits its own `<title>`, `<meta name="description">`, `<link rel="canonical">`, `og:*`, and JSON-LD.
-- JSON-LD per page: `BreadcrumbList` everywhere; `ItemList` on hubs; `Article`/`BlogPosting` on posts; `FAQPage` on scenarios that have FAQ.
-- Canonical + `og:url` self-reference every route (per skill guidance).
-- Remove sitewide `<link rel="canonical">` from `index.html`; keep sitewide `og:*` as fallback for non-JS crawlers.
-- `sitemap.xml` regenerated to include all new URLs.
-
-## Landing wiring
-
-`PublicLanding.tsx`:
-
-- Keep existing `#use-cases` "decisions founders face" list untouched (**Option A**).
-- Add a new **Scenarios** section below it: 3 featured `ScenarioCard`s + "See all 8 scenarios →" link to `/scenarios`.
-- `LandingNav` + `Footer`: add `Scenarios` and `Blog` links.
-
-## Routes (add to `src/App.tsx`)
-
-```
-/scenarios         → ScenariosHub          (lazy, public)
-/scenarios/:slug   → ScenarioPage          (lazy, public)
-/blog              → BlogIndex             (lazy, public)
-/blog/:slug        → BlogPost              (lazy, public)
-```
-
-## Out of scope
-
-- No CMS, no MDX toolchain.
-- No changes to auth, Paddle, backend schema, edge functions, in-app product surfaces.
-- No changes to the existing landing `#use-cases` list (per Option A).
-- No AI-generated body copy; scenarios/posts are hand-authored TS.
-- No og:image generation unless the user asks.
-
-## Verification
-
-1. `tsgo` typecheck passes.
-2. Playwright at 1440×900 and 390×844: `/scenarios`, `/scenarios/yc-founder-batch-prep`, `/blog`, `/blog/<slug>` render, no console errors, no horizontal overflow, nav + footer links resolve, JSON-LD present in DOM, per-route `<title>` + canonical correct.
-3. `sitemap.xml` includes every new URL; `robots.txt` unchanged.
-4. Landing still renders; new Scenarios section visible on desktop + mobile; existing `#use-cases` list intact.
+## Out of scope this round
+- Deleting `create-checkout-session` / `stripe-webhook` (needs your call on retiring Stripe entirely).
+- Lint cleanup (114 pre-existing `no-explicit-any`).
+- Landing page social proof.
+- PWA maskable icon regeneration.
+- 114 lint errors.
 
 ## Rollback
-
-Additive new files + small edits to `App.tsx`, `main.tsx`, `PublicLanding.tsx`, `LandingNav`, `Footer`, `sitemap.xml`, `index.html`, `package.json`. Single revert restores prior state; no DB, no config changes.
+- Migration: `ALTER TABLE public.user_subscriptions DROP COLUMN IF EXISTS status;` (only if no row depends on it — it will after the webhook writes once).
+- SSRF guard: single file (`supabase/functions/_shared/transcript.ts`); revert the file.
+- Redeploy: previous versions remain in Supabase function history.

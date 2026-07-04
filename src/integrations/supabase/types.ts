@@ -1088,6 +1088,7 @@ export type Database = {
           current_period_start: string | null
           id: string
           revenuecat_app_user_id: string | null
+          status: string
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
           tier: string
@@ -1101,6 +1102,7 @@ export type Database = {
           current_period_start?: string | null
           id?: string
           revenuecat_app_user_id?: string | null
+          status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           tier?: string
@@ -1114,6 +1116,7 @@ export type Database = {
           current_period_start?: string | null
           id?: string
           revenuecat_app_user_id?: string | null
+          status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           tier?: string
