@@ -3,6 +3,14 @@ import { BrandLogo } from "@/components/BrandLogo";
 
 const LINK_GROUPS: { heading: string; links: { to: string; label: string }[] }[] = [
   {
+    heading: "Explore",
+    links: [
+      { to: "/scenarios", label: "Scenarios" },
+      { to: "/blog", label: "Blog" },
+      { to: "/founders", label: "Operators" },
+    ],
+  },
+  {
     heading: "Product",
     links: [
       { to: "/faq", label: "FAQ" },
