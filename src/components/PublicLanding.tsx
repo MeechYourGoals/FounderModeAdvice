@@ -16,6 +16,9 @@ import { Footer } from "@/components/Footer";
 import { SampleDemo } from "@/components/marketing/SampleDemo";
 import { SectionShell } from "@/components/marketing/SectionShell";
 import { UseCasesList } from "@/components/marketing/UseCasesList";
+import { ScenarioCard } from "@/components/marketing/editorial/ScenarioCard";
+import { Link } from "react-router-dom";
+import { FEATURED_SCENARIO_SLUGS, SCENARIOS } from "@/lib/content/scenarios";
 import { LandingNav } from "@/components/marketing/LandingNav";
 import { AuroraBackground } from "@/components/marketing/AuroraBackground";
 import { ScrollProgress } from "@/components/marketing/ScrollProgress";
@@ -193,6 +196,36 @@ export const PublicLanding = () => {
               {/* Use cases — first-class editorial section */}
               <SectionShell id="use-cases">
                 <UseCasesList onSelect={goToAuth} />
+              </SectionShell>
+
+              {/* Scenarios — persona-shaped entry points to /scenarios */}
+              <SectionShell
+                id="scenarios"
+                eyebrow="Scenarios"
+                title="Who this is actually for."
+                lead="Persona-shaped workflows with the exact decisions, prompts, and operator libraries — from a YC batch to a Fortune 500 reduction."
+              >
+                <m.div
+                  className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
+                  variants={staggerParent(0.06)}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={VIEWPORT_ONCE}
+                >
+                  {FEATURED_SCENARIO_SLUGS.map((slug) => {
+                    const s = SCENARIOS.find((x) => x.slug === slug)!;
+                    return <ScenarioCard key={slug} scenario={s} />;
+                  })}
+                </m.div>
+                <div className="mt-10 flex justify-center">
+                  <Link
+                    to="/scenarios"
+                    className="inline-flex items-center gap-2 rounded-full border border-border/60 px-5 py-2.5 text-sm font-medium text-foreground/85 hover:border-primary/40 hover:text-foreground link-sweep"
+                  >
+                    See all {SCENARIOS.length} scenarios
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
               </SectionShell>
 
               {/* Comparison */}
