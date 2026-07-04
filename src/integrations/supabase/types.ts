@@ -14,6 +14,91 @@ export type Database = {
   }
   public: {
     Tables: {
+      analysis_access_grants: {
+        Row: {
+          created_at: string
+          episode_id: string
+          granted_by_user_id: string
+          grantee_user_id: string
+          id: string
+          role: string
+        }
+        Insert: {
+          created_at?: string
+          episode_id: string
+          granted_by_user_id: string
+          grantee_user_id: string
+          id?: string
+          role?: string
+        }
+        Update: {
+          created_at?: string
+          episode_id?: string
+          granted_by_user_id?: string
+          grantee_user_id?: string
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_access_grants_episode_id_fkey"
+            columns: ["episode_id"]
+            isOneToOne: false
+            referencedRelation: "episodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      analysis_invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_by_user_id: string | null
+          created_at: string
+          episode_id: string
+          expires_at: string
+          id: string
+          invited_by_user_id: string
+          invited_email: string
+          role: string
+          status: string
+          token_hash: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by_user_id?: string | null
+          created_at?: string
+          episode_id: string
+          expires_at?: string
+          id?: string
+          invited_by_user_id: string
+          invited_email: string
+          role?: string
+          status?: string
+          token_hash: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by_user_id?: string | null
+          created_at?: string
+          episode_id?: string
+          expires_at?: string
+          id?: string
+          invited_by_user_id?: string
+          invited_email?: string
+          role?: string
+          status?: string
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_invites_episode_id_fkey"
+            columns: ["episode_id"]
+            isOneToOne: false
+            referencedRelation: "episodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookmark_folders: {
         Row: {
           color: string | null
@@ -307,6 +392,8 @@ export type Database = {
         Row: {
           analysis_status: string | null
           analyzed_by: string | null
+          analyzed_profile_id: string | null
+          analyzed_profile_name_snapshot: string | null
           channel_handle: string | null
           channel_name: string | null
           company_id: string | null
@@ -325,6 +412,8 @@ export type Database = {
         Insert: {
           analysis_status?: string | null
           analyzed_by?: string | null
+          analyzed_profile_id?: string | null
+          analyzed_profile_name_snapshot?: string | null
           channel_handle?: string | null
           channel_name?: string | null
           company_id?: string | null
@@ -343,6 +432,8 @@ export type Database = {
         Update: {
           analysis_status?: string | null
           analyzed_by?: string | null
+          analyzed_profile_id?: string | null
+          analyzed_profile_name_snapshot?: string | null
           channel_handle?: string | null
           channel_name?: string | null
           company_id?: string | null
@@ -359,6 +450,13 @@ export type Database = {
           url?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "episodes_analyzed_profile_id_fkey"
+            columns: ["analyzed_profile_id"]
+            isOneToOne: false
+            referencedRelation: "user_startup_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "episodes_company_id_fkey"
             columns: ["company_id"]
@@ -504,6 +602,79 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      insight_comment_mentions: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          mentioned_user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          mentioned_user_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          mentioned_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insight_comment_mentions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "insight_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      insight_comments: {
+        Row: {
+          author_user_id: string
+          body: string
+          created_at: string
+          episode_id: string
+          id: string
+          insight_id: string
+          insight_type: string
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          author_user_id: string
+          body: string
+          created_at?: string
+          episode_id: string
+          id?: string
+          insight_id: string
+          insight_type: string
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          author_user_id?: string
+          body?: string
+          created_at?: string
+          episode_id?: string
+          id?: string
+          insight_id?: string
+          insight_type?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insight_comments_episode_id_fkey"
+            columns: ["episode_id"]
+            isOneToOne: false
+            referencedRelation: "episodes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lesson_tags: {
         Row: {
@@ -1039,7 +1210,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_analysis_invite: {
+        Args: { p_token_hash: string }
+        Returns: string
+      }
       accept_folder_invite: { Args: { p_token_hash: string }; Returns: string }
+      can_user_view_invited_episode: {
+        Args: { _episode_id: string; _user_id: string }
+        Returns: boolean
+      }
       check_tier_limits: {
         Args: { p_user_id: string }
         Returns: {
@@ -1074,12 +1253,49 @@ export type Database = {
         Returns: boolean
       }
       increment_analysis_count: { Args: { p_user_id: string }; Returns: number }
+      insight_belongs_to_episode: {
+        Args: {
+          _episode_id: string
+          _insight_id: string
+          _insight_type: string
+        }
+        Returns: boolean
+      }
+      is_episode_owner: {
+        Args: { _episode_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_folder_member: {
+        Args: { _folder_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_folder_owner: {
         Args: { _folder_id: string; _user_id: string }
         Returns: boolean
       }
+      list_episode_collaborators: {
+        Args: { p_episode_id: string }
+        Returns: {
+          email: string
+          is_owner: boolean
+          user_id: string
+        }[]
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      user_can_access_episode: {
+        Args: { _episode_id: string; _user_id: string }
+        Returns: boolean
+      }
+      user_can_view_episode: {
+        Args: { _episode_id: string; _user_id: string }
+        Returns: boolean
+      }
+      user_can_view_lesson: {
+        Args: { _lesson_id: string; _user_id: string }
+        Returns: boolean
+      }
+      user_has_boardroom_plan: { Args: { _user_id: string }; Returns: boolean }
       user_has_paid_plan: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
