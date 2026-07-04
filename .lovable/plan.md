@@ -1,106 +1,153 @@
-## Diagnosis: the missing "Use cases" section
+## Goal
 
-`src/components/PublicLanding.tsx` currently renders the "Built for the decisions founders actually face" grid inline. On the live site it's either scrolled past unnoticed or visually collapsing into the surrounding card rhythm — it's not gated by data/auth, not conditionally hidden, not routed away. Root cause is **presentation, not availability**: it reads as one more generic 3-card grid, so it disappears into the page.
+Add two new content surfaces to Founder Mode Advice, modeled on ChravelApp's `/use-cases` + `/blog` system, but branded to FMA (deep navy + primary accent, no gold). Keep the existing landing `#use-cases` "decisions founders face" list untouched — the new **Scenarios** system is the "who this is for" surface (personas), and **Blog** is long-form editorial.
 
-Fix: extract it into a first-class section with its own visual language and anchor (`#use-cases`), promoted in the section rhythm and linked from the hero secondary CTA so it's discoverable.
-
-## Rebuild scope
-
-Full rebuild of `src/components/PublicLanding.tsx` into a distinct Founder Mode Advice visual system. Nothing about routing, auth, CTAs, Paddle checkout, or analytics changes. Copy stays as-is unless a layout beat needs a shorter line.
-
-## New page architecture
+## Architecture
 
 ```
-Hero                    → scroll-driven Transcript → Memo transformation
-Proof strip             → 3 signal lines, hairline dividers, no cards
-How it works            → 4 numbered beats, monospace step index, connective vertical rule
-Use cases (RESTORED)    → editorial 2-column list, not a card grid; anchor #use-cases
-Sample demo             → existing <SampleDemo/>, reframed with an eyebrow + hairline
-Boardroom vs. feed      → side-by-side comparison rail
-Pricing                 → existing <PricingPlans/> wrapped in a quieter shell
-FAQ / closing CTA       → single-column, generous negative space
-Footer
+src/pages/
+  ScenariosHub.tsx            new — /scenarios
+  ScenarioPage.tsx            new — /scenarios/:slug
+  BlogIndex.tsx               new — /blog
+  BlogPost.tsx                new — /blog/:slug
+
+src/components/marketing/editorial/
+  ArticleShell.tsx            <main> wrapper + ambient primary tint + max-w container
+  ArticleHeader.tsx           kicker + H1 + dek + breadcrumb
+  EditorialKicker.tsx         small-caps eyebrow with hairline
+  ProseBody.tsx               typed section-block renderer (p/h2/ul/quote/callout)
+  ScenarioCard.tsx
+  PostCard.tsx
+  RelatedRail.tsx             cross-links Scenario ↔ Blog
+
+src/lib/content/
+  scenarios.ts                typed Scenario[] registry (source of truth)
+  blog.ts                     typed BlogPost[] registry
+  seoJsonLd.ts                siteIdentity / breadcrumb / itemList / article / faq builders
+  readingTime.ts              estimateReadingMinutes()
+
+src/App.tsx                   add 4 lazy public routes
+src/main.tsx                  wrap in <HelmetProvider>
+src/components/PublicLanding.tsx
+                              add "Scenarios" section (3 featured + link to /scenarios)
+src/components/marketing/LandingNav.tsx
+src/components/Footer.tsx     add Scenarios + Blog links
+public/sitemap.xml            add /scenarios, /blog, and every slug
+index.html                    remove <link rel="canonical"> (per-route owns canonical)
+package.json                  + react-helmet-async
 ```
 
-## Signature hero: Transcript → Memo
+Content lives as typed TS records (same pattern as ChravelApp's `src/lib/blog.ts`). No CMS, no MDX build step.
 
-Left rail is a live-typing transcript column (monospace, low-contrast). As the user scrolls the hero (pinned via `position: sticky` on a tall container, driven by `useScroll` from framer-motion which is already in the tree), transcript lines fade/translate out and get replaced, in sequence, by:
+## Scenario data model
 
-1. **Citations** — timestamped chips pulled from the transcript lines
-2. **Risks** — 2 red-outline callouts
-3. **Actions** — checkbox-styled action items
-4. **Founder question** — a single italicized prompt
-5. **Decision brief** — a compact memo card assembles from the fragments above
+```ts
+type Scenario = {
+  slug: string;                    // 'yc-founder-batch-prep'
+  persona: string;                 // 'YC founder, current batch'
+  cardTitle: string;               // 'From batch to demo day'
+  cardTagline: string;
+  cardCtaLabel: string;
+  stakes: string;                  // "What's actually on the line"
+  decisionsFaced: string[];        // 4–6 concrete decisions
+  sampleAnalysisPrompt: string;    // the exact question they'd paste
+  sampleMemoBullets: string[];     // 3–5 bullets of FMA output
+  recommendedOperators: string[];  // names from src/lib/founders.ts
+  faq: { q: string; a: string }[];
+  datePublished: string;
+  updatedAt?: string;
+};
+```
 
-Right rail holds the H1 ("Build your boardroom, then instill their insights.") and CTAs; both stay static while the left rail transforms. On mobile and under `prefers-reduced-motion` the transformation degrades to a static 2-panel "transcript / brief" side-by-side — no scroll pinning.
+**Launch set (8 scenarios):**
 
-## Visual system — deliberately not SeatMap Sentry
+1. `yc-founder-batch-prep` — YC founder mid-batch
+2. `series-b-fundraise` — Series B, defending metrics
+3. `mom-and-pop-car-wash` — local operator scaling like PE
+4. `fortune-500-downsizing` — F500 CEO running a RIF
+5. `bootstrapped-solo-founder` — profitable, no board
+6. `first-vp-sales-hire` — hiring & org-design
+7. `pricing-repricing` — repricing existing SaaS
+8. `board-meeting-prep` — quarterly deck + asks
 
-- **Layout DNA**: right-heavy hero (headline on the right, artifact on the left) — opposite of the SeatMap left-copy/right-mockup pattern. No square product-card in the hero. No dark grid background.
-- **Background**: single deep-navy field (`hsl(222 47% 6%)`) with a low-opacity radial gradient anchor top-right; a slow-drift noise texture layer at 4% opacity. No neon grid, no floating orbs.
-- **Section rhythm**: full-bleed sections separated by a 1px animated gradient hairline that draws in on reveal (already stubbed as `.hairline` in `index.css`).
-- **Cards**: replace rounded soft cards with **hairline-bordered panels** (1px `border-white/8`, no shadow, subtle inner top highlight `shadow-[inset_0_1px_0_hsl(var(--primary)/0.08)]`). No glassmorphism.
-- **Eyebrows**: existing `.eyebrow-rule` (small-caps + 24px underline) already added; reused on every section.
-- **Typography**: keep current stack (no new font install). Enforce `tracking-[-0.02em] font-semibold` on H1/H2, `text-[15px] leading-relaxed` for body. No italic-serif accent words (already removed last turn — plan preserves that).
-- **Interactive surfaces**: nav links get a story-link underline sweep; CTAs get a 1px primary-tinted border on hover + 2px translateY; cards get border brighten + 4px translateY; use-case rows get a left-edge accent bar on hover.
+## Blog data model
 
-## Motion system
+```ts
+type BlogPost = {
+  slug: string;
+  h1: string;
+  title: string; description: string;    // SEO
+  datePublished: string;
+  excerpt: string;
+  sections: Array<
+    | { kind: 'p'; text: string }
+    | { kind: 'h2'; text: string }
+    | { kind: 'ul'; items: string[] }
+    | { kind: 'quote'; text: string; attribution?: string }
+    | { kind: 'callout'; title: string; body: string }
+  >;
+  relatedScenarios?: string[];
+};
+```
 
-- `Reveal` (existing) drives section entrances. Hero words stagger in via a new small `HeroWords` component (opacity + 8px y, 40ms stagger). All motion respects `useReducedMotion`.
-- Scroll-pinned hero uses `useScroll({ target, offset: ["start start","end start"] })` + `useTransform` to sequence transcript→memo fragments across five keyframe bands.
-- Passive listeners only; cleanup on unmount. No mouse-move parallax on mobile.
-- Cursor-reactive background: a single 400px radial glow following the cursor on desktop, throttled with `requestAnimationFrame`, disabled below `lg` and under reduced-motion.
+**Launch set (4 posts):**
 
-## Use-cases section (the restore)
+1. "How to pressure-test a Series B narrative in a weekend"
+2. "The operator library, not the podcast feed"
+3. "Turning a 90-minute YC talk into a 1-page decision memo"
+4. "Downsizing with dignity: what F500 CEOs get wrong that founders get right"
 
-Editorial two-column list, not a card grid:
+## Visual system (FMA, not ChravelApp)
 
-- Left column: eyebrow "USE CASES" + H2 "The decisions founders actually face" + one-line lead.
-- Right column: 6 rows, each a hairline-divided line with a bespoke inline glyph, a bold headline, a one-line supporting phrase, and a subtle `→` that animates right on hover. Anchor id `use-cases`; hero secondary CTA scrolls to it.
-- Content preserved from current implementation.
+- Reuse existing tokens: navy field, `primary` accent, hairline borders, `eyebrow-rule` small-caps.
+- **No gold.** Where ChravelApp uses `gold-*`, we use `hsl(var(--primary))` and `hsl(var(--primary)/.7)`.
+- Reuse `SectionShell`, `panel-hairline`, `link-sweep`, and `motion.tsx` primitives from `src/components/marketing/`.
+- Ambient masthead: single top radial in primary at ~9% opacity.
+- Cards: hairline-bordered panels, no glass, subtle inner top highlight.
+- Motion: `MReveal` + `staggerParent` + `riseChild`. Animations stay on (owner reversed reduced-motion gating; don't re-add).
+- Typography: existing stack. H1 `tracking-[-0.025em] font-semibold`. Body `text-[15px] leading-relaxed`.
 
-## Files touched
+## SEO
 
-- `src/components/PublicLanding.tsx` — full rebuild.
-- `src/components/marketing/HeroTranscriptMemo.tsx` — **new**, scroll-driven hero artifact.
-- `src/components/marketing/UseCasesList.tsx` — **new**, editorial list.
-- `src/components/marketing/SectionShell.tsx` — **new**, shared eyebrow + hairline + reveal wrapper (kills repetition).
-- `src/components/marketing/glyphs/` — **new**, 6 bespoke 20×20 SVG glyphs (`Transcript`, `Boardroom`, `Signal`, `Memo`, `Library`, `Guardrail`) sharing one stroke language.
-- `src/index.css` — add `.panel-hairline`, `.link-sweep`, `.section-divider-animated`; retire unused `.text-gradient` calls on marketing routes.
-- `src/components/HeroSection.tsx` — untouched (in-app hero, not marketing).
-- `src/components/marketing/SampleDemo.tsx` — minor: wrap in new `SectionShell`.
-- Dead code removal: any inline card variants replaced by `SectionShell` + `panel-hairline` get deleted from `PublicLanding.tsx`; no orphan imports left.
+- Adopt `react-helmet-async` (single new dep). Wrap app once in `<HelmetProvider>`.
+- Each hub + slug page emits its own `<title>`, `<meta name="description">`, `<link rel="canonical">`, `og:*`, and JSON-LD.
+- JSON-LD per page: `BreadcrumbList` everywhere; `ItemList` on hubs; `Article`/`BlogPosting` on posts; `FAQPage` on scenarios that have FAQ.
+- Canonical + `og:url` self-reference every route (per skill guidance).
+- Remove sitewide `<link rel="canonical">` from `index.html`; keep sitewide `og:*` as fallback for non-JS crawlers.
+- `sitemap.xml` regenerated to include all new URLs.
 
-## Out of scope (explicit)
+## Landing wiring
 
-- No new npm deps. Framer Motion + Embla + shadcn already installed.
-- No changes to `HeroSection`, in-app product surfaces, auth, Paddle, Supabase schema, edge functions, SEO metadata, or routes.
-- No font install. No WebGL/Three.js. No particle field.
-- No copy rewrites beyond line-break tightening where a new layout beat requires it.
+`PublicLanding.tsx`:
 
-## Technical notes
+- Keep existing `#use-cases` "decisions founders face" list untouched (**Option A**).
+- Add a new **Scenarios** section below it: 3 featured `ScenarioCard`s + "See all 8 scenarios →" link to `/scenarios`.
+- `LandingNav` + `Footer`: add `Scenarios` and `Blog` links.
 
-- Scroll-pin implemented with a `min-h-[220vh]` container + `sticky top-0 h-screen` inner; `useScroll` scoped to the container ref. This keeps the rest of the page fully scrollable and avoids body-scroll hijacking.
-- Cursor glow lives in a single portal-less `<div>` under the hero, `pointer-events-none`, `mix-blend-screen`, opacity capped at 0.12.
-- All new components are pure presentational; no data fetching, no Supabase calls, no auth checks.
-- `prefers-reduced-motion`: `useReducedMotion()` short-circuits transforms; opacity-only fades remain. Transcript→memo becomes a static 2-panel layout.
-- Accessibility: transcript panel is `aria-hidden` (decorative); memo fragments are real headings/lists so screen readers get the real content. Keyboard focus rings preserved (`focus-visible:ring-2 ring-primary/60`).
+## Routes (add to `src/App.tsx`)
+
+```
+/scenarios         → ScenariosHub          (lazy, public)
+/scenarios/:slug   → ScenarioPage          (lazy, public)
+/blog              → BlogIndex             (lazy, public)
+/blog/:slug        → BlogPost              (lazy, public)
+```
+
+## Out of scope
+
+- No CMS, no MDX toolchain.
+- No changes to auth, Paddle, backend schema, edge functions, in-app product surfaces.
+- No changes to the existing landing `#use-cases` list (per Option A).
+- No AI-generated body copy; scenarios/posts are hand-authored TS.
+- No og:image generation unless the user asks.
 
 ## Verification
 
-1. `tsgo` typecheck (auto-run by harness).
-2. Playwright script at 1440×900 and 390×844: assert `#use-cases` is in the DOM and visible, hero H1 renders once, no console errors, `document.body.scrollHeight` grows with scroll, CTAs `/auth` and `#use-cases` resolve.
-3. Manual: reduced-motion emulation via Chromium flag; confirm static hero fallback.
-4. Grep sweep: zero remaining `font-display .* italic .* text-gradient` on marketing routes.
+1. `tsgo` typecheck passes.
+2. Playwright at 1440×900 and 390×844: `/scenarios`, `/scenarios/yc-founder-batch-prep`, `/blog`, `/blog/<slug>` render, no console errors, no horizontal overflow, nav + footer links resolve, JSON-LD present in DOM, per-route `<title>` + canonical correct.
+3. `sitemap.xml` includes every new URL; `robots.txt` unchanged.
+4. Landing still renders; new Scenarios section visible on desktop + mobile; existing `#use-cases` list intact.
 
 ## Rollback
 
-Single-revert: `PublicLanding.tsx` + new files under `src/components/marketing/`. No DB, no config, no route changes to undo.
-
-## Definition of done
-
-- Use-cases section visible and anchored at `#use-cases`.
-- Hero uses the transcript→memo composition; SeatMap Sentry pattern gone.
-- Reduced-motion honored; no console errors; mobile has no horizontal overflow.
-- Existing CTAs, auth, Paddle, and analytics untouched.
-- No new dependencies.
+Additive new files + small edits to `App.tsx`, `main.tsx`, `PublicLanding.tsx`, `LandingNav`, `Footer`, `sitemap.xml`, `index.html`, `package.json`. Single revert restores prior state; no DB, no config changes.
