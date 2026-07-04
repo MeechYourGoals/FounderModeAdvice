@@ -149,8 +149,8 @@ export const FolderShareDialog = ({
             <Users className="h-4 w-4" /> Share “{folderName}”
           </DialogTitle>
           <DialogDescription>
-            Invite teammates or advisors to this folder. They get read-only access to its
-            insights — and nothing else in your workspace.
+            Invite teammates or advisors to this folder. They can view its insights and
+            join the comment threads — and see nothing else in your workspace.
           </DialogDescription>
         </DialogHeader>
 

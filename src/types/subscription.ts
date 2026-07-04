@@ -60,7 +60,11 @@ export function hasExport(tier: SubscriptionTier): boolean {
   return TIER_LIMITS[tier].exports;
 }
 
-/** Tiers that can invite collaborators to share insight folders. */
+/**
+ * Tiers that can collaborate: invite teammates to folders/analyses and start
+ * notes/comment threads on individual insights (server-enforced via
+ * user_has_boardroom_plan in RLS).
+ */
 export function hasSharing(tier: SubscriptionTier): boolean {
   return TIER_LIMITS[tier].sharing;
 }
@@ -79,7 +83,7 @@ export const TIER_LIMITS: Record<SubscriptionTier, Omit<TierLimits, 'profiles' |
   videoChat: boolean;
   /** Whether the plan unlocks exporting analyses and chat summaries. */
   exports: boolean;
-  /** Whether the plan unlocks inviting collaborators to insight folders/analyses. */
+  /** Whether the plan unlocks collaboration: sharing folders/analyses plus insight notes, comments & mentions. */
   sharing: boolean;
   /** Whether one URL submission can target multiple profiles. */
   batchProfileAnalysis: boolean;
@@ -169,7 +173,9 @@ export const TIER_PRICING: Record<SubscriptionTier, TierPricing> = {
       'Run one video across multiple profiles in one go',
       'Ask-the-video AI chat (unlimited)',
       'Personalized insights by industry & stage',
-      'Invite teammates & advisors to view insights',
+      'Share analyses & folders with teammates and advisors',
+      'Notes & comments on individual insights',
+      'Tag teammates in insight discussions',
       'Priority feature access',
       'Best for multiple ventures & clients',
     ],
