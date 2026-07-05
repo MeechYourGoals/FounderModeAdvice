@@ -382,7 +382,9 @@ serve(async (req) => {
 
         // Document upload is a premium (paid-tier) feature. Enforce server-side —
         // the client gate is UX only. Re-read tier from the DB; never trust the client.
-        if (isUpload && tier !== 'seed' && tier !== 'series_z') {
+        // Re-analysis of an already-uploaded document skips the upload gate (the
+        // paywall was enforced on the original upload) but still counts as an analysis.
+        if (isUpload && !reanalyzeSource && tier !== 'seed' && tier !== 'series_z') {
           return new Response(JSON.stringify({
             error: 'Document upload is a premium feature. Upgrade to The C-Suite or The Boardroom to analyze private documents.',
             upgradeRequired: true,
