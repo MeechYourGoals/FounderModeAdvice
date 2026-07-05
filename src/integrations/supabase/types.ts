@@ -1280,6 +1280,10 @@ export type Database = {
           tier: string
         }[]
       }
+      get_tier_max: {
+        Args: { _resource: string; _user_id: string }
+        Returns: number
+      }
       has_active_subscription: {
         Args: { check_env?: string; user_uuid: string }
         Returns: boolean
