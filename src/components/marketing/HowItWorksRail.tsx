@@ -5,6 +5,8 @@ import {
   useScroll,
   useSpring,
   useTransform,
+  useMotionValue,
+  animate,
   useLandingScrollRef,
   staggerParent,
   cardChild,
@@ -52,7 +54,9 @@ const StepPanel = ({ step, title, description }: (typeof STEPS)[number]) => (
   </div>
 );
 
-/** One step in the sticky rail — highlights while its quarter of scroll is active. */
+/** One step in the sticky rail — highlights while its quarter of scroll is active.
+ *  Hovering a card temporarily overrides scroll-driven dimming so the
+ *  focused card always comes to prominence. */
 const ScrubStep = ({
   progress,
   index,
@@ -66,19 +70,31 @@ const ScrubStep = ({
 }) => {
   const start = index / total;
   const end = (index + 1) / total;
-  const opacity = useTransform(
+  const baseOpacity = useTransform(
     progress,
     [start - 0.12, start, end, end + 0.12],
     [0.45, 1, 1, 0.45],
     { clamp: true },
   );
-  const scale = useTransform(
+  const baseScale = useTransform(
     progress,
     [start - 0.12, start, end, end + 0.12],
     [0.965, 1.025, 1.025, 0.965],
     { clamp: true },
   );
-  return <m.div style={{ opacity, scale }}>{children}</m.div>;
+  const hover = useMotionValue(0);
+  const opacity = useTransform([baseOpacity, hover] as const, ([o, h]) => (o as number) + (1 - (o as number)) * (h as number));
+  const scale = useTransform([baseScale, hover] as const, ([s, h]) => (s as number) + (1.03 - (s as number)) * (h as number));
+  return (
+    <m.div
+      className="step-wrapper"
+      style={{ opacity, scale }}
+      onHoverStart={() => animate(hover, 1, { duration: 0.25 })}
+      onHoverEnd={() => animate(hover, 0, { duration: 0.25 })}
+    >
+      {children}
+    </m.div>
+  );
 };
 
 /**
@@ -129,7 +145,7 @@ export const HowItWorksRail = () => {
             }}
           />
         </div>
-        <ol className="grid grid-cols-4 gap-5">
+        <ol className="how-it-works-rail grid grid-cols-4 gap-5">
           {STEPS.map((s, i) => (
             <li key={s.step} className="list-none">
               <ScrubStep progress={sprung} index={i} total={STEPS.length}>
