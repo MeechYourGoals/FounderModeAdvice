@@ -603,6 +603,14 @@ body.keyboard-open .mobile-bottom-nav {
     -webkit-backdrop-filter: blur(10px);
   }
 
+  /* HowItWorksRail spotlight: when one card is hovered, dim the siblings
+     so the focused step comes to prominence. Filter avoids fighting the
+     scroll-driven MotionValue opacity / transform on the wrappers. */
+  .how-it-works-rail:has(.step-wrapper:hover) .step-wrapper:not(:hover) {
+    filter: brightness(0.75);
+    transition: filter 0.25s ease;
+  }
+
   /* Animated section divider — a 1px rule that draws in from the left as
      the section enters the viewport. Purely decorative. */
   .section-divider-animated {
