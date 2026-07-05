@@ -8,8 +8,8 @@ import { UpgradePrompt } from "./subscription";
 
 // Premium document upload: private files analyzed through the same pipeline as
 // public URLs. Free users see the upgrade path; the server is the real gate.
-const ACCEPT = ".pdf,.txt,.md,.csv,.docx,.png,.jpg,.jpeg,.webp";
-const ALLOWED_EXT = ["pdf", "txt", "md", "csv", "docx", "png", "jpg", "jpeg", "webp"];
+const ACCEPT = ".pdf,.txt,.md,.csv,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.webp";
+const ALLOWED_EXT = ["pdf", "txt", "md", "csv", "docx", "xlsx", "xls", "png", "jpg", "jpeg", "webp"];
 const MAX_BYTES = 20 * 1024 * 1024;
 
 interface SourceUploadZoneProps {
@@ -44,7 +44,7 @@ export const SourceUploadZone = ({
       if (!ALLOWED_EXT.includes(ext)) {
         toast({
           title: "Unsupported file type",
-          description: "Supported files: PDF, TXT, Markdown, CSV, DOCX, and images (PNG/JPG/WEBP).",
+          description: "Supported files: PDF, TXT, Markdown, CSV, DOCX, Excel (XLSX/XLS), and images (PNG/JPG/WEBP).",
           variant: "destructive",
         });
         return;
@@ -241,7 +241,7 @@ export const SourceUploadZone = ({
                       Drop a document here or <span className="text-primary underline">browse</span>
                     </span>
                   </span>
-                  <span className="text-xs">PDF, TXT, Markdown, CSV, DOCX, or an image · up to 20MB</span>
+                  <span className="text-xs">PDF, TXT, Markdown, CSV, DOCX, XLSX/XLS, or an image · up to 20MB</span>
                 </>
               )}
             </div>
