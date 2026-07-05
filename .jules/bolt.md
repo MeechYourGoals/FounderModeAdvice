@@ -1,0 +1,3 @@
+## 2025-07-05 - EpisodesTable Consolidation
+**Learning:** Found that multiple `useMemo` blocks iterating over the same data, combined with expensive nested loops inside filtering and sorting, was causing a noticeable lag in list performance. Consolidating these into a single O(N) pass and pre-calculating expensive lookups significantly reduces the work done during renders and state updates.
+**Action:** Always look for patterns where multiple `useMemo` hooks consume the same source data, and consider building lookup maps for expensive derived properties (like tags) during the initial fetch or first derivation pass.
