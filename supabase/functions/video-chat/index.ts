@@ -216,6 +216,17 @@ serve(async (req) => {
       return jsonResponse({ error: "Authentication is required to chat with a video." }, 401);
     }
 
+    // Rate limit: 30 requests / minute per user.
+    const { data: allowed } = await supabase.rpc("check_and_increment_rate_limit", {
+      _user_id: user.id,
+      _key: "video-chat",
+      _window: "1 minute",
+      _limit: 30,
+    });
+    if (allowed === false) {
+      return jsonResponse({ error: "You're sending messages too quickly. Please wait a moment." }, 429);
+    }
+
     const { action = "ask", videoId, message } = await req.json();
     if (!videoId || typeof videoId !== "string") {
       return jsonResponse({ error: "videoId is required." }, 400);
