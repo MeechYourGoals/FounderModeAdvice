@@ -27,14 +27,14 @@ export const HeroSection = () => {
             Founder Mode Advice
           </h1>
           <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto animate-slide-up">
-            Paste a founder, operator, or investor video. Get a transcript-grounded operating memo —
+            Paste almost any public URL — articles, posts, videos, newsletters, threads, and more. Get a source-grounded operating memo —
             lessons, risks, and action items — tailored to your company.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pt-2 sm:pt-4 animate-slide-up">
             <FeatureCard
               icon={<ShieldCheck className="h-4 w-4" />}
               title="Source-grounded"
-              description="Every lesson, risk, and action cites the transcript — verify the advice, don't just take it on faith."
+              description="Every lesson, risk, and action cites the source content — verify the advice, don't just take it on faith."
             />
             <FeatureCard
               icon={<Target className="h-4 w-4" />}

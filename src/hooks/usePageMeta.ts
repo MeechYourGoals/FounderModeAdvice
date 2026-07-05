@@ -4,7 +4,7 @@ const SITE_NAME = "Founder Mode Advice";
 const SITE_URL = "https://foundermodeadvice.com";
 const DEFAULT_TITLE = "Founder Mode Advice — Transcript-grounded founder intelligence";
 const DEFAULT_DESCRIPTION =
-  "Paste a founder, investor, or operator video. Get transcript-grounded operating memos, risks, action items, and follow-up Q&A tailored to your company, stage, and next decision.";
+  "Paste almost any public URL — articles, posts, videos, newsletters, and more. Get source-grounded operating memos, risks, action items, and follow-up Q&A tailored to your company, stage, and next decision.";
 
 interface PageMeta {
   /** Page-specific title; rendered as "<title> — Founder Mode Advice". */

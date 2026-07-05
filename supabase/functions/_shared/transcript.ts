@@ -1,5 +1,5 @@
-// Shared multi-platform transcript + metadata adapter.
-// Supports YouTube, TikTok, Instagram, X/Twitter, Vimeo, LinkedIn, podcasts, and generic web video.
+// Shared multi-platform source content adapter.
+// Supports YouTube, TikTok, Instagram, X/Twitter, Vimeo, LinkedIn, articles, newsletters, podcasts, and generic web pages.
 // Transcript provider: Supadata (https://supadata.ai) — one URL → plain-text transcript across all major platforms.
 
 export type Platform =
@@ -10,6 +10,9 @@ export type Platform =
   | "vimeo"
   | "linkedin"
   | "podcast"
+  | "substack"
+  | "medium"
+  | "article"
   | "generic";
 
 export type VideoTranscript = {
@@ -42,10 +45,81 @@ export const detectPlatform = (urlString: string): Platform => {
     if (h === "x.com" || h === "twitter.com" || h.endsWith(".x.com") || h.endsWith(".twitter.com") || h === "t.co") return "x";
     if (h.includes("vimeo.com")) return "vimeo";
     if (h.includes("linkedin.com") || h === "lnkd.in") return "linkedin";
+    if (h.includes("substack.com") || h.endsWith(".substack.com")) return "substack";
+    if (h.includes("medium.com") || h.endsWith(".medium.com")) return "medium";
     if (/\.(mp3|m4a|wav|ogg)(\?|$)/i.test(u.pathname)) return "podcast";
+    // Common article/blog hosts and paths that are unlikely to be video-only pages.
+    if (
+      h.includes("beehiiv.com") ||
+      h.includes("ghost.io") ||
+      /\/blog\//i.test(u.pathname) ||
+      /\/posts?\//i.test(u.pathname) ||
+      /\/articles?\//i.test(u.pathname)
+    ) {
+      return "article";
+    }
     return "generic";
   } catch {
     return "generic";
+  }
+};
+
+const ARTICLE_PLATFORMS = new Set<Platform>(["substack", "medium", "article", "linkedin", "x"]);
+
+/** Strip HTML tags and collapse whitespace for article text extraction. */
+const htmlToPlainText = (html: string): string => {
+  const withoutScripts = html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ");
+  const withBreaks = withoutScripts
+    .replace(/<(br|p|div|h[1-6]|li|blockquote|section|article)[^>]*>/gi, "\n")
+    .replace(/<[^>]+>/g, " ");
+  return decodeHtml(withBreaks.replace(/\s+/g, " ").trim());
+};
+
+/** Extract readable article body text from HTML (OG scrape fallback path). */
+export const extractArticleTextFromHtml = (html: string): string | null => {
+  const articleMatch = html.match(/<article[\s\S]*?<\/article>/i);
+  const mainMatch = html.match(/<main[\s\S]*?<\/main>/i);
+  const candidates = [
+    articleMatch?.[0],
+    mainMatch?.[0],
+    html,
+  ].filter(Boolean) as string[];
+
+  for (const chunk of candidates) {
+    const text = htmlToPlainText(chunk);
+    if (text.length >= 400) return text.slice(0, 120000);
+  }
+  const ogDesc = extractMeta(html, ["og:description", "twitter:description", "description"]);
+  if (ogDesc && ogDesc.length >= 120) return ogDesc;
+  return null;
+};
+
+/** Fetch article text for platforms where transcript APIs are unreliable. */
+export const fetchArticleText = async (url: string, platform: Platform): Promise<VideoTranscript | null> => {
+  if (!ARTICLE_PLATFORMS.has(platform) && platform !== "generic") return null;
+  try {
+    const res = await safeFetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    const text = extractArticleTextFromHtml(html);
+    if (!text || text.length < 200) return null;
+    return {
+      transcriptText: text,
+      language: "en",
+      source: `article_${platform}`,
+    };
+  } catch (e) {
+    console.warn("fetchArticleText failed:", e);
+    return null;
   }
 };
 
@@ -459,7 +533,25 @@ export const getVideoContext = async (url: string): Promise<VideoContext> => {
     platform === "youtube" ? extractYouTubeTranscriptNative(canonicalUrl) : Promise.resolve(null),
   ]);
 
-  const transcript = nativeTranscript ?? (await fetchTranscriptViaSupadata(canonicalUrl, platform));
+  let transcript = nativeTranscript ?? (await fetchTranscriptViaSupadata(canonicalUrl, platform));
+
+  // For articles, newsletters, and social posts, fall back to HTML text extraction.
+  if (!transcript && (ARTICLE_PLATFORMS.has(platform) || platform === "generic")) {
+    transcript = await fetchArticleText(canonicalUrl, platform);
+  }
 
   return { platform, metadata, transcript };
+};
+
+/** User-facing guidance when a public URL cannot be fetched or parsed. */
+export const inaccessibleUrlMessage = (platform: Platform): string => {
+  const base =
+    "We couldn't access this URL directly. Try uploading the file, pasting the text, or using a public version of the link.";
+  if (platform === "linkedin") {
+    return `${base} LinkedIn posts often require login — copy the text or export as PDF and upload (premium).`;
+  }
+  if (platform === "x" || platform === "instagram" || platform === "tiktok") {
+    return `${base} Some social posts block automated access — try a public embed link or upload a screenshot/PDF (premium).`;
+  }
+  return base;
 };

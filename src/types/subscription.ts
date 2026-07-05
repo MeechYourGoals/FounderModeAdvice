@@ -50,7 +50,12 @@ export function isUnlimited(max: number): boolean {
   return max >= UNLIMITED;
 }
 
-/** Tiers that include the transcript-grounded "Ask this video" AI chat feature. */
+/** Tiers that can upload private documents for analysis (server-enforced). */
+export function hasFileUpload(tier: SubscriptionTier): boolean {
+  return tier !== 'free';
+}
+
+/** Tiers that include the transcript-grounded "Ask this source" AI chat feature. */
 export function hasVideoChat(tier: SubscriptionTier): boolean {
   return TIER_LIMITS[tier].videoChat;
 }
@@ -143,7 +148,8 @@ export const TIER_PRICING: Record<SubscriptionTier, TierPricing> = {
     priceDisplay: 'Free',
     features: [
       '1 business profile',
-      '3 video analyses per month',
+      '3 analyses per month (public URLs)',
+      'Articles, posts, videos, newsletters & more',
       'Universal, industry-aware insights',
       'Organize analyses into private folders',
     ],
@@ -154,7 +160,8 @@ export const TIER_PRICING: Record<SubscriptionTier, TierPricing> = {
     price: 9.99,
     priceDisplay: '$9.99/month',
     features: [
-      '20 video analyses per month',
+      '20 analyses per month',
+      'Upload private PDFs, notes & documents',
       'Up to 5 business profiles',
       'Personalized insights by industry & stage',
       'One analysis target per submission',
@@ -168,10 +175,11 @@ export const TIER_PRICING: Record<SubscriptionTier, TierPricing> = {
     price: 19.99,
     priceDisplay: '$19.99/month',
     features: [
-      'Unlimited video analyses',
+      'Unlimited analyses',
+      'Upload private PDFs, notes & documents',
       'Unlimited business profiles',
-      'Run one video across multiple profiles in one go',
-      'Ask-the-video AI chat (unlimited)',
+      'Run one source across multiple profiles in one go',
+      'Ask-this-source AI chat (unlimited)',
       'Personalized insights by industry & stage',
       'Share analyses & folders with teammates and advisors',
       'Notes & comments on individual insights',

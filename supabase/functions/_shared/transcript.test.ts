@@ -28,3 +28,12 @@ Deno.test("detectPlatform — Vimeo + generic", () => {
   assertEquals(detectPlatform("https://example.com/video.mp4"), "generic");
   assertEquals(detectPlatform("not a url"), "generic");
 });
+
+Deno.test("detectPlatform — Substack and Medium", () => {
+  assertEquals(detectPlatform("https://founder.substack.com/p/hello"), "substack");
+  assertEquals(detectPlatform("https://medium.com/@user/post-slug"), "medium");
+});
+
+Deno.test("detectPlatform — article paths", () => {
+  assertEquals(detectPlatform("https://example.com/blog/my-post"), "article");
+});

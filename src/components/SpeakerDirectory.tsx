@@ -101,7 +101,7 @@ export const SpeakerDirectory = ({
   if (speakers.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground text-sm">
-        No speakers yet. Analyze a video to start building your directory.
+        No speakers yet. Analyze a source to start building your directory.
       </div>
     );
   }

@@ -12,6 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { StartupProfileForm } from "./StartupProfileForm";
 import { AnalyzingScene } from "./AnalyzingScene";
 import { UpgradePrompt } from "./subscription";
+import { SourceUploadZone } from "./SourceUploadZone";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 import {
   DropdownMenu,
@@ -52,7 +53,7 @@ export const AnalysisForm = () => {
   const [podcastName, setPodcastName] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [progress, setProgress] = useState("");
-  const [inputMode, setInputMode] = useState<"series" | "url">("url");
+  const [inputMode, setInputMode] = useState<"series" | "url" | "upload">("url");
   const [step, setStep] = useState<"episode" | "profile">("episode");
   const [savedProfiles, setSavedProfiles] = useState<SavedProfile[]>([]);
   const [startupContext, setStartupContext] = useState<any>(null);
@@ -115,7 +116,7 @@ export const AnalysisForm = () => {
       if (!analysisCheck.allowed) {
         toast({
           title: "Analysis Limit Reached",
-          description: analysisCheck.message || "Upgrade to analyze more videos.",
+          description: analysisCheck.message || "Upgrade to analyze more sources.",
           variant: "destructive",
         });
         return;
@@ -137,7 +138,7 @@ export const AnalysisForm = () => {
       triggerHapticFeedback('medium');
       toast({
         title: "Missing Information",
-        description: "Please enter an episode URL",
+        description: "Please enter a public URL",
         variant: "destructive",
       });
       return;
@@ -209,30 +210,40 @@ export const AnalysisForm = () => {
   const analyzeWithContext = async (
     profile: any,
     urlArg?: string,
-    options?: { profileId?: string | null; progressLabel?: string; manageState?: boolean },
+    options?: {
+      profileId?: string | null;
+      progressLabel?: string;
+      manageState?: boolean;
+      uploadFileUrl?: string;
+      uploadFileName?: string;
+    },
   ) => {
     const url = (urlArg ?? episodeUrl).trim();
-    if (!url) return;
+    const isUpload = Boolean(options?.uploadFileUrl);
+    if (!isUpload && !url) return;
     const manageState = options?.manageState ?? true;
     if (manageState) {
       setIsAnalyzing(true);
-      setProgress(options?.progressLabel || (profile ? "Analyzing with your business context..." : "Analyzing episode..."));
+      setProgress(options?.progressLabel || (profile ? "Analyzing with your business context..." : "Analyzing source..."));
     }
 
     try {
       if (manageState) setProgress("Checking for duplicates...");
       const { data: { user } } = await supabase.auth.getUser();
+      const dedupeKey = isUpload
+        ? `upload://${options?.uploadFileName}`
+        : url;
       let existingQuery = user?.id
         ? supabase
             .from('episodes')
             .select('id, title, url')
-            .eq('url', url)
+            .eq('url', dedupeKey)
             .eq('analyzed_by', user.id)
             .limit(1)
         : supabase
             .from('episodes')
             .select('id, title, url')
-            .eq('url', url)
+            .eq('url', dedupeKey)
             .limit(1);
 
       // analyzed_profile_id column is missing in DB
@@ -248,8 +259,8 @@ export const AnalysisForm = () => {
       if (existing && existing.length > 0) {
         if (manageState) {
           toast({
-            title: "Episode already analyzed",
-            description: `"${existing[0].title}" has already been analyzed for this profile. View it in your episodes list.`,
+            title: "Already analyzed",
+            description: `"${existing[0].title}" has already been analyzed for this profile. View it in your library.`,
           });
           setIsAnalyzing(false);
           setProgress("");
@@ -258,26 +269,44 @@ export const AnalysisForm = () => {
         return { success: false, reason: "duplicate" as const };
       }
 
-      if (manageState) setProgress("Fetching episode data...");
+      if (manageState) setProgress(isUpload ? "Reading your document..." : "Fetching source content...");
+      const invokeBody: Record<string, unknown> = {
+        podcastName: podcastName.trim() || undefined,
+        startupProfile: profile,
+        startupProfileId: options?.profileId || undefined,
+        deckSummary: profile?.deck_summary || undefined,
+      };
+      if (isUpload) {
+        invokeBody.uploadFileUrl = options?.uploadFileUrl;
+        invokeBody.uploadFileName = options?.uploadFileName;
+      } else {
+        invokeBody.episodeUrl = url;
+      }
       const { data, error } = await supabase.functions.invoke('analyze-episode', {
-        body: {
-          episodeUrl: url,
-          podcastName: podcastName.trim() || undefined,
-          startupProfile: profile,
-          startupProfileId: options?.profileId || undefined,
-          deckSummary: profile?.deck_summary || undefined
-        }
+        body: invokeBody,
       });
 
       if (error) {
         console.error("Analysis error:", error);
         triggerHapticFeedback('medium');
+        let description = error.message || "Failed to analyze source. Please try again.";
+        if (data?.error && typeof data.error === "string") description = data.error;
         toast({
           title: "Analysis Failed",
-          description: error.message || "Failed to analyze episode. Please try again.",
+          description,
           variant: "destructive",
         });
-        return { success: false, reason: "error" as const, message: error.message };
+        return { success: false, reason: "error" as const, message: description };
+      }
+
+      if (data?.error) {
+        triggerHapticFeedback('medium');
+        toast({
+          title: "Analysis Failed",
+          description: data.error,
+          variant: "destructive",
+        });
+        return { success: false, reason: "error" as const, message: data.error };
       }
 
       if (manageState) setProgress("Generating insights...");
@@ -290,7 +319,7 @@ export const AnalysisForm = () => {
       if (manageState) {
         toast({
           title: "Analysis complete!",
-          description: "Episode analyzed successfully.",
+          description: "Analysis complete.",
         });
 
         setEpisodeUrl("");
@@ -416,7 +445,7 @@ export const AnalysisForm = () => {
           className="mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Episode URL
+          Back to source input
         </Button>
         <StartupProfileForm
           onSubmit={handleProfileSubmit}
@@ -494,14 +523,15 @@ export const AnalysisForm = () => {
             <span className="font-display font-medium italic text-gradient">analysis</span>
           </h2>
           <p className="text-muted-foreground">
-            Paste a founder, operator, or investor video — get a transcript-grounded memo tailored to your company
+            Paste almost any public URL — article, post, video, newsletter, or podcast — and get a source-grounded memo tailored to your company
           </p>
         </div>
 
-        <Tabs value={inputMode} onValueChange={(v) => setInputMode(v as "series" | "url")} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto h-11 sm:h-10">
+        <Tabs value={inputMode} onValueChange={(v) => setInputMode(v as "series" | "url" | "upload")} className="w-full">
+          <TabsList className="grid w-full grid-cols-3 max-w-lg mx-auto h-11 sm:h-10">
+            <TabsTrigger value="url" className="text-xs sm:text-sm min-h-[44px] sm:min-h-0">Public URL</TabsTrigger>
             <TabsTrigger value="series" className="text-xs sm:text-sm min-h-[44px] sm:min-h-0">By Source</TabsTrigger>
-            <TabsTrigger value="url" className="text-xs sm:text-sm min-h-[44px] sm:min-h-0">Direct URL</TabsTrigger>
+            <TabsTrigger value="upload" className="text-xs sm:text-sm min-h-[44px] sm:min-h-0">Upload</TabsTrigger>
           </TabsList>
           
           <TabsContent value="series" className="space-y-4 mt-6">
@@ -527,12 +557,12 @@ export const AnalysisForm = () => {
 
             <div className="space-y-2 max-w-xl mx-auto">
               <label htmlFor="episodeUrlSeries" className="text-sm font-medium">
-                Video URL
+                Public URL
               </label>
               <Input
                 id="episodeUrlSeries"
                 type="url"
-                placeholder="YouTube, TikTok, Instagram, X, Vimeo, or any public video link"
+                placeholder="Article, Substack, tweet, YouTube, TikTok, podcast, or any public link"
                 value={episodeUrl}
                 onChange={(e) => setEpisodeUrl(e.target.value)}
                 disabled={isAnalyzing}
@@ -544,12 +574,12 @@ export const AnalysisForm = () => {
           <TabsContent value="url" className="space-y-4 mt-6">
             <div className="space-y-2 max-w-xl mx-auto">
               <label htmlFor="episodeUrlDirect" className="text-sm font-medium text-center block">
-                Video URL
+                Public URL
               </label>
               <Input
                 id="episodeUrlDirect"
                 type="url"
-                placeholder="Paste a YouTube, TikTok, Instagram, X, Vimeo, or any public video link"
+                placeholder="Paste an article, post, video, Substack, tweet, or any public URL"
                 value={episodeUrl}
                 onChange={(e) => setEpisodeUrl(e.target.value)}
                 disabled={isAnalyzing}
@@ -560,8 +590,37 @@ export const AnalysisForm = () => {
               </p>
             </div>
           </TabsContent>
+          <TabsContent value="upload" className="space-y-4 mt-6">
+            <SourceUploadZone
+              tier={subscription?.tier ?? "free"}
+              disabled={isAnalyzing || !analysisCheck.allowed}
+              onAnalyzeUpload={async (filePath, fileName) => {
+                const analysisCheckLocal = canAnalyzeVideo();
+                if (!analysisCheckLocal.allowed) {
+                  toast({
+                    title: "Analysis Limit Reached",
+                    description: analysisCheckLocal.message || "Upgrade to analyze more sources.",
+                    variant: "destructive",
+                  });
+                  throw new Error(analysisCheckLocal.message || "Analysis limit reached");
+                }
+                const profile = selectedProfiles[0] ?? activeProfile;
+                const result = await analyzeWithContext(profile, undefined, {
+                  profileId: selectedProfiles[0]?.id ?? activeProfileId ?? undefined,
+                  uploadFileUrl: filePath,
+                  uploadFileName: fileName,
+                  progressLabel: "Analyzing your document...",
+                  manageState: true,
+                });
+                if (!result?.success && result?.reason === "error") {
+                  throw new Error(result.message || "Analysis failed");
+                }
+              }}
+            />
+          </TabsContent>
         </Tabs>
 
+        {inputMode !== "upload" && (
         <div className="space-y-3">
           <div className="flex justify-center">
             <DropdownMenu>
@@ -684,6 +743,7 @@ export const AnalysisForm = () => {
           )}
         </div>
         </div>
+        )}
       </form>
       )}
     </Card>

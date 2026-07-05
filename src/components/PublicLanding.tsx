@@ -140,7 +140,7 @@ export const PublicLanding = () => {
               <SectionShell
                 eyebrow="How it works"
                 title="From talk to operating memo in minutes."
-                lead="Paste a founder talk, investor interview, operator breakdown, or strategy lecture. Add your company context. Get structured intelligence you can act on."
+                lead="Paste an article, post, newsletter, founder talk, or strategy lecture. Add your company context. Get structured intelligence you can act on."
               >
                 <HowItWorksRail />
               </SectionShell>
@@ -178,8 +178,8 @@ export const PublicLanding = () => {
                   <m.div variants={cardChild}>
                     <ValueCard
                       icon={<MessageSquare className="w-4 h-4" />}
-                      title="Ask the transcript anything"
-                      description="Open a transcript-grounded chat after analysis and pressure-test how the advice applies to your stage, your market, and your next move."
+                      title="Ask the source anything"
+                      description="Open a source-grounded chat after analysis and pressure-test how the advice applies to your stage, your market, and your next move."
                     />
                   </m.div>
                   <m.div variants={cardChild}>
@@ -231,7 +231,7 @@ export const PublicLanding = () => {
               {/* Comparison */}
               <SectionShell
                 title="Watching is passive. Operating is the point."
-                lead="Saved videos, generic summaries, and raw transcripts leave the work to you. Founder Mode Advice does the work — and keeps it."
+                lead="Saved links, generic summaries, and raw transcripts leave the work to you. Founder Mode Advice does the work — and keeps it."
                 align="center"
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:items-stretch max-w-4xl mx-auto">
@@ -281,7 +281,7 @@ export const PublicLanding = () => {
                   <div className="panel-hairline max-w-5xl mx-auto rounded-3xl p-6 sm:p-10">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
                       <div className="space-y-4">
-                        <BadgeLabel>Public video in. Operating leverage out.</BadgeLabel>
+                        <BadgeLabel>Public source in. Operating leverage out.</BadgeLabel>
                         <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-[-0.02em]">
                           You don&apos;t need a boardroom of advisors to learn like you have one.
                         </h2>
@@ -302,8 +302,8 @@ export const PublicLanding = () => {
                         <m.div variants={riseChild}>
                           <MiniFeature
                             icon={<ShieldCheck className="w-4 h-4" />}
-                            title="Public video in"
-                            description="Paste a founder, investor, operator, strategy, or leadership video from YouTube, TikTok, Instagram Reels, X, Vimeo, LinkedIn, or any public podcast or web video URL."
+                            title="Public URLs & uploads"
+                            description="Paste articles, posts, newsletters, threads, or videos from YouTube, TikTok, Instagram, X, Vimeo, LinkedIn, Substack, and more. Premium users can upload private PDFs, notes, and documents."
                           />
                         </m.div>
                         <m.div variants={riseChild}>
@@ -316,15 +316,15 @@ export const PublicLanding = () => {
                         <m.div variants={riseChild}>
                           <MiniFeature
                             icon={<MessageSquare className="w-4 h-4" />}
-                            title="Transcript-grounded Q&A"
-                            description="Ask follow-up questions directly against the transcript and your company context after analysis."
+                            title="Source-grounded Q&A"
+                            description="Ask follow-up questions against the source content and your company context after analysis."
                           />
                         </m.div>
                       </m.div>
                     </div>
                     <p className="mt-6 text-sm text-foreground/65">
                       Founder Mode Advice analyzes public content only. It is independent and does not provide private
-                      access, endorsement, or investment advice from any person or firm referenced in a video.
+                      access, endorsement, or investment advice from any person or firm referenced in a source.
                     </p>
                   </div>
                 </m.div>
@@ -408,8 +408,8 @@ export const PublicLanding = () => {
                         Build your private founder boardroom.
                       </h2>
                       <p className="mx-auto mt-4 max-w-xl text-lg text-primary-foreground/95">
-                        Start with one video. Leave with a company-specific memo, risk map, action list, and a
-                        transcript-grounded Q&amp;A you can keep.
+                        Start with one source. Leave with a company-specific memo, risk map, action list, and a
+                        source-grounded Q&amp;A you can keep.
                       </p>
                       <div className="mt-7 flex flex-wrap justify-center gap-3">
                         <m.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.96 }} transition={SPRING_POP}>
@@ -419,7 +419,7 @@ export const PublicLanding = () => {
                             className="h-12 rounded-full px-7 text-base"
                             onClick={goToAuth}
                           >
-                            Analyze a video <ArrowRight className="ml-2 h-4 w-4" />
+                            Analyze a source <ArrowRight className="ml-2 h-4 w-4" />
                           </Button>
                         </m.div>
                         <m.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.96 }} transition={SPRING_POP}>
@@ -453,20 +453,20 @@ export const PublicLanding = () => {
 
 const FAQS = [
   {
-    q: "What kinds of videos work?",
-    a: "Founder interviews, investor talks, operator deep-dives, and strategy lectures — from any public link: YouTube, TikTok, Instagram Reels, X, Vimeo, LinkedIn, or a podcast MP3. Private or login-gated posts aren't supported.",
+    q: "What kinds of sources work?",
+    a: "Articles, blog posts, Substack newsletters, LinkedIn and X posts, founder interviews, investor talks, and videos — from YouTube, TikTok, Instagram, Vimeo, podcasts, and most public links. Private or login-gated content isn't supported via URL; premium users can upload PDFs, TXT, MD, and CSV files instead.",
   },
   {
     q: "How is this different from a generic AI summary?",
-    a: "Summaries flatten a talk into bullet points. Founder Mode Advice produces a structured operating memo — risks, action items, founder questions — grounded in the transcript and mapped to your company, stage, and decision.",
+    a: "Summaries flatten content into bullet points. Founder Mode Advice produces a structured operating memo — risks, action items, founder questions — grounded in the source and mapped to your company, stage, and decision.",
   },
   {
-    q: "Do I need to know who the speaker is?",
-    a: "No. Paste any business video and you'll get structured lessons, risks, and action items mapped to your company — even if you've never heard of the person.",
+    q: "Do I need to know who the speaker or author is?",
+    a: "No. Paste any business-related public link and you'll get structured lessons, risks, and action items mapped to your company — even if you've never heard of the person.",
   },
   {
     q: "Is the free plan actually useful?",
-    a: "Yes. The free plan includes 3 full analyses every month with the complete memo view. Upgrade when you want more volume, more profiles, and the transcript-grounded Q&A.",
+    a: "Yes. The free plan includes 3 full analyses every month on public URLs with the complete memo view. Upgrade when you want more volume, document uploads, more profiles, and source-grounded Q&A.",
   },
   {
     q: "How do I cancel?",

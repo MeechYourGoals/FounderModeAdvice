@@ -215,7 +215,7 @@ const Account = () => {
               <CardHeader>
                 <CardTitle>Upgrade Your Plan</CardTitle>
                 <CardDescription>
-                  Unlock more profiles, bookmarks, and video analyses
+                  Unlock more profiles, bookmarks, analyses, and document uploads
                 </CardDescription>
               </CardHeader>
               <CardContent>

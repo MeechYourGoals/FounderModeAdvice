@@ -289,7 +289,7 @@ export const VideoChatSheet = ({ videoId, videoTitle }: VideoChatSheetProps) => 
               </div>
             </Card>
             <UpgradePrompt
-              message="Unlock unlimited transcript-grounded Q&A with The Boardroom plan."
+              message="Unlock unlimited source-grounded Q&A with The Boardroom plan."
               feature="videoChat"
             />
           </div>

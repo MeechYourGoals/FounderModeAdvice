@@ -8,9 +8,9 @@ import { HighlightedFounders } from "@/components/HighlightedFounders";
 import { InspirationRecommendations } from "@/components/InspirationRecommendations";
 
 /**
- * First-run activation state for the analyzed-videos library. Nudges the user to
+ * First-run activation state for the analysis library. Nudges the user to
  * create a business profile (so analyses are personalized) and offers one-tap
- * starter videos that kick off their first analysis.
+ * starter sources that kick off their first analysis.
  */
 export const LibraryEmptyState = () => {
   const { activeProfile, profiles } = useActiveProfile();
@@ -34,10 +34,10 @@ export const LibraryEmptyState = () => {
         </div>
         <h3 className="text-lg sm:text-xl font-semibold tracking-tight">
           Analyze your{" "}
-          <span className="font-display font-medium italic text-gradient">first video</span>
+          <span className="font-display font-medium italic text-gradient">first source</span>
         </h3>
         <p className="text-sm text-muted-foreground max-w-md mx-auto mt-1">
-          Paste a founder, operator, or investor video above — or start with one of these.
+          Paste a public URL above — article, post, video, or newsletter — or start with one of these.
           {activeProfile
             ? <> The memo will be tailored to <span className="font-medium text-foreground">{activeProfile.company_name}</span>.</>
             : <> Add a company profile to tailor the advice to your stage and industry.</>}
@@ -64,7 +64,7 @@ export const LibraryEmptyState = () => {
         </div>
       )}
 
-      {/* Starter videos */}
+      {/* Starter sources */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl mx-auto text-left">
         {STARTER_VIDEOS.map((video) => (
           <button
