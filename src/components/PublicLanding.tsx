@@ -92,7 +92,7 @@ export const PublicLanding = () => {
               <SectionShell
                 id="product"
                 eyebrow="Why it's different"
-                title="Not another AI summary. A source-grounded operating system."
+                title="Not just another AI note summary. A digital advisory council of your chosen experts."
                 align="center"
                 aura
               >
@@ -118,7 +118,7 @@ export const PublicLanding = () => {
                       <ProofCard
                         index="02"
                         icon={<Target className="h-4 w-4" />}
-                        title="Company-specific"
+                        title="Your Company-specific"
                         description="Output adapts to your stage, industry, business model, and the decision in front of you — not generic venture-scale platitudes."
                       />
                     </TiltCard>
@@ -129,7 +129,7 @@ export const PublicLanding = () => {
                         index="03"
                         icon={<Layers className="h-4 w-4" />}
                         title="Built into a library"
-                        description="Save analyses into folders so insight compounds over time, instead of scattering across notebooks and screenshots."
+                        description="Save analyses into folders so insight compounds over time, instead of scattering across notebooks, apps, and screenshots."
                       />
                     </TiltCard>
                   </m.div>
