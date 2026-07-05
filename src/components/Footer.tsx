@@ -43,7 +43,7 @@ export const Footer = () => {
           <div className="space-y-3">
             <BrandLogo className="h-9 w-auto" />
             <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
-              Transcript-grounded founder intelligence. Turn the best founder and operator videos into company-specific
+              Transcript-grounded founder intelligence. Turn the best founder and operator content into company-specific
               operating memos, risks, and action plans.
             </p>
           </div>

@@ -60,7 +60,7 @@ const PrivacyPolicy = () => {
                 diagnostic events.
               </li>
               <li>
-                <strong>Advisory content</strong> — the video links you submit, your startup
+                <strong>Advisory content</strong> — the links and documents you submit, your startup
                 profiles, uploaded decks, chat prompts, and the AI-generated advice and notes you
                 save.
               </li>
@@ -154,7 +154,7 @@ const PrivacyPolicy = () => {
                 (Apple / Google) where applicable.
               </li>
               <li>
-                <strong>AI processing providers</strong> — video links, transcripts where
+                <strong>AI processing providers</strong> — links, uploaded files, transcripts where
                 available, startup profile context, deck summaries, and chat prompts are sent to
                 our AI gateway to generate the advice you request.
               </li>
@@ -212,7 +212,7 @@ const PrivacyPolicy = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">10. AI &amp; Advisory Interactions</h2>
             <p>
-              Founder Mode Advice uses AI to analyze the videos and context you provide and
+              Founder Mode Advice uses AI to analyze the content and context you provide and
               generate advice tailored to your situation. AI-generated advice is informational
               only and is not professional, legal, financial, or investment advice.
             </p>

@@ -104,7 +104,7 @@ const TermsOfService = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">5. Content &amp; AI-Generated Advice</h2>
             <p>
-              Our service allows you to submit videos and other context, and uses AI to generate
+              Our service allows you to submit links, documents, and other context, and uses AI to generate
               advice and insights. You are responsible for ensuring you have the right to submit
               any link or content, and for how you use the output. We grant you a limited,
               non-exclusive, non-transferable right to use the service and its output within your

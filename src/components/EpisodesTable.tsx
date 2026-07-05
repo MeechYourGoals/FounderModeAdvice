@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   ExternalLink, TrendingUp, MoreVertical, Eye, Bookmark, Download, Copy,
-  Youtube, Headphones, Trash2, X, ArrowUpDown, ArrowUp, ArrowDown,
+  Youtube, Headphones, FileText, Trash2, X, ArrowUpDown, ArrowUp, ArrowDown,
   FolderPlus, Folder, ChevronLeft, ChevronRight, Filter, Search,
   Tag, LayoutList, Plus, Share2
 } from "lucide-react";
@@ -575,7 +575,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
 
   if (loading) {
     return (
-      <Card className="p-4 sm:p-6 shadow-card border-primary/10" role="status" aria-live="polite" aria-label="Loading your analyzed videos">
+      <Card className="p-4 sm:p-6 shadow-card border-primary/10" role="status" aria-live="polite" aria-label="Loading your analyzed sources">
         <div className="flex items-center justify-between gap-4 mb-6">
           <div className="space-y-2">
             <Skeleton className="h-6 w-40" />
@@ -604,8 +604,25 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     );
   }
 
-  const getPlatformIcon = (url: string) => url.includes("youtube.com") || url.includes("youtu.be") ? <Youtube className="w-4 h-4" /> : <Headphones className="w-4 h-4" />;
-  const getPlatformLabel = (url: string) => url.includes("youtube.com") || url.includes("youtu.be") ? "Watch Now" : "Listen Now";
+  // Uploaded documents use a synthetic, non-navigable "document://" url.
+  const isUploadedDocument = (url: string) => url.startsWith("document://");
+  const getPlatformIcon = (url: string) =>
+    isUploadedDocument(url) ? <FileText className="w-4 h-4" />
+      : (url.includes("youtube.com") || url.includes("youtu.be")) ? <Youtube className="w-4 h-4" />
+      : <Headphones className="w-4 h-4" />;
+  const getPlatformLabel = (url: string) =>
+    isUploadedDocument(url) ? "View Details"
+      : (url.includes("youtube.com") || url.includes("youtu.be")) ? "Watch Now"
+      : "Listen Now";
+  // Open the source (or, for uploaded documents which have no navigable URL, open details).
+  const openSource = (episode: Episode, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isUploadedDocument(episode.url)) {
+      onSelectEpisode(episode.id);
+    } else {
+      window.open(episode.url, "_blank");
+    }
+  };
 
   const handleExport = (episodeId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -690,7 +707,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.open(episode.url, "_blank"); }}>
+                <DropdownMenuItem onClick={(e) => openSource(episode, e)}>
                   {getPlatformIcon(episode.url)}
                   <span className="ml-2">{getPlatformLabel(episode.url)}</span>
                 </DropdownMenuItem>
@@ -1152,7 +1169,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
         {/* No results (filters/search exclude everything) */}
         {filteredEpisodes.length === 0 && (
           <div className="p-8 text-center text-sm text-muted-foreground">
-            No videos match your search or filters.
+            No sources match your search or filters.
             <Button variant="link" size="sm" onClick={() => { setSearch(""); clearFilters(); }}>
               Clear
             </Button>

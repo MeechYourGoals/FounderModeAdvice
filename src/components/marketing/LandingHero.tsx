@@ -97,8 +97,8 @@ export const LandingHero = ({ onPrimary, onSecondary }: LandingHeroProps) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: EASE_IOS, delay: 0.75 }}
           >
-            Paste any founder, investor, or operator video. Get a transcript-grounded operating
-            memo — risks, actions, and answers tuned to the decision in front of you.
+            Paste almost any public link — an article, post, newsletter, video, or podcast. Get a
+            transcript-grounded operating memo — risks, actions, and answers tuned to the decision in front of you.
           </m.p>
 
           <m.div
@@ -109,7 +109,7 @@ export const LandingHero = ({ onPrimary, onSecondary }: LandingHeroProps) => {
           >
             <m.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.96 }} transition={SPRING_POP}>
               <Button size="lg" className="rounded-full px-7 h-12 text-[15px]" onClick={onPrimary}>
-                Analyze a video
+                Analyze a source
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </m.div>

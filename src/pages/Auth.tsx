@@ -236,7 +236,7 @@ const Auth = () => {
             <span className="font-display font-medium italic text-gradient">Welcome</span>
           </CardTitle>
           <CardDescription className="text-center">
-            Create a free account to analyze your first video — no credit card required
+            Create a free account to analyze your first source — no credit card required
           </CardDescription>
         </CardHeader>
         <CardContent>

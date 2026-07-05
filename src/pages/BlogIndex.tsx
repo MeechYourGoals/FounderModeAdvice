@@ -38,7 +38,7 @@ export default function BlogIndex() {
         <title>Blog — Founder Mode Advice</title>
         <meta
           name="description"
-          content="Essays on turning founder and operator videos into decision memos. Long-form guidance for founders, operators, and boards."
+          content="Essays on turning founder and operator content into decision memos. Long-form guidance for founders, operators, and boards."
         />
         <link rel="canonical" href={CANONICAL} />
         <meta property="og:type" content="website" />
@@ -46,7 +46,7 @@ export default function BlogIndex() {
         <meta property="og:url" content={CANONICAL} />
         <meta
           property="og:description"
-          content="Essays on turning founder and operator videos into decision memos."
+          content="Essays on turning founder and operator content into decision memos."
         />
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>

@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import JSZip from "https://esm.sh/jszip@3.10.1";
 import { getVideoContext, deriveChannelHandle } from "../_shared/transcript.ts";
 
 // Canonical topic vocabulary (keep in sync with src/lib/topics.ts).
@@ -43,6 +44,107 @@ const TIER_LIMITS = {
 /** Founder/Super Admin emails with unlimited access - no feature limits */
 const FOUNDER_EMAILS = ['ccamechi@gmail.com'];
 
+// ---- Premium document upload support ----
+// Uploaded private documents are analyzed through the SAME pipeline as URLs:
+// we extract plain text from the file and feed it to the analysis prompt as the
+// grounding content. Upload is a premium (paid-tier) feature, enforced server-side.
+const ALLOWED_UPLOAD_EXTS = ['.pdf', '.txt', '.md', '.csv', '.docx', '.png', '.jpg', '.jpeg', '.webp'];
+const MAX_GROUNDING_CHARS = 200000;
+const IMAGE_MIME: Record<string, string> = {
+  '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp',
+};
+
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    binary += String.fromCharCode.apply(null, Array.from(chunk));
+  }
+  return btoa(binary);
+}
+
+/**
+ * Extract analyzable plain text from an uploaded document stored in the
+ * `source-uploads` bucket. Text formats are decoded directly; DOCX is unzipped;
+ * PDFs and images are transcribed by the multimodal model. Throws a
+ * user-actionable "Could not …" error on failure.
+ */
+async function extractDocumentText(
+  supabase: any,
+  filePath: string,
+  lovableApiKey: string,
+): Promise<string> {
+  const { data: fileData, error: downloadError } = await supabase.storage
+    .from('source-uploads')
+    .download(filePath);
+  if (downloadError || !fileData) {
+    throw new Error('Could not read the uploaded file. Please try uploading it again.');
+  }
+  const buffer = await fileData.arrayBuffer();
+  const lower = filePath.toLowerCase();
+
+  // Plain-text formats — decode directly, no AI needed.
+  if (lower.endsWith('.txt') || lower.endsWith('.md') || lower.endsWith('.csv')) {
+    return new TextDecoder().decode(buffer).slice(0, MAX_GROUNDING_CHARS);
+  }
+
+  // DOCX — unzip and read word/document.xml, then strip XML tags to text.
+  if (lower.endsWith('.docx')) {
+    const zip = await JSZip.loadAsync(buffer);
+    const doc = zip.file('word/document.xml');
+    if (!doc) throw new Error('Could not extract text from this document.');
+    const xml = await doc.async('string');
+    const text = xml
+      .replace(/<\/w:p>/g, '\n')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+    if (text.length < 1) throw new Error('Could not extract text from this document.');
+    return text.slice(0, MAX_GROUNDING_CHARS);
+  }
+
+  // PDF and images — hand to the multimodal model to transcribe verbatim.
+  const imageExt = Object.keys(IMAGE_MIME).find((ext) => lower.endsWith(ext));
+  const mime = imageExt ? IMAGE_MIME[imageExt] : 'application/pdf';
+  const instruction = imageExt
+    ? 'Transcribe all visible text in this image verbatim, then briefly describe any non-text content (charts, screenshots, diagrams). Return only the transcription and description — do not summarize or add commentary.'
+    : 'Extract and return the full plain text of this document, preserving paragraph breaks. Return only the document text — do not summarize, comment, or add anything not present in the document.';
+  const dataUrl = `data:${mime};base64,${arrayBufferToBase64(buffer)}`;
+
+  const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${lovableApiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'google/gemini-2.5-flash',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: instruction },
+            { type: 'image_url', image_url: { url: dataUrl } },
+          ],
+        },
+      ],
+    }),
+  });
+
+  if (!aiResponse.ok) {
+    if (aiResponse.status === 429) throw new Error('Rate limit exceeded. Please try again in a few moments.');
+    if (aiResponse.status === 402) throw new Error('AI credits depleted. Please add credits to continue.');
+    const errorText = await aiResponse.text();
+    console.error('Document extraction AI error:', aiResponse.status, errorText);
+    throw new Error('Could not extract text from the uploaded file.');
+  }
+  const aiResult = await aiResponse.json();
+  const text = aiResult.choices?.[0]?.message?.content || '';
+  return String(text).slice(0, MAX_GROUNDING_CHARS);
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -69,9 +171,29 @@ serve(async (req) => {
     }
     const authenticatedUserId: string = authUserFromToken.id;
 
-    const { episodeUrl, podcastName, startupProfile, startupProfileId } = await req.json();
-    console.log('Analyzing episode:', {
+    const {
       episodeUrl,
+      podcastName,
+      startupProfile,
+      startupProfileId,
+      sourceFilePath,
+      sourceFileName,
+    } = await req.json();
+
+    // Two ingestion modes: a public URL, or a premium uploaded document.
+    const isUpload = typeof sourceFilePath === 'string' && sourceFilePath.length > 0;
+    const displayFileName =
+      (typeof sourceFileName === 'string' && sourceFileName.trim()) || 'Uploaded document';
+    // Uploaded documents have no navigable URL; use a synthetic, non-navigable value
+    // so the NOT NULL episodes.url column and downstream references stay consistent.
+    const sourceUrl = isUpload
+      ? `document://${encodeURIComponent(displayFileName)}`
+      : episodeUrl;
+
+    console.log('Analyzing source:', {
+      mode: isUpload ? 'upload' : 'url',
+      episodeUrl: isUpload ? undefined : episodeUrl,
+      sourceFileName: isUpload ? displayFileName : undefined,
       podcastName,
       hasProfile: !!startupProfile,
       startupProfileId: startupProfileId || null,
@@ -86,29 +208,50 @@ serve(async (req) => {
       });
     }
 
-    if (!episodeUrl || typeof episodeUrl !== 'string') {
-      throw new Error('Episode URL is required');
-    }
-    if (episodeUrl.length > 2048) {
-      throw new Error('Episode URL too long');
-    }
     if (podcastName && (typeof podcastName !== 'string' || podcastName.length > 200)) {
       throw new Error('Invalid podcast name');
     }
 
-    // Validate URL format and allowed domains
-    let parsedUrl: URL;
-    try {
-      parsedUrl = new URL(episodeUrl);
-    } catch {
-      throw new Error('Invalid URL format. Please provide a valid video link.');
+    if (isUpload) {
+      // ---- Uploaded document: AuthZ + validation ----
+      if (sourceFilePath.length > 1024) {
+        throw new Error('Invalid file path');
+      }
+      // File must live inside the caller's own storage folder.
+      if (!sourceFilePath.startsWith(`${authenticatedUserId}/`)) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const lowerPath = sourceFilePath.toLowerCase();
+      if (!ALLOWED_UPLOAD_EXTS.some((ext) => lowerPath.endsWith(ext))) {
+        throw new Error('Unsupported file type. Supported files: PDF, TXT, Markdown, CSV, DOCX, and images.');
+      }
+      if (displayFileName.length > 300) {
+        throw new Error('Invalid file name');
+      }
+    } else {
+      // ---- Public URL: validate format ----
+      if (!episodeUrl || typeof episodeUrl !== 'string') {
+        throw new Error('Source URL is required');
+      }
+      if (episodeUrl.length > 2048) {
+        throw new Error('Source URL too long');
+      }
+      let parsedUrl: URL;
+      try {
+        parsedUrl = new URL(episodeUrl);
+      } catch {
+        throw new Error('Invalid URL format. Please provide a valid public link.');
+      }
+      if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+        throw new Error('Invalid URL protocol — must be http or https.');
+      }
+      // Multi-source: any public http(s) URL is accepted. The shared adapter detects
+      // the source type (YouTube, TikTok, Instagram, X, Vimeo, LinkedIn, podcast, or a
+      // generic article/web page) and pulls a transcript (video/audio) or extracts the
+      // readable article text for everything else.
     }
-    if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
-      throw new Error('Invalid URL protocol — must be http or https.');
-    }
-    // Multi-platform: any public http(s) video URL is accepted. The shared adapter
-    // detects the platform (YouTube, TikTok, Instagram, X, Vimeo, LinkedIn, podcast, generic)
-    // and pulls a transcript via free YouTube captions or Supadata for everything else.
 
     let resolvedStartupProfile = startupProfile;
     let resolvedStartupProfileId: string | null = null;
@@ -155,6 +298,19 @@ serve(async (req) => {
           .single();
 
         const tier = (subscription?.tier || 'free') as keyof typeof TIER_LIMITS;
+
+        // Document upload is a premium (paid-tier) feature. Enforce server-side —
+        // the client gate is UX only. Re-read tier from the DB; never trust the client.
+        if (isUpload && tier !== 'seed' && tier !== 'series_z') {
+          return new Response(JSON.stringify({
+            error: 'Document upload is a premium feature. Upgrade to The C-Suite or The Boardroom to analyze private documents.',
+            upgradeRequired: true,
+          }), {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
         const maxAnalyses = TIER_LIMITS[tier]?.analyses ?? TIER_LIMITS.free.analyses;
 
         // Get current month usage
@@ -181,22 +337,55 @@ serve(async (req) => {
       }
     }
 
-    // Unified multi-platform context: metadata + transcript (when obtainable).
-    const videoContext = await getVideoContext(episodeUrl);
+    // Acquire content from either the URL (metadata + transcript or article text)
+    // or the uploaded document (extracted plain text). Both feed the same analysis
+    // prompt through `groundingText`.
+    let videoContext: Awaited<ReturnType<typeof getVideoContext>>;
+    let transcript: { transcriptText: string; language: string | null; source: string } | null = null;
+    let groundingText = '';
+    let groundingLabel: string | null = null;
+
+    if (isUpload) {
+      groundingText = (await extractDocumentText(supabase, sourceFilePath, lovableApiKey)).trim();
+      if (groundingText.length < 20) {
+        throw new Error('Could not extract enough text from the uploaded file to analyze. Try a different file or paste the text as a URL.');
+      }
+      groundingLabel = 'Document text excerpt for grounding';
+      videoContext = {
+        platform: 'generic',
+        metadata: { title: displayFileName, author: null, authorUrl: null, thumbnail: null, description: null },
+        transcript: null,
+        article: null,
+      };
+      // Privacy: remove the raw uploaded file now that we've extracted its text.
+      // Only the derived lessons/callouts are persisted (mirrors parse-deck).
+      supabase.storage.from('source-uploads').remove([sourceFilePath]).catch(() => {});
+    } else {
+      videoContext = await getVideoContext(episodeUrl);
+      transcript = videoContext.transcript
+        ? {
+            transcriptText: videoContext.transcript.transcriptText,
+            language: videoContext.transcript.language,
+            source: videoContext.transcript.source,
+          }
+        : null;
+      if (transcript?.transcriptText) {
+        groundingText = transcript.transcriptText;
+        groundingLabel = 'Transcript excerpt for grounding';
+      } else if (videoContext.article?.text) {
+        groundingText = videoContext.article.text;
+        groundingLabel = 'Article text excerpt for grounding';
+      }
+    }
+
     const videoTitle = videoContext.metadata.title || '';
     const videoAuthor = videoContext.metadata.author || '';
-    const transcript = videoContext.transcript
-      ? {
-          transcriptText: videoContext.transcript.transcriptText,
-          language: videoContext.transcript.language,
-          source: videoContext.transcript.source,
-        }
-      : null;
-    console.log('Video context:', {
+    console.log('Source context:', {
+      mode: isUpload ? 'upload' : 'url',
       platform: videoContext.platform,
       hasTitle: Boolean(videoTitle),
-      hasTranscript: Boolean(transcript),
-      transcriptChars: transcript?.transcriptText.length || 0,
+      hasGrounding: Boolean(groundingText),
+      groundingChars: groundingText.length,
     });
 
 
@@ -210,39 +399,39 @@ ${resolvedStartupProfile.description ? `- About: ${resolvedStartupProfile.descri
       : '';
 
     // Step 2: Use AI to analyze the episode with tool calling
-    const systemPrompt = `You are an expert at extracting practical business lessons from videos and podcasts for founders, operators, and business owners across every industry — including local shops, restaurants, agencies, creators, service businesses, ecommerce brands, bootstrapped companies, and venture-backed startups.
+    const systemPrompt = `You are an expert at extracting practical business lessons from ANY piece of content — articles, blog posts, newsletters, social posts, PDFs, notes, podcasts, and videos — for founders, operators, and business owners across every industry, including local shops, restaurants, agencies, creators, service businesses, ecommerce brands, bootstrapped companies, and venture-backed startups.
 
 CRITICAL REQUIREMENTS:
 - Extract EXACTLY 10 tactical lessons ranked by actionability and impact (each 3-4 sentences with specific context)
 - Extract EXACTLY 5 business-relevant callouts (key takeaways useful to a business builder at any stage or size)
 - Research and include actual company data (funding, valuation, stage, employee count) when the subject is a company; mark "Unknown" or "Not disclosed" otherwise
-- Cite specific examples and stories from the speaker
+- Cite specific examples and stories from the source's author or creator
 - DO NOT provide mock or placeholder data
-- Extract the series/source name from the episode context if not provided
+- Extract the source or publication name from context if not provided
 - Do NOT assume the audience is raising venture capital; keep lessons applicable to many business types
 - Assign relevant TAGS to each lesson (e.g., #marketing, #hiring, #operations, #pricing, #growth)`;
 
-    const userPrompt = `Analyze this episode/video:
-URL: ${episodeUrl}
-Platform: ${videoContext.platform}
+    const userPrompt = `Analyze this content:
+${isUpload ? `Source: Uploaded document — ${displayFileName}` : `URL: ${sourceUrl}`}
+Source type: ${isUpload ? 'document' : videoContext.platform}
 ${videoTitle ? `Title: ${videoTitle}` : ''}
-${videoAuthor ? `Creator/Channel: ${videoAuthor}` : ''}
+${videoAuthor ? `Author/Creator: ${videoAuthor}` : ''}
 ${videoContext.metadata.description ? `Description: ${videoContext.metadata.description.slice(0, 1200)}` : ''}
-${podcastName ? `Source: ${podcastName}` : 'Source: Please extract from the episode'}
-${transcript?.transcriptText ? `Transcript excerpt for grounding:
-${transcript.transcriptText.slice(0, 30000)}` : 'Transcript excerpt: Not available. Use the title, creator, description, and any public knowledge of this URL to extract the most useful business lessons you can. If there truly is nothing to work with, return an error rather than mock data.'}${viewerBusiness}
+${podcastName ? `Source name: ${podcastName}` : 'Source name: Please extract from the content'}
+${groundingText ? `${groundingLabel}:
+${groundingText.slice(0, 30000)}` : 'Full text: Not available. Use the title, author, description, and any public knowledge of this source to extract the most useful business lessons you can. If there truly is nothing to work with, return an error rather than mock data.'}${viewerBusiness}
 
 
 INSTRUCTIONS:
-1. Watch/listen to the episode and extract real insights from the actual content
-2. Identify the speaker(s) and the company or topic discussed
+1. Read the actual content and extract real insights from it
+2. Identify the author or creator(s) and the company or topic discussed
 3. Research relevant metrics (funding, valuation, stage, employees, industry) when applicable
-4. Extract EXACTLY 10 tactical, actionable lessons with specific context from the speaker's stories
+4. Extract EXACTLY 10 tactical, actionable lessons with specific context from the author's stories and points
 5. Extract EXACTLY 5 business-relevant callouts useful to a builder of any business type
 6. Rank lessons by actionability (1-10) and impact (1-10)
-7. Include speaker attribution for each lesson
+7. Include author attribution for each lesson
 8. Assign 1-3 relevant tags to each lesson (e.g. #growth, #culture, #pricing)
-9. Assign 1-3 TOPICS to the whole video, chosen ONLY from this fixed list: ${CANONICAL_TOPICS.join(", ")}
+9. Assign 1-3 TOPICS to the whole source, chosen ONLY from this fixed list: ${CANONICAL_TOPICS.join(", ")}
 10. If you cannot access the content, return an error - do NOT provide mock data`;
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -262,14 +451,14 @@ INSTRUCTIONS:
             type: "function",
             function: {
               name: "extract_episode_data",
-              description: "Extract structured data from podcast episode",
+              description: "Extract structured business insights from a piece of content (article, post, PDF, note, podcast, or video)",
               parameters: {
                 type: "object",
                 properties: {
-                  podcastSeriesName: { type: "string", description: "Name of the podcast series" },
-                  episodeTitle: { type: "string", description: "Episode title" },
-                  releaseDate: { type: "string", description: "Release date in YYYY-MM-DD format", nullable: true },
-                  founderNames: { type: "string", description: "Comma-separated founder names" },
+                  podcastSeriesName: { type: "string", description: "Name of the source, publication, show, or channel" },
+                  episodeTitle: { type: "string", description: "Title of the content" },
+                  releaseDate: { type: "string", description: "Publish/release date in YYYY-MM-DD format", nullable: true },
+                  founderNames: { type: "string", description: "Comma-separated names of the people featured or quoted (authors, speakers, founders)" },
                   company: {
                     type: "object",
                     properties: {
@@ -301,14 +490,14 @@ INSTRUCTIONS:
                           items: { type: "string" },
                           description: "List of tags e.g. #funding, #hiring"
                         },
-                        founderAttribution: { type: "string", description: "Founder's name" }
+                        founderAttribution: { type: "string", description: "Name of the person the lesson is attributed to" }
                       },
                       required: ["text", "impactScore", "actionabilityScore", "category", "tags", "founderAttribution"]
                     }
                   },
                   chavelCallouts: {
                     type: "array",
-                    description: "Exactly 5 startup-relevant callouts for founders",
+                    description: "Exactly 5 business-relevant callouts for founders and operators",
                     minItems: 5,
                     maxItems: 5,
                     items: {
@@ -322,7 +511,7 @@ INSTRUCTIONS:
                   },
                   topics: {
                     type: "array",
-                    description: `1-3 topics for the video, chosen ONLY from: ${CANONICAL_TOPICS.join(", ")}`,
+                    description: `1-3 topics for the content, chosen ONLY from: ${CANONICAL_TOPICS.join(", ")}`,
                     items: { type: "string", enum: [...CANONICAL_TOPICS] },
                     minItems: 1,
                     maxItems: 3
@@ -426,7 +615,7 @@ INSTRUCTIONS:
 
     // Derive channel facets from oEmbed (preferred) with URL fallback.
     const channelName = videoContext.metadata.author || null;
-    const channelHandle = deriveChannelHandle(videoContext.metadata.authorUrl, episodeUrl);
+    const channelHandle = deriveChannelHandle(videoContext.metadata.authorUrl, sourceUrl);
     const topics = normalizeTopics(analysis.topics);
 
     // Canonicalize founder names via the founder_aliases table so favoriting
@@ -472,7 +661,9 @@ INSTRUCTIONS:
         podcast_id: podcastId,
         title: analysis.episodeTitle,
         release_date: (analysis.releaseDate && isValidDate(analysis.releaseDate)) ? analysis.releaseDate : undefined,
-        url: episodeUrl,
+        url: sourceUrl,
+        source_type: isUpload ? 'document' : 'url',
+        platform: isUpload ? 'Document' : undefined,
         company_id: companyId,
         analyzed_profile_id: resolvedStartupProfileId,
         analyzed_profile_name_snapshot: resolvedStartupProfileNameSnapshot,
@@ -738,8 +929,9 @@ Adapt the language, examples, KPIs, risks, and recommended actions to their indu
     if (error instanceof Error) {
       const msg = error.message;
       const safePrefixes = [
-        'Episode URL', 'Invalid URL', 'Invalid podcast', 'Unsupported URL',
-        'Episode URL too long', 'Invalid URL protocol',
+        'Source URL', 'Invalid URL', 'Invalid podcast', 'Unsupported URL',
+        'Invalid URL protocol', 'Unsupported file type', 'Invalid file',
+        'Could not extract', 'Could not read the uploaded',
       ];
       if (safePrefixes.some((p) => msg.startsWith(p))) {
         clientMessage = msg;

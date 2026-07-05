@@ -2,9 +2,9 @@ import { useEffect } from "react";
 
 const SITE_NAME = "Founder Mode Advice";
 const SITE_URL = "https://foundermodeadvice.com";
-const DEFAULT_TITLE = "Founder Mode Advice — Transcript-grounded founder intelligence";
+const DEFAULT_TITLE = "Founder Mode Advice — turn any link or document into founder advice";
 const DEFAULT_DESCRIPTION =
-  "Paste a founder, investor, or operator video. Get transcript-grounded operating memos, risks, action items, and follow-up Q&A tailored to your company, stage, and next decision.";
+  "Paste almost any public URL — articles, posts, newsletters, videos, podcasts — or upload private docs, and get operating memos, risks, action items, and follow-up Q&A tailored to your company, stage, and next decision.";
 
 interface PageMeta {
   /** Page-specific title; rendered as "<title> — Founder Mode Advice". */

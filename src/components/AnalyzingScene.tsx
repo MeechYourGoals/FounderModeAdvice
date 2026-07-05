@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
  * section below it.
  */
 const STAGES = [
-  { label: "Pulling the transcript", at: 0 },
+  { label: "Reading the source", at: 0 },
   { label: "Extracting lessons & risks", at: 6_000 },
   { label: "Mapping to your company", at: 14_000 },
   { label: "Writing your memo", at: 24_000 },
@@ -37,7 +37,7 @@ export const AnalyzingScene = ({
   const activeIndex = STAGES.reduce((acc, stage, i) => (elapsed >= stage.at ? i : acc), 0);
 
   return (
-    <div className="space-y-8 py-2" role="status" aria-live="polite" aria-label="Analyzing video">
+    <div className="space-y-8 py-2" role="status" aria-live="polite" aria-label="Analyzing source">
       {/* Staged narrative */}
       <ol className="mx-auto w-full max-w-sm space-y-3">
         {STAGES.map((stage, i) => {

@@ -30,6 +30,10 @@ export type VideoContext = {
   platform: Platform;
   metadata: VideoMetadata;
   transcript: VideoTranscript | null;
+  // Readable body text for non-video sources (articles, blog posts, newsletters,
+  // generic web pages). Populated only when no transcript is available. Video
+  // callers can safely ignore this field.
+  article?: { text: string; source: string } | null;
 };
 
 export const detectPlatform = (urlString: string): Platform => {
@@ -230,6 +234,63 @@ const extractMeta = (html: string, names: string[]): string | null => {
     if (m2?.[1]) return decodeHtml(m2[1]);
   }
   return null;
+};
+
+/**
+ * Strip page chrome and pull the main readable text from an HTML document.
+ * Regex-based and dependency-free (Deno-safe — no DOM parser). Prefers the
+ * primary content container when present, then block-level text, then a full
+ * tag strip. Returns null when the result is too thin to be useful.
+ */
+export const extractReadableText = (html: string, maxChars = 20000): string | null => {
+  if (!html) return null;
+  // Prefer the primary content container when present.
+  const scoped =
+    html.match(/<article[^>]*>([\s\S]*?)<\/article>/i)?.[1] ??
+    html.match(/<main[^>]*>([\s\S]*?)<\/main>/i)?.[1] ??
+    html;
+  const stripped = scoped
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
+    .replace(/<(nav|header|footer|aside|form|svg)[\s\S]*?<\/\1>/gi, " ");
+  // Prefer block-level text; fall back to a full tag strip.
+  const blocks = [...stripped.matchAll(/<(p|h1|h2|h3|li|blockquote)[^>]*>([\s\S]*?)<\/\1>/gi)]
+    .map((m) => decodeHtml(m[2].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()))
+    .filter((t) => t.length > 0);
+  let text = blocks.join("\n\n").trim();
+  if (text.length < 200) {
+    text = decodeHtml(stripped.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
+  }
+  return text.length >= 200 ? text.slice(0, maxChars) : null;
+};
+
+/**
+ * Fetch a public web page and extract its readable body text.
+ * Reuses safeFetch (SSRF guard applies to the initial URL and every redirect).
+ * Returns null for non-HTML responses or pages with too little text.
+ */
+export const fetchArticleText = async (
+  url: string,
+  maxChars = 20000,
+): Promise<{ text: string; source: string } | null> => {
+  try {
+    const res = await safeFetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
+    });
+    if (!res.ok) return null;
+    const ct = res.headers.get("content-type") || "";
+    if (ct && !/text\/html|application\/xhtml/i.test(ct)) return null;
+    const text = extractReadableText(await res.text(), maxChars);
+    return text ? { text, source: "article_extract" } : null;
+  } catch (e) {
+    console.warn("fetchArticleText failed:", e);
+    return null;
+  }
 };
 
 /** Fetch oEmbed (preferred) or fall back to scraping OpenGraph tags. */
@@ -461,5 +522,13 @@ export const getVideoContext = async (url: string): Promise<VideoContext> => {
 
   const transcript = nativeTranscript ?? (await fetchTranscriptViaSupadata(canonicalUrl, platform));
 
-  return { platform, metadata, transcript };
+  // For non-video sources with no transcript (articles, blog posts, newsletters,
+  // generic web pages), extract the readable body text so the analysis is
+  // grounded in the actual content rather than just OpenGraph metadata.
+  let article: VideoContext["article"] = null;
+  if (!transcript && platform === "generic") {
+    article = await fetchArticleText(canonicalUrl);
+  }
+
+  return { platform, metadata, transcript, article };
 };
