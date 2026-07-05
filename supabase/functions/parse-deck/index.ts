@@ -43,6 +43,16 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) return jsonError("Unauthorized", 401);
 
+    // Rate limit: 10 deck parses / minute per user.
+    const { data: allowed } = await supabase.rpc("check_and_increment_rate_limit", {
+      _user_id: user.id,
+      _key: "parse-deck",
+      _window: "1 minute",
+      _limit: 10,
+    });
+    if (allowed === false) return jsonError("You're uploading decks too quickly. Please wait a moment.", 429);
+
+
     const body = await req.json().catch(() => ({}));
     const fileUrl = typeof body?.fileUrl === "string" ? body.fileUrl : "";
     if (!fileUrl) return jsonError("fileUrl is required", 400);

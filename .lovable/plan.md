@@ -1,61 +1,48 @@
+## Current state (verified against DB + edge functions)
 
-## What I'll do in code
+| Item | Status |
+|---|---|
+| `user_subscriptions.status` column | ✅ applied (12 cols present) |
+| `20260705120000_add_source_uploads_and_document_sources.sql` | ❌ **NOT applied** — `source-uploads` bucket missing, `episodes.source_type` + `episodes.file_path` missing |
+| `analyze-episode` upload handler (PDF / DOCX / TXT / MD / CSV / images) | ✅ code present, but blocked because bucket/columns don't exist |
+| Excel (`.xlsx` / `.xls`) support | ❌ not in `SourceUploadZone` ACCEPT list, not in `extractDocumentText` |
+| Rate limits on `video-chat` / `parse-deck` | ❌ not implemented (was awaiting your (a)/(b) decision — assuming (a) below) |
+| SSRF guard in `_shared/transcript.ts` | ✅ done last round |
 
-### 1. Apply the `user_subscriptions.status` migration
-Confirmed via `information_schema`: the `status` column is **missing** in production (only 11 columns present). The file `supabase/migrations/20260704190000_add_user_subscriptions_status.sql` exists in the repo but was never executed against the DB. Every write from `payments-webhook`, `sync-revenuecat-subscription`, and `get_or_create_subscription()` is currently failing silently → paid users never upgrade.
+The single biggest blocker is that migration `20260705120000` never ran. Until it does, every document upload will 500 at `storage.from('source-uploads').upload(...)` because the bucket doesn't exist, and even if it uploaded, the `episodes` insert would fail on `source_type`.
 
-I'll run the migration via the migration tool (idempotent `ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'active'`).
+## What I'll do in code (build mode)
 
-### 2. Redeploy the 4 edge functions
-`payments-webhook`, `create-portal-session`, `send-daily-prompt`, `analyze-episode` — via `supabase--deploy_edge_functions`. Lovable's autodeploy usually handles this, but I'll force it to be safe.
+### 1. Re-apply the source-uploads migration
+Same SQL as `20260705120000_add_source_uploads_and_document_sources.sql`, wrapped so it's idempotent against partial prior runs:
+- `INSERT INTO storage.buckets ... ON CONFLICT DO NOTHING` for `source-uploads` (private).
+- Three `CREATE POLICY IF NOT EXISTS` on `storage.objects` scoping insert/select/delete to `auth.uid() = (storage.foldername(name))[1]`.
+- `ALTER TABLE public.episodes ADD COLUMN IF NOT EXISTS source_type text NOT NULL DEFAULT 'url'`.
+- `ALTER TABLE public.episodes ADD COLUMN IF NOT EXISTS file_path text`.
 
-### 3. Harden `analyze-episode` SSRF
-The exposure is in `supabase/functions/_shared/transcript.ts`:
-- Line 77: `fetch(current, { method: "HEAD", redirect: "follow" })` on caller-supplied URL
-- Line 151: `fetch(url, ...)` on caller-supplied URL
+No new public tables → no new GRANTs needed. Rollback is `DROP COLUMN` + `DELETE FROM storage.buckets`.
 
-Both are reachable from `analyze-episode`. Fix: add a shared `assertPublicUrl(url)` guard that runs before every user-URL fetch:
-- Require `http:`/`https:` only (reject `file:`, `gopher:`, `ftp:`, etc.)
-- Reject hostnames that are literal IPs
-- DNS-resolve the hostname; reject if any resolved address is private/loopback/link-local/reserved (RFC1918, 127/8, 169.254/16, ::1, fc00::/7, fe80::/10, metadata 169.254.169.254)
-- On redirect follow: re-check each hop (so we drop `redirect: "follow"` and implement a bounded manual follow that re-validates)
+### 2. Add Excel (.xlsx / .xls) support end-to-end
+- **Client (`src/components/SourceUploadZone.tsx`)**: add `xlsx`, `xls` to `ACCEPT` + `ALLOWED_EXT`; extend the "PDF, TXT, …" helper text and the unsupported-type toast.
+- **Edge (`supabase/functions/analyze-episode/index.ts`)** — in `extractDocumentText`, add a branch before the multimodal fallback:
+  - `.xlsx` → `SheetJS` (`npm:xlsx@0.18`) `read(buffer, { type: 'array' })` → for each sheet, `utils.sheet_to_csv(sheet)` joined with `\n\n# Sheet: <name>\n`, sliced to `MAX_GROUNDING_CHARS`.
+  - `.xls` → same SheetJS call (it handles both). If parse throws, return the same user-actionable "Could not extract text from this document." error.
+- No AI round-trip for spreadsheets — deterministic CSV extraction, cheaper and lossless for the analysis pipeline.
 
-Applied at both fetch sites. No behavior change for legitimate public YouTube/podcast URLs.
+### 3. Redeploy touched edge functions
+`analyze-episode` (Excel branch). `parse-deck` and `video-chat` only if step 4 lands the rate-limit code — otherwise skipped.
 
-## What only you can do (walkthroughs)
+### 4. Rate limits on `video-chat` + `parse-deck` (option (a) from last round)
+Assumed you want (a) — the ~30-line DB-backed limiter. If you'd rather defer, say so and I'll drop this step.
 
-### A. `CRON_SECRET` for `send-daily-prompt`
-The function now returns 401 unless the caller sends header `x-cron-secret: <value>` matching the `CRON_SECRET` env var. Until you set both sides, daily push is dead (which is fine pre-launch).
+- New migration: `public.rate_limits(user_id uuid, key text, window_start timestamptz, count int, primary key (user_id, key, window_start))`, `GRANT ALL ON public.rate_limits TO service_role;` (no anon/authenticated — only edge functions touch it), RLS enabled with no policies (service-role-only access).
+- New `public.check_and_increment_rate_limit(_user_id uuid, _key text, _window interval, _limit int) returns boolean` — security definer, upserts current bucket, returns `false` when over cap.
+- `video-chat`: gate at 30 requests / 1 min per user. `parse-deck`: 10 / 1 min per user. On `false`, return 429 with `{ error: "Rate limit exceeded, please wait a moment." }`.
 
-Steps:
-1. **Backend → Edge Functions → Secrets** → add `CRON_SECRET` = a random 32+ char string. I can generate & store it for you via the generate_secret tool — say the word.
-2. Update the scheduler that hits `/functions/v1/send-daily-prompt`:
-   - **If pg_cron:** re-run the cron.schedule SQL with `headers` including `"x-cron-secret": "<same value>"` alongside the existing `apikey`/`Content-Type`. Because this SQL embeds a secret, do it in **Backend → SQL editor**, not a migration.
-   - **If external cron (GitHub Actions, Cloudflare, EasyCron, etc.):** add the `x-cron-secret` header to the scheduled HTTP request; store the secret in that platform's secret store.
+## Decisions I need from you before I switch to build mode
 
-### B. Paddle live webhook URL + API key
-1. **Paddle dashboard → Developer tools → Notifications** → the **live** endpoint's URL must end in `?env=live`. The handler now defaults to live if omitted, but explicit is the contract.
-2. **Backend → Edge Functions → Secrets**: confirm `PADDLE_LIVE_API_KEY` is set (fetch_secrets shows only `PADDLE_LIVE_API_KEY` managed by connector — good). `create-portal-session` will 502 without it when a live Paddle customer opens the portal.
+1. **Rate limits: (a) implement now, or (b) defer?** Default = (a).
+2. **Excel row cap.** SheetJS will happily emit 500k-row CSVs. I'll slice to `MAX_GROUNDING_CHARS` (same cap as every other source) — confirm that's fine, or give me a row cap you'd prefer.
+3. **`.xls` (legacy binary)** — worth supporting alongside `.xlsx`? Free with SheetJS; only cost is one more line in the allow-list. Default = yes.
 
-## Decisions I need from you
-
-1. **Rate limits on `video-chat` and `parse-deck`.** The Lovable backend has no standard rate-limiting primitive. Options:
-   - **(a)** Ad-hoc per-user cap in a new `public.rate_limits(user_id, key, window_start, count)` table with a security-definer function — ~30 lines, adds a DB row per call. Cheap but real.
-   - **(b)** Skip until proper infra exists (documented gap).
-   - Pick (a) or (b).
-
-2. **PostHog identify email trait.** You said web analytics is out of scope, so I'm skipping it. Confirm you want it left alone.
-
-3. **`CRON_SECRET`** — want me to generate & store it now, or will you pick the value?
-
-## Out of scope this round
-- Deleting `create-checkout-session` / `stripe-webhook` (needs your call on retiring Stripe entirely).
-- Lint cleanup (114 pre-existing `no-explicit-any`).
-- Landing page social proof.
-- PWA maskable icon regeneration.
-- 114 lint errors.
-
-## Rollback
-- Migration: `ALTER TABLE public.user_subscriptions DROP COLUMN IF EXISTS status;` (only if no row depends on it — it will after the webhook writes once).
-- SSRF guard: single file (`supabase/functions/_shared/transcript.ts`); revert the file.
-- Redeploy: previous versions remain in Supabase function history.
+Answer those (or say "go with defaults") and I'll switch to build.

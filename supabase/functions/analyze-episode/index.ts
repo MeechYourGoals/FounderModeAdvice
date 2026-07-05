@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import JSZip from "https://esm.sh/jszip@3.10.1";
+import * as XLSX from "https://esm.sh/xlsx@0.18.5";
 import { getVideoContext, deriveChannelHandle } from "../_shared/transcript.ts";
 
 // Canonical topic vocabulary (keep in sync with src/lib/topics.ts).
@@ -48,7 +49,7 @@ const FOUNDER_EMAILS = ['ccamechi@gmail.com'];
 // Uploaded private documents are analyzed through the SAME pipeline as URLs:
 // we extract plain text from the file and feed it to the analysis prompt as the
 // grounding content. Upload is a premium (paid-tier) feature, enforced server-side.
-const ALLOWED_UPLOAD_EXTS = ['.pdf', '.txt', '.md', '.csv', '.docx', '.png', '.jpg', '.jpeg', '.webp'];
+const ALLOWED_UPLOAD_EXTS = ['.pdf', '.txt', '.md', '.csv', '.docx', '.xlsx', '.xls', '.png', '.jpg', '.jpeg', '.webp'];
 const MAX_GROUNDING_CHARS = 200000;
 const IMAGE_MIME: Record<string, string> = {
   '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp',
@@ -104,6 +105,29 @@ async function extractDocumentText(
       .replace(/[ \t]+/g, ' ')
       .replace(/\n{3,}/g, '\n\n')
       .trim();
+    if (text.length < 1) throw new Error('Could not extract text from this document.');
+    return text.slice(0, MAX_GROUNDING_CHARS);
+  }
+
+  // XLSX / XLS — deterministic CSV extraction per sheet, no AI round-trip.
+  if (lower.endsWith('.xlsx') || lower.endsWith('.xls')) {
+    let workbook: XLSX.WorkBook;
+    try {
+      workbook = XLSX.read(new Uint8Array(buffer), { type: 'array' });
+    } catch (err) {
+      console.error('XLSX parse error:', err);
+      throw new Error('Could not extract text from this document.');
+    }
+    const parts: string[] = [];
+    for (const name of workbook.SheetNames) {
+      const sheet = workbook.Sheets[name];
+      if (!sheet) continue;
+      const csv = XLSX.utils.sheet_to_csv(sheet);
+      if (csv.trim().length === 0) continue;
+      parts.push(`# Sheet: ${name}\n${csv}`);
+      if (parts.join('\n\n').length >= MAX_GROUNDING_CHARS) break;
+    }
+    const text = parts.join('\n\n').trim();
     if (text.length < 1) throw new Error('Could not extract text from this document.');
     return text.slice(0, MAX_GROUNDING_CHARS);
   }
