@@ -83,8 +83,8 @@ const ScrubStep = ({
     { clamp: true },
   );
   const hover = useMotionValue(0);
-  const opacity = useTransform([baseOpacity, hover] as const, ([o, h]) => o + (1 - o) * h);
-  const scale = useTransform([baseScale, hover] as const, ([s, h]) => s + (1.03 - s) * h);
+  const opacity = useTransform([baseOpacity, hover] as const, ([o, h]) => (o as number) + (1 - (o as number)) * (h as number));
+  const scale = useTransform([baseScale, hover] as const, ([s, h]) => (s as number) + (1.03 - (s as number)) * (h as number));
   return (
     <m.div
       className="step-wrapper"
