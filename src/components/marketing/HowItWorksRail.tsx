@@ -145,7 +145,7 @@ export const HowItWorksRail = () => {
             }}
           />
         </div>
-        <ol className="grid grid-cols-4 gap-5">
+        <ol className="how-it-works-rail grid grid-cols-4 gap-5">
           {STEPS.map((s, i) => (
             <li key={s.step} className="list-none">
               <ScrubStep progress={sprung} index={i} total={STEPS.length}>
