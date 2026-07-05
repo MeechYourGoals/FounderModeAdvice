@@ -290,7 +290,10 @@ serve(async (req) => {
       throw new Error('Invalid podcast name');
     }
 
-    if (isUpload) {
+    if (reanalyzeSource) {
+      // Nothing to validate: title/url come from the prior owned episode row and
+      // grounding text is already in hand from episode_transcripts.
+    } else if (isUpload) {
       // ---- Uploaded document: AuthZ + validation ----
       if (sourceFilePath.length > 1024) {
         throw new Error('Invalid file path');
