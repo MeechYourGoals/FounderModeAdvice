@@ -40,6 +40,17 @@ serve(async (req) => {
       return jsonError('Service temporarily unavailable', 503);
     }
 
+    // Allowlist: only permit known, intended price IDs to prevent billing bypass.
+    const seedPriceId = Deno.env.get('STRIPE_SEED_PRICE_ID');
+    const seriesZPriceId = Deno.env.get('STRIPE_SERIES_Z_PRICE_ID');
+    if (!seedPriceId || !seriesZPriceId) {
+      console.error('create-checkout-session: STRIPE_SEED_PRICE_ID or STRIPE_SERIES_Z_PRICE_ID missing');
+      return jsonError('Billing not configured', 503);
+    }
+    if (priceId !== seedPriceId && priceId !== seriesZPriceId) {
+      return jsonError('Invalid price ID', 400);
+    }
+
     const userId = user.id;
 
     const { data: subscription } = await supabase
