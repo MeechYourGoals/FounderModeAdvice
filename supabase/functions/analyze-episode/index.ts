@@ -428,7 +428,22 @@ serve(async (req) => {
     let groundingText = '';
     let groundingLabel: string | null = null;
 
-    if (isUpload) {
+    if (reanalyzeSource) {
+      groundingText = reanalyzeSource.transcriptText;
+      groundingLabel = 'Document text excerpt for grounding';
+      videoContext = {
+        platform: 'generic',
+        metadata: { title: displayFileName, author: null, authorUrl: null, thumbnail: null, description: null },
+        transcript: null,
+        article: null,
+      };
+      // Persist the reused text on the new episode too, so future re-analyses keep working.
+      transcript = {
+        transcriptText: groundingText,
+        language: null,
+        source: 'document-upload',
+      };
+    } else if (isUpload) {
       groundingText = (await extractDocumentText(supabase, sourceFilePath, lovableApiKey)).trim();
       if (groundingText.length < 20) {
         throw new Error('Could not extract enough text from the uploaded file to analyze. Try a different file or paste the text as a URL.');
@@ -440,8 +455,15 @@ serve(async (req) => {
         transcript: null,
         article: null,
       };
+      // Persist extracted text so the user can re-analyze without re-uploading.
+      // The raw file is still deleted below for privacy.
+      transcript = {
+        transcriptText: groundingText,
+        language: null,
+        source: 'document-upload',
+      };
       // Privacy: remove the raw uploaded file now that we've extracted its text.
-      // Only the derived lessons/callouts are persisted (mirrors parse-deck).
+      // Only the derived lessons/callouts + transcript text are persisted.
       supabase.storage.from('source-uploads').remove([sourceFilePath]).catch(() => {});
     } else {
       videoContext = await getVideoContext(episodeUrl);
