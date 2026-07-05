@@ -54,7 +54,9 @@ const StepPanel = ({ step, title, description }: (typeof STEPS)[number]) => (
   </div>
 );
 
-/** One step in the sticky rail — highlights while its quarter of scroll is active. */
+/** One step in the sticky rail — highlights while its quarter of scroll is active.
+ *  Hovering a card temporarily overrides scroll-driven dimming so the
+ *  focused card always comes to prominence. */
 const ScrubStep = ({
   progress,
   index,
@@ -68,19 +70,31 @@ const ScrubStep = ({
 }) => {
   const start = index / total;
   const end = (index + 1) / total;
-  const opacity = useTransform(
+  const baseOpacity = useTransform(
     progress,
     [start - 0.12, start, end, end + 0.12],
     [0.45, 1, 1, 0.45],
     { clamp: true },
   );
-  const scale = useTransform(
+  const baseScale = useTransform(
     progress,
     [start - 0.12, start, end, end + 0.12],
     [0.965, 1.025, 1.025, 0.965],
     { clamp: true },
   );
-  return <m.div style={{ opacity, scale }}>{children}</m.div>;
+  const hover = useMotionValue(0);
+  const opacity = useTransform([baseOpacity, hover] as const, ([o, h]) => o + (1 - o) * h);
+  const scale = useTransform([baseScale, hover] as const, ([s, h]) => s + (1.03 - s) * h);
+  return (
+    <m.div
+      className="step-wrapper"
+      style={{ opacity, scale }}
+      onHoverStart={() => animate(hover, 1, { duration: 0.25 })}
+      onHoverEnd={() => animate(hover, 0, { duration: 0.25 })}
+    >
+      {children}
+    </m.div>
+  );
 };
 
 /**
