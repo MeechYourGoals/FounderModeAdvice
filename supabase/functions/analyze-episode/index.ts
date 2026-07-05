@@ -202,17 +202,71 @@ serve(async (req) => {
       startupProfileId,
       sourceFilePath,
       sourceFileName,
+      reanalyzeEpisodeId,
     } = await req.json();
 
+    // Re-analysis mode: reuse a previously extracted document's stored transcript
+    // instead of touching a URL or the storage bucket (the raw file was already
+    // deleted after the first analysis for privacy).
+    let reanalyzeSource: {
+      episodeUrl: string;
+      displayFileName: string;
+      transcriptText: string;
+    } | null = null;
+    if (typeof reanalyzeEpisodeId === 'string' && reanalyzeEpisodeId.length > 0) {
+      const { data: priorEpisode, error: priorErr } = await supabase
+        .from('episodes')
+        .select('id, url, title, source_type, analyzed_by')
+        .eq('id', reanalyzeEpisodeId)
+        .maybeSingle();
+      if (priorErr || !priorEpisode) {
+        return new Response(JSON.stringify({ error: 'Original analysis not found.' }), {
+          status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (priorEpisode.analyzed_by !== authenticatedUserId) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (priorEpisode.source_type !== 'document') {
+        return new Response(JSON.stringify({ error: 'Re-analysis by episode id is only supported for uploaded documents.' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const { data: priorTranscript } = await supabase
+        .from('episode_transcripts')
+        .select('transcript_text')
+        .eq('episode_id', priorEpisode.id)
+        .maybeSingle();
+      const priorText = priorTranscript?.transcript_text?.trim() || '';
+      if (priorText.length < 20) {
+        return new Response(JSON.stringify({
+          error: 'The original document text is no longer available. Please upload the document again to re-analyze.',
+        }), {
+          status: 410, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      reanalyzeSource = {
+        episodeUrl: priorEpisode.url,
+        displayFileName: priorEpisode.title || 'Uploaded document',
+        transcriptText: priorText,
+      };
+    }
+
     // Two ingestion modes: a public URL, or a premium uploaded document.
-    const isUpload = typeof sourceFilePath === 'string' && sourceFilePath.length > 0;
-    const displayFileName =
-      (typeof sourceFileName === 'string' && sourceFileName.trim()) || 'Uploaded document';
+    // Re-analysis of a document is treated as an "upload" mode with grounding
+    // sourced from the saved transcript.
+    const isUpload = reanalyzeSource !== null
+      || (typeof sourceFilePath === 'string' && sourceFilePath.length > 0);
+    const displayFileName = reanalyzeSource
+      ? reanalyzeSource.displayFileName
+      : ((typeof sourceFileName === 'string' && sourceFileName.trim()) || 'Uploaded document');
     // Uploaded documents have no navigable URL; use a synthetic, non-navigable value
     // so the NOT NULL episodes.url column and downstream references stay consistent.
-    const sourceUrl = isUpload
-      ? `document://${encodeURIComponent(displayFileName)}`
-      : episodeUrl;
+    const sourceUrl = reanalyzeSource
+      ? reanalyzeSource.episodeUrl
+      : (isUpload ? `document://${encodeURIComponent(displayFileName)}` : episodeUrl);
 
     console.log('Analyzing source:', {
       mode: isUpload ? 'upload' : 'url',
