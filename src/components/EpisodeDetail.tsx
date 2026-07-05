@@ -368,9 +368,10 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
         deck_summary: (profile as any).deck_summary || null,
       } : undefined;
 
+      const isDocument = (episode as { source_type?: string }).source_type === 'document';
       const { data, error } = await supabase.functions.invoke('analyze-episode', {
         body: {
-          episodeUrl: episode.url,
+          ...(isDocument ? { reanalyzeEpisodeId: episode.id } : { episodeUrl: episode.url }),
           startupProfile,
           userId: user.id,
         },
@@ -525,34 +526,32 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
                   </Button>
                 )}
               </div>
-              {(episode as { source_type?: string }).source_type !== 'document' && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="sm:size-default" disabled={reanalyzing}>
-                      {reanalyzing ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : (
-                        <RefreshCw className="w-4 h-4 mr-2" />
-                      )}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="sm:size-default" disabled={reanalyzing}>
+                    {reanalyzing ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                    )}
+                    Re-Analyze
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Re-analyze this episode?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will replace the existing analysis with a fresh one based on your current startup profile. This counts as a new analysis toward your monthly limit.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleReanalyze}>
                       Re-Analyze
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Re-analyze this episode?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This will replace the existing analysis with a fresh one based on your current startup profile. This counts as a new analysis toward your monthly limit.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleReanalyze}>
-                        Re-Analyze
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
 

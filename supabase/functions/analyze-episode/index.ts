@@ -202,17 +202,71 @@ serve(async (req) => {
       startupProfileId,
       sourceFilePath,
       sourceFileName,
+      reanalyzeEpisodeId,
     } = await req.json();
 
+    // Re-analysis mode: reuse a previously extracted document's stored transcript
+    // instead of touching a URL or the storage bucket (the raw file was already
+    // deleted after the first analysis for privacy).
+    let reanalyzeSource: {
+      episodeUrl: string;
+      displayFileName: string;
+      transcriptText: string;
+    } | null = null;
+    if (typeof reanalyzeEpisodeId === 'string' && reanalyzeEpisodeId.length > 0) {
+      const { data: priorEpisode, error: priorErr } = await supabase
+        .from('episodes')
+        .select('id, url, title, source_type, analyzed_by')
+        .eq('id', reanalyzeEpisodeId)
+        .maybeSingle();
+      if (priorErr || !priorEpisode) {
+        return new Response(JSON.stringify({ error: 'Original analysis not found.' }), {
+          status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (priorEpisode.analyzed_by !== authenticatedUserId) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (priorEpisode.source_type !== 'document') {
+        return new Response(JSON.stringify({ error: 'Re-analysis by episode id is only supported for uploaded documents.' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const { data: priorTranscript } = await supabase
+        .from('episode_transcripts')
+        .select('transcript_text')
+        .eq('episode_id', priorEpisode.id)
+        .maybeSingle();
+      const priorText = priorTranscript?.transcript_text?.trim() || '';
+      if (priorText.length < 20) {
+        return new Response(JSON.stringify({
+          error: 'The original document text is no longer available. Please upload the document again to re-analyze.',
+        }), {
+          status: 410, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      reanalyzeSource = {
+        episodeUrl: priorEpisode.url,
+        displayFileName: priorEpisode.title || 'Uploaded document',
+        transcriptText: priorText,
+      };
+    }
+
     // Two ingestion modes: a public URL, or a premium uploaded document.
-    const isUpload = typeof sourceFilePath === 'string' && sourceFilePath.length > 0;
-    const displayFileName =
-      (typeof sourceFileName === 'string' && sourceFileName.trim()) || 'Uploaded document';
+    // Re-analysis of a document is treated as an "upload" mode with grounding
+    // sourced from the saved transcript.
+    const isUpload = reanalyzeSource !== null
+      || (typeof sourceFilePath === 'string' && sourceFilePath.length > 0);
+    const displayFileName = reanalyzeSource
+      ? reanalyzeSource.displayFileName
+      : ((typeof sourceFileName === 'string' && sourceFileName.trim()) || 'Uploaded document');
     // Uploaded documents have no navigable URL; use a synthetic, non-navigable value
     // so the NOT NULL episodes.url column and downstream references stay consistent.
-    const sourceUrl = isUpload
-      ? `document://${encodeURIComponent(displayFileName)}`
-      : episodeUrl;
+    const sourceUrl = reanalyzeSource
+      ? reanalyzeSource.episodeUrl
+      : (isUpload ? `document://${encodeURIComponent(displayFileName)}` : episodeUrl);
 
     console.log('Analyzing source:', {
       mode: isUpload ? 'upload' : 'url',
@@ -236,7 +290,10 @@ serve(async (req) => {
       throw new Error('Invalid podcast name');
     }
 
-    if (isUpload) {
+    if (reanalyzeSource) {
+      // Nothing to validate: title/url come from the prior owned episode row and
+      // grounding text is already in hand from episode_transcripts.
+    } else if (isUpload) {
       // ---- Uploaded document: AuthZ + validation ----
       if (sourceFilePath.length > 1024) {
         throw new Error('Invalid file path');
@@ -325,7 +382,9 @@ serve(async (req) => {
 
         // Document upload is a premium (paid-tier) feature. Enforce server-side —
         // the client gate is UX only. Re-read tier from the DB; never trust the client.
-        if (isUpload && tier !== 'seed' && tier !== 'series_z') {
+        // Re-analysis of an already-uploaded document skips the upload gate (the
+        // paywall was enforced on the original upload) but still counts as an analysis.
+        if (isUpload && !reanalyzeSource && tier !== 'seed' && tier !== 'series_z') {
           return new Response(JSON.stringify({
             error: 'Document upload is a premium feature. Upgrade to The C-Suite or The Boardroom to analyze private documents.',
             upgradeRequired: true,
@@ -369,7 +428,22 @@ serve(async (req) => {
     let groundingText = '';
     let groundingLabel: string | null = null;
 
-    if (isUpload) {
+    if (reanalyzeSource) {
+      groundingText = reanalyzeSource.transcriptText;
+      groundingLabel = 'Document text excerpt for grounding';
+      videoContext = {
+        platform: 'generic',
+        metadata: { title: displayFileName, author: null, authorUrl: null, thumbnail: null, description: null },
+        transcript: null,
+        article: null,
+      };
+      // Persist the reused text on the new episode too, so future re-analyses keep working.
+      transcript = {
+        transcriptText: groundingText,
+        language: null,
+        source: 'document-upload',
+      };
+    } else if (isUpload) {
       groundingText = (await extractDocumentText(supabase, sourceFilePath, lovableApiKey)).trim();
       if (groundingText.length < 20) {
         throw new Error('Could not extract enough text from the uploaded file to analyze. Try a different file or paste the text as a URL.');
@@ -381,8 +455,15 @@ serve(async (req) => {
         transcript: null,
         article: null,
       };
+      // Persist extracted text so the user can re-analyze without re-uploading.
+      // The raw file is still deleted below for privacy.
+      transcript = {
+        transcriptText: groundingText,
+        language: null,
+        source: 'document-upload',
+      };
       // Privacy: remove the raw uploaded file now that we've extracted its text.
-      // Only the derived lessons/callouts are persisted (mirrors parse-deck).
+      // Only the derived lessons/callouts + transcript text are persisted.
       supabase.storage.from('source-uploads').remove([sourceFilePath]).catch(() => {});
     } else {
       videoContext = await getVideoContext(episodeUrl);
