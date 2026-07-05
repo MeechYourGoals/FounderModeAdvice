@@ -34,10 +34,10 @@ export const LibraryEmptyState = () => {
         </div>
         <h3 className="text-lg sm:text-xl font-semibold tracking-tight">
           Analyze your{" "}
-          <span className="font-display font-medium italic text-gradient">first video</span>
+          <span className="font-display font-medium italic text-gradient">first source</span>
         </h3>
         <p className="text-sm text-muted-foreground max-w-md mx-auto mt-1">
-          Paste a founder, operator, or investor video above — or start with one of these.
+          Paste almost any public link above — or start with one of these.
           {activeProfile
             ? <> The memo will be tailored to <span className="font-medium text-foreground">{activeProfile.company_name}</span>.</>
             : <> Add a company profile to tailor the advice to your stage and industry.</>}

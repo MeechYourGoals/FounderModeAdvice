@@ -65,7 +65,7 @@ const STEP_META: Record<StepId, { icon: LucideIcon; title: string; description: 
     icon: Rocket,
     title: "Welcome to Founder Mode Advice",
     description:
-      "Turn founder, operator, and investor videos into operating memos for your business. A minute of setup makes every memo yours — not a generic playbook.",
+      "Turn almost any link or document into operating memos for your business. A minute of setup makes every memo yours — not a generic playbook.",
   },
   business: {
     icon: Building2,
@@ -86,7 +86,7 @@ const STEP_META: Record<StepId, { icon: LucideIcon; title: string; description: 
   finish: {
     icon: Check,
     title: "You're all set",
-    description: "Paste any video link on the home screen and your first memo starts writing itself.",
+    description: "Paste almost any public link on the home screen and your first memo starts writing itself.",
   },
 };
 

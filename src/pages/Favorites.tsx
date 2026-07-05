@@ -24,7 +24,7 @@ import { SHORTCUT_TOPICS, normalizeTopics } from "@/lib/topics";
 import { useToast } from "@/hooks/use-toast";
 
 const KIND_META: Record<FavoriteKind, { label: string; icon: typeof Tv; empty: string }> = {
-  channel: { label: "Channels", icon: Tv, empty: "Analyze a video to see its channel here." },
+  channel: { label: "Channels", icon: Tv, empty: "Analyze a source to see its channel here." },
   founder: { label: "Founders", icon: UserIcon, empty: "Founder names from your analyses appear here." },
   topic: { label: "Topics", icon: Tag, empty: "Topics get tagged automatically as you analyze." },
 };
@@ -66,7 +66,7 @@ const FacetRow = ({
     <button onClick={onTogglePin} className="flex-1 text-left min-w-0">
       <div className="font-medium truncate">{facet.display_name}</div>
       <div className="text-xs text-muted-foreground">
-        {facet.count} {facet.count === 1 ? "video" : "videos"}
+        {facet.count} {facet.count === 1 ? "source" : "sources"}
       </div>
     </button>
     <FavoriteStar kind={kind} displayName={facet.display_name} />
@@ -360,11 +360,11 @@ const Favorites = () => {
               <div>
                 <h3 className="font-semibold text-sm text-muted-foreground mb-2">
                   {filteredEpisodes.length}{" "}
-                  {filteredEpisodes.length === 1 ? "video" : "videos"} match
+                  {filteredEpisodes.length === 1 ? "source" : "sources"} match
                 </h3>
                 {filteredEpisodes.length === 0 ? (
                   <p className="text-sm text-muted-foreground py-6 text-center border border-dashed rounded-md">
-                    No videos match the intersection of these pins yet.
+                    No sources match the intersection of these pins yet.
                     {pins.length > 1 && " Try removing one to widen the search."}
                   </p>
                 ) : (
@@ -391,7 +391,7 @@ const Favorites = () => {
                           target="_blank"
                           rel="noreferrer"
                           className="text-muted-foreground hover:text-foreground p-1"
-                          aria-label="Open original video"
+                          aria-label="Open original source"
                         >
                           <ExternalLink className="h-4 w-4" />
                         </a>

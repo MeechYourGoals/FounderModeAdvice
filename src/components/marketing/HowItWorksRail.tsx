@@ -17,9 +17,9 @@ import {
 const STEPS = [
   {
     step: "01",
-    title: "Paste a video",
+    title: "Paste a source",
     description:
-      "Drop in any public founder, investor, or operator video. The source and transcript are pulled automatically.",
+      "Drop in almost any public link — an article, post, newsletter, video, or podcast. The source is fetched automatically.",
   },
   {
     step: "02",
@@ -37,7 +37,7 @@ const STEPS = [
     step: "04",
     title: "Save, ask, operationalize",
     description:
-      "File it into a playbook, ask transcript follow-ups, and on Boardroom run one video across multiple business profiles in one go.",
+      "File it into a playbook, ask transcript follow-ups, and on Boardroom run one source across multiple business profiles in one go.",
   },
 ] as const;
 

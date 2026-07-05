@@ -398,12 +398,14 @@ export type Database = {
           channel_name: string | null
           company_id: string | null
           created_at: string | null
+          file_path: string | null
           founder_names: string | null
           founders: string[]
           id: string
           platform: string | null
           podcast_id: string | null
           release_date: string | null
+          source_type: string
           title: string
           topics: string[] | null
           updated_at: string | null
@@ -418,12 +420,14 @@ export type Database = {
           channel_name?: string | null
           company_id?: string | null
           created_at?: string | null
+          file_path?: string | null
           founder_names?: string | null
           founders?: string[]
           id?: string
           platform?: string | null
           podcast_id?: string | null
           release_date?: string | null
+          source_type?: string
           title: string
           topics?: string[] | null
           updated_at?: string | null
@@ -438,12 +442,14 @@ export type Database = {
           channel_name?: string | null
           company_id?: string | null
           created_at?: string | null
+          file_path?: string | null
           founder_names?: string | null
           founders?: string[]
           id?: string
           platform?: string | null
           podcast_id?: string | null
           release_date?: string | null
+          source_type?: string
           title?: string
           topics?: string[] | null
           updated_at?: string | null

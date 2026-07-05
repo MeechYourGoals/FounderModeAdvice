@@ -11,6 +11,7 @@ import { canBatchAnalyzeProfiles, isUnlimited } from "@/types/subscription";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { StartupProfileForm } from "./StartupProfileForm";
 import { AnalyzingScene } from "./AnalyzingScene";
+import { SourceUploadZone } from "./SourceUploadZone";
 import { UpgradePrompt } from "./subscription";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 import {
@@ -52,7 +53,7 @@ export const AnalysisForm = () => {
   const [podcastName, setPodcastName] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [progress, setProgress] = useState("");
-  const [inputMode, setInputMode] = useState<"series" | "url">("url");
+  const [inputMode, setInputMode] = useState<"series" | "url" | "upload">("url");
   const [step, setStep] = useState<"episode" | "profile">("episode");
   const [savedProfiles, setSavedProfiles] = useState<SavedProfile[]>([]);
   const [startupContext, setStartupContext] = useState<any>(null);
@@ -62,6 +63,7 @@ export const AnalysisForm = () => {
   const { activeProfile, activeProfileId, setActiveProfileId, profiles, refreshProfiles } = useActiveProfile();
   const profileLimit = subscription?.limits.profiles.max || 1;
   const canBatchProfiles = subscription ? canBatchAnalyzeProfiles(subscription.tier) : false;
+  const isPremium = subscription ? subscription.tier !== "free" : false;
 
   // Depend on the derived limit, not the subscription object — refreshSubscription()
   // creates a new object after every analysis, which would re-fetch profiles each time.
@@ -115,7 +117,7 @@ export const AnalysisForm = () => {
       if (!analysisCheck.allowed) {
         toast({
           title: "Analysis Limit Reached",
-          description: analysisCheck.message || "Upgrade to analyze more videos.",
+          description: analysisCheck.message || "Upgrade to analyze more sources.",
           variant: "destructive",
         });
         return;
@@ -137,7 +139,7 @@ export const AnalysisForm = () => {
       triggerHapticFeedback('medium');
       toast({
         title: "Missing Information",
-        description: "Please enter an episode URL",
+        description: "Please enter a source URL",
         variant: "destructive",
       });
       return;
@@ -494,14 +496,15 @@ export const AnalysisForm = () => {
             <span className="font-display font-medium italic text-gradient">analysis</span>
           </h2>
           <p className="text-muted-foreground">
-            Paste a founder, operator, or investor video — get a transcript-grounded memo tailored to your company
+            Paste almost any public link — article, post, newsletter, video, or podcast — or upload a private document, and get a memo tailored to your company
           </p>
         </div>
 
-        <Tabs value={inputMode} onValueChange={(v) => setInputMode(v as "series" | "url")} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto h-11 sm:h-10">
+        <Tabs value={inputMode} onValueChange={(v) => setInputMode(v as "series" | "url" | "upload")} className="w-full">
+          <TabsList className="grid w-full grid-cols-3 max-w-lg mx-auto h-11 sm:h-10">
             <TabsTrigger value="series" className="text-xs sm:text-sm min-h-[44px] sm:min-h-0">By Source</TabsTrigger>
             <TabsTrigger value="url" className="text-xs sm:text-sm min-h-[44px] sm:min-h-0">Direct URL</TabsTrigger>
+            <TabsTrigger value="upload" className="text-xs sm:text-sm min-h-[44px] sm:min-h-0">Upload</TabsTrigger>
           </TabsList>
           
           <TabsContent value="series" className="space-y-4 mt-6">
@@ -527,12 +530,12 @@ export const AnalysisForm = () => {
 
             <div className="space-y-2 max-w-xl mx-auto">
               <label htmlFor="episodeUrlSeries" className="text-sm font-medium">
-                Video URL
+                Source URL
               </label>
               <Input
                 id="episodeUrlSeries"
                 type="url"
-                placeholder="YouTube, TikTok, Instagram, X, Vimeo, or any public video link"
+                placeholder="Article, post, video, Substack, tweet, podcast, or any public URL"
                 value={episodeUrl}
                 onChange={(e) => setEpisodeUrl(e.target.value)}
                 disabled={isAnalyzing}
@@ -544,12 +547,12 @@ export const AnalysisForm = () => {
           <TabsContent value="url" className="space-y-4 mt-6">
             <div className="space-y-2 max-w-xl mx-auto">
               <label htmlFor="episodeUrlDirect" className="text-sm font-medium text-center block">
-                Video URL
+                Source URL
               </label>
               <Input
                 id="episodeUrlDirect"
                 type="url"
-                placeholder="Paste a YouTube, TikTok, Instagram, X, Vimeo, or any public video link"
+                placeholder="Paste an article, post, video, Substack, tweet, or any public URL"
                 value={episodeUrl}
                 onChange={(e) => setEpisodeUrl(e.target.value)}
                 disabled={isAnalyzing}
@@ -560,8 +563,18 @@ export const AnalysisForm = () => {
               </p>
             </div>
           </TabsContent>
+
+          <TabsContent value="upload" className="space-y-4 mt-6">
+            <SourceUploadZone
+              isPremium={isPremium}
+              canAnalyze={analysisCheck.allowed}
+              activeProfile={activeProfile}
+              activeProfileId={activeProfileId}
+            />
+          </TabsContent>
         </Tabs>
 
+        {inputMode !== "upload" && (
         <div className="space-y-3">
           <div className="flex justify-center">
             <DropdownMenu>
@@ -684,6 +697,7 @@ export const AnalysisForm = () => {
           )}
         </div>
         </div>
+        )}
       </form>
       )}
     </Card>

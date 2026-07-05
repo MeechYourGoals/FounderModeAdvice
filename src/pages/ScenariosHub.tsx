@@ -89,7 +89,7 @@ export default function ScenariosHub() {
             to="/auth"
             className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
           >
-            Analyze a video
+            Analyze a source
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>

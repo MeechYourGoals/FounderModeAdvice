@@ -27,8 +27,8 @@ export const HeroSection = () => {
             Founder Mode Advice
           </h1>
           <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto animate-slide-up">
-            Paste a founder, operator, or investor video. Get a transcript-grounded operating memo —
-            lessons, risks, and action items — tailored to your company.
+            Paste almost any public link — an article, post, newsletter, video, or podcast. Get a
+            transcript-grounded operating memo — lessons, risks, and action items — tailored to your company.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pt-2 sm:pt-4 animate-slide-up">
             <FeatureCard

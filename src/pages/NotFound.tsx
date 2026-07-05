@@ -24,7 +24,7 @@ const NotFound = () => {
         <h1 className="font-display text-[7rem] sm:text-[9rem] font-medium italic leading-none text-gradient">
           404
         </h1>
-        <p className="mt-2 text-lg sm:text-xl font-semibold tracking-tight">This page wandered off the transcript.</p>
+        <p className="mt-2 text-lg sm:text-xl font-semibold tracking-tight">This page wandered off the map.</p>
         <p className="mt-1 mb-8 text-sm text-muted-foreground">
           The advice you're looking for isn't here — but your boardroom is.
         </p>

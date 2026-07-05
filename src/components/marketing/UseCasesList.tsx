@@ -36,7 +36,7 @@ export const UseCasesList = ({
           <p className="mt-5 text-[15px] leading-relaxed text-foreground/80 max-w-md">
             Every analysis is scoped to a specific decision — not a generic
             summary of what the speaker said. Choose the workstream you're
-            in, then paste the video.
+            in, then paste the source.
           </p>
         </div>
       </m.div>

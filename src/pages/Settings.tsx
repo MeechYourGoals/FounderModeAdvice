@@ -138,7 +138,7 @@ const Settings = () => {
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><SlidersHorizontal className="h-4 w-4" /></span>
                   Library defaults
                 </CardTitle>
-                <CardDescription>How your analyzed videos are sorted and grouped by default.</CardDescription>
+                <CardDescription>How your analyzed sources are sorted and grouped by default.</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-2">

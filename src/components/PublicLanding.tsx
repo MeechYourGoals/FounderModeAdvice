@@ -139,8 +139,8 @@ export const PublicLanding = () => {
               {/* How it works */}
               <SectionShell
                 eyebrow="How it works"
-                title="From talk to operating memo in minutes."
-                lead="Paste a founder talk, investor interview, operator breakdown, or strategy lecture. Add your company context. Get structured intelligence you can act on."
+                title="From source to operating memo in minutes."
+                lead="Paste almost any public link — an article, post, newsletter, video, or podcast. Add your company context. Get structured intelligence you can act on."
               >
                 <HowItWorksRail />
               </SectionShell>
@@ -152,7 +152,7 @@ export const PublicLanding = () => {
               <SectionShell
                 eyebrow="Your founder library"
                 title="A private boardroom that compounds, not a feed you forget."
-                lead="Founders watch hundreds of hours of talks and interviews — and the signal scatters across notebooks, screenshots, and half-remembered episodes. Founder Mode Advice turns what you study into an organized library of operating memos you can revisit, export, and share."
+                lead="Founders read and watch hundreds of hours of talks, interviews, essays, and posts — and the signal scatters across notebooks, screenshots, and half-remembered episodes. Founder Mode Advice turns what you study into an organized library of operating memos you can revisit, export, and share."
               >
                 <m.div
                   className="grid grid-cols-1 sm:grid-cols-2 gap-5"
@@ -231,7 +231,7 @@ export const PublicLanding = () => {
               {/* Comparison */}
               <SectionShell
                 title="Watching is passive. Operating is the point."
-                lead="Saved videos, generic summaries, and raw transcripts leave the work to you. Founder Mode Advice does the work — and keeps it."
+                lead="Saved links, generic summaries, and raw transcripts leave the work to you. Founder Mode Advice does the work — and keeps it."
                 align="center"
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:items-stretch max-w-4xl mx-auto">
@@ -281,15 +281,15 @@ export const PublicLanding = () => {
                   <div className="panel-hairline max-w-5xl mx-auto rounded-3xl p-6 sm:p-10">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
                       <div className="space-y-4">
-                        <BadgeLabel>Public video in. Operating leverage out.</BadgeLabel>
+                        <BadgeLabel>Any public link in. Operating leverage out.</BadgeLabel>
                         <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-[-0.02em]">
                           You don&apos;t need a boardroom of advisors to learn like you have one.
                         </h2>
                         <p className="text-[15px] sm:text-[17px] leading-relaxed text-foreground/85">
                           The best founders and operators have shared thousands of hours of hard-won lessons in public
-                          interviews, podcasts, and talks. Founder Mode Advice turns that content into structured
-                          guidance for your company — without implying affiliation, endorsement, or replacing real
-                          advisors.
+                          interviews, podcasts, talks, essays, and posts. Founder Mode Advice turns that content into
+                          structured guidance for your company — without implying affiliation, endorsement, or replacing
+                          real advisors.
                         </p>
                       </div>
                       <m.div
@@ -302,8 +302,8 @@ export const PublicLanding = () => {
                         <m.div variants={riseChild}>
                           <MiniFeature
                             icon={<ShieldCheck className="w-4 h-4" />}
-                            title="Public video in"
-                            description="Paste a founder, investor, operator, strategy, or leadership video from YouTube, TikTok, Instagram Reels, X, Vimeo, LinkedIn, or any public podcast or web video URL."
+                            title="Any public link in"
+                            description="Paste almost any public link — an article, post, newsletter, or podcast, or a founder, investor, operator, or leadership video from YouTube, TikTok, Instagram Reels, X, Vimeo, or LinkedIn."
                           />
                         </m.div>
                         <m.div variants={riseChild}>
@@ -324,7 +324,7 @@ export const PublicLanding = () => {
                     </div>
                     <p className="mt-6 text-sm text-foreground/65">
                       Founder Mode Advice analyzes public content only. It is independent and does not provide private
-                      access, endorsement, or investment advice from any person or firm referenced in a video.
+                      access, endorsement, or investment advice from any person or firm referenced in the content.
                     </p>
                   </div>
                 </m.div>
@@ -408,7 +408,7 @@ export const PublicLanding = () => {
                         Build your private founder boardroom.
                       </h2>
                       <p className="mx-auto mt-4 max-w-xl text-lg text-primary-foreground/95">
-                        Start with one video. Leave with a company-specific memo, risk map, action list, and a
+                        Start with one source. Leave with a company-specific memo, risk map, action list, and a
                         transcript-grounded Q&amp;A you can keep.
                       </p>
                       <div className="mt-7 flex flex-wrap justify-center gap-3">
@@ -419,7 +419,7 @@ export const PublicLanding = () => {
                             className="h-12 rounded-full px-7 text-base"
                             onClick={goToAuth}
                           >
-                            Analyze a video <ArrowRight className="ml-2 h-4 w-4" />
+                            Analyze a source <ArrowRight className="ml-2 h-4 w-4" />
                           </Button>
                         </m.div>
                         <m.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.96 }} transition={SPRING_POP}>
@@ -453,8 +453,8 @@ export const PublicLanding = () => {
 
 const FAQS = [
   {
-    q: "What kinds of videos work?",
-    a: "Founder interviews, investor talks, operator deep-dives, and strategy lectures — from any public link: YouTube, TikTok, Instagram Reels, X, Vimeo, LinkedIn, or a podcast MP3. Private or login-gated posts aren't supported.",
+    q: "What can I analyze?",
+    a: "Almost any public URL — articles, blogs, Substack posts, LinkedIn or X posts, newsletters, and videos or podcasts from YouTube, TikTok, Instagram Reels, Vimeo, or a podcast MP3. Paid tiers can also upload private documents (PDF, TXT, Markdown, CSV, DOCX, and images). Private or login-gated posts aren't supported.",
   },
   {
     q: "How is this different from a generic AI summary?",
@@ -462,7 +462,7 @@ const FAQS = [
   },
   {
     q: "Do I need to know who the speaker is?",
-    a: "No. Paste any business video and you'll get structured lessons, risks, and action items mapped to your company — even if you've never heard of the person.",
+    a: "No. Paste almost any public link and you'll get structured lessons, risks, and action items mapped to your company — even if you've never heard of the person.",
   },
   {
     q: "Is the free plan actually useful?",

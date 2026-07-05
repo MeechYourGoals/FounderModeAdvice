@@ -143,7 +143,8 @@ export const TIER_PRICING: Record<SubscriptionTier, TierPricing> = {
     priceDisplay: 'Free',
     features: [
       '1 business profile',
-      '3 video analyses per month',
+      '3 source analyses per month',
+      'Analyze almost any public URL: articles, posts, videos, newsletters & more',
       'Universal, industry-aware insights',
       'Organize analyses into private folders',
     ],
@@ -154,7 +155,8 @@ export const TIER_PRICING: Record<SubscriptionTier, TierPricing> = {
     price: 9.99,
     priceDisplay: '$9.99/month',
     features: [
-      '20 video analyses per month',
+      '20 source analyses per month',
+      'Upload private docs, PDFs, notes & screenshots — not just public links',
       'Up to 5 business profiles',
       'Personalized insights by industry & stage',
       'One analysis target per submission',
@@ -168,9 +170,10 @@ export const TIER_PRICING: Record<SubscriptionTier, TierPricing> = {
     price: 19.99,
     priceDisplay: '$19.99/month',
     features: [
-      'Unlimited video analyses',
+      'Unlimited source analyses',
+      'Upload private docs, PDFs, notes & screenshots — not just public links',
       'Unlimited business profiles',
-      'Run one video across multiple profiles in one go',
+      'Run one source across multiple profiles in one go',
       'Ask-the-video AI chat (unlimited)',
       'Personalized insights by industry & stage',
       'Share analyses & folders with teammates and advisors',
