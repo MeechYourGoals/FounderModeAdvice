@@ -398,12 +398,14 @@ export type Database = {
           channel_name: string | null
           company_id: string | null
           created_at: string | null
+          file_path: string | null
           founder_names: string | null
           founders: string[]
           id: string
           platform: string | null
           podcast_id: string | null
           release_date: string | null
+          source_type: string
           title: string
           topics: string[] | null
           updated_at: string | null
@@ -418,12 +420,14 @@ export type Database = {
           channel_name?: string | null
           company_id?: string | null
           created_at?: string | null
+          file_path?: string | null
           founder_names?: string | null
           founders?: string[]
           id?: string
           platform?: string | null
           podcast_id?: string | null
           release_date?: string | null
+          source_type?: string
           title: string
           topics?: string[] | null
           updated_at?: string | null
@@ -438,12 +442,14 @@ export type Database = {
           channel_name?: string | null
           company_id?: string | null
           created_at?: string | null
+          file_path?: string | null
           founder_names?: string | null
           founders?: string[]
           id?: string
           platform?: string | null
           podcast_id?: string | null
           release_date?: string | null
+          source_type?: string
           title?: string
           topics?: string[] | null
           updated_at?: string | null
@@ -819,6 +825,27 @@ export type Database = {
           id?: string
           name?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      rate_limits: {
+        Row: {
+          count: number
+          key: string
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          count?: number
+          key: string
+          user_id: string
+          window_start: string
+        }
+        Update: {
+          count?: number
+          key?: string
+          user_id?: string
+          window_start?: string
         }
         Relationships: []
       }
@@ -1220,6 +1247,15 @@ export type Database = {
       accept_folder_invite: { Args: { p_token_hash: string }; Returns: string }
       can_user_view_invited_episode: {
         Args: { _episode_id: string; _user_id: string }
+        Returns: boolean
+      }
+      check_and_increment_rate_limit: {
+        Args: {
+          _key: string
+          _limit: number
+          _user_id: string
+          _window: string
+        }
         Returns: boolean
       }
       check_tier_limits: {
