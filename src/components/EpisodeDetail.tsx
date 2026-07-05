@@ -368,9 +368,10 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
         deck_summary: (profile as any).deck_summary || null,
       } : undefined;
 
+      const isDocument = (episode as { source_type?: string }).source_type === 'document';
       const { data, error } = await supabase.functions.invoke('analyze-episode', {
         body: {
-          episodeUrl: episode.url,
+          ...(isDocument ? { reanalyzeEpisodeId: episode.id } : { episodeUrl: episode.url }),
           startupProfile,
           userId: user.id,
         },
