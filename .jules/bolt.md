@@ -1,0 +1,3 @@
+## 2025-05-15 - [EpisodesTable Rendering & Data Processing Optimization]
+**Learning:** Defining a sub-component (like `MobileEpisodeCard`) inside the main component body causes it to be recreated on every render, triggering full unmounts/remounts of the entire list. Also, performing multiple filter/map passes over a large dataset in separate `useMemo` hooks is less efficient than a single consolidated O(N) pass.
+**Action:** Always define list item components outside the main component and wrap with `React.memo`. Consolidate multiple derived data passes into a single `useMemo` iteration and use Map/Set for O(1) lookups during rendering.
