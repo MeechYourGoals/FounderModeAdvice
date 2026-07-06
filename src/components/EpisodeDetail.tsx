@@ -369,12 +369,44 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
       } : undefined;
 
       const isDocument = (episode as { source_type?: string }).source_type === 'document';
-      const { data, error } = await supabase.functions.invoke('analyze-episode', {
-        body: {
-          ...(isDocument ? { reanalyzeEpisodeId: episode.id } : { episodeUrl: episode.url }),
+
+      let invokeBody: Record<string, unknown>;
+      if (isDocument) {
+        // Fetch the stored transcript under the user's own RLS and send it as the
+        // grounding payload — no URL pipeline, no storage round-trip.
+        const { data: transcriptRow, error: transcriptErr } = await supabase
+          .from('episode_transcripts')
+          .select('transcript_text')
+          .eq('episode_id', episode.id)
+          .maybeSingle();
+        if (transcriptErr) throw transcriptErr;
+        const priorText = transcriptRow?.transcript_text?.trim() ?? '';
+        if (priorText.length < 20) {
+          toast({
+            title: "Re-analysis unavailable",
+            description: "The original document text is no longer available. Please upload the document again to re-analyze.",
+            variant: "destructive",
+          });
+          setReanalyzing(false);
+          return;
+        }
+        invokeBody = {
+          reanalyzeText: priorText,
+          sourceFileName: episode.title ?? 'Uploaded document',
+          priorEpisodeId: episode.id,
           startupProfile,
           userId: user.id,
-        },
+        };
+      } else {
+        invokeBody = {
+          episodeUrl: episode.url,
+          startupProfile,
+          userId: user.id,
+        };
+      }
+
+      const { data, error } = await supabase.functions.invoke('analyze-episode', {
+        body: invokeBody,
       });
 
       if (error) throw error;
