@@ -202,55 +202,62 @@ serve(async (req) => {
       startupProfileId,
       sourceFilePath,
       sourceFileName,
-      reanalyzeEpisodeId,
+      reanalyzeText,
+      priorEpisodeId,
     } = await req.json();
 
-    // Re-analysis mode: reuse a previously extracted document's stored transcript
-    // instead of touching a URL or the storage bucket (the raw file was already
-    // deleted after the first analysis for privacy).
+    // Re-analysis mode for uploaded documents: the client sends the previously
+    // extracted transcript text directly (fetched from episode_transcripts under
+    // its own RLS), so this function never needs to hit the URL pipeline or the
+    // storage bucket for a re-run. The raw file was already deleted after the
+    // first analysis for privacy.
     let reanalyzeSource: {
       episodeUrl: string;
       displayFileName: string;
       transcriptText: string;
     } | null = null;
-    if (typeof reanalyzeEpisodeId === 'string' && reanalyzeEpisodeId.length > 0) {
-      const { data: priorEpisode, error: priorErr } = await supabase
-        .from('episodes')
-        .select('id, url, title, source_type, analyzed_by')
-        .eq('id', reanalyzeEpisodeId)
-        .maybeSingle();
-      if (priorErr || !priorEpisode) {
-        return new Response(JSON.stringify({ error: 'Original analysis not found.' }), {
-          status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      if (priorEpisode.analyzed_by !== authenticatedUserId) {
-        return new Response(JSON.stringify({ error: 'Forbidden' }), {
-          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      if (priorEpisode.source_type !== 'document') {
-        return new Response(JSON.stringify({ error: 'Re-analysis by episode id is only supported for uploaded documents.' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      const { data: priorTranscript } = await supabase
-        .from('episode_transcripts')
-        .select('transcript_text')
-        .eq('episode_id', priorEpisode.id)
-        .maybeSingle();
-      const priorText = priorTranscript?.transcript_text?.trim() || '';
-      if (priorText.length < 20) {
+    if (typeof reanalyzeText === 'string' && reanalyzeText.trim().length > 0) {
+      const trimmed = reanalyzeText.trim();
+      if (trimmed.length < 20) {
         return new Response(JSON.stringify({
           error: 'The original document text is no longer available. Please upload the document again to re-analyze.',
         }), {
-          status: 410, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+      const displayName = (typeof sourceFileName === 'string' && sourceFileName.trim())
+        ? sourceFileName.trim()
+        : 'Uploaded document';
+      if (displayName.length > 300) {
+        return new Response(JSON.stringify({ error: 'Invalid file name' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      // Ownership check when the client references a prior episode (used for the
+      // post-success delete on the client). Prevents replaying a stolen priorEpisodeId.
+      let priorUrl = `document://${encodeURIComponent(displayName)}`;
+      if (typeof priorEpisodeId === 'string' && priorEpisodeId.length > 0) {
+        const { data: priorEpisode, error: priorErr } = await supabase
+          .from('episodes')
+          .select('id, url, source_type, analyzed_by')
+          .eq('id', priorEpisodeId)
+          .maybeSingle();
+        if (priorErr || !priorEpisode) {
+          return new Response(JSON.stringify({ error: 'Original analysis not found.' }), {
+            status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        if (priorEpisode.analyzed_by !== authenticatedUserId || priorEpisode.source_type !== 'document') {
+          return new Response(JSON.stringify({ error: 'Forbidden' }), {
+            status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        priorUrl = priorEpisode.url;
+      }
       reanalyzeSource = {
-        episodeUrl: priorEpisode.url,
-        displayFileName: priorEpisode.title || 'Uploaded document',
-        transcriptText: priorText,
+        episodeUrl: priorUrl,
+        displayFileName: displayName,
+        transcriptText: trimmed.slice(0, MAX_GROUNDING_CHARS),
       };
     }
 
