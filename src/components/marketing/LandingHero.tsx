@@ -97,8 +97,8 @@ export const LandingHero = ({ onPrimary, onSecondary }: LandingHeroProps) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: EASE_IOS, delay: 0.75 }}
           >
-            Paste almost any public link — an article, post, newsletter, video, or podcast. Get a
-            transcript-grounded operating memo — risks, actions, and answers tuned to the decision in front of you.
+            Paste almost any public link — an article, post, newsletter, video, or podcast. Get the
+            wisdom of your chosen experts — risks, actions, and answers tailored to your company, role, and situation.
           </m.p>
 
           <m.div
