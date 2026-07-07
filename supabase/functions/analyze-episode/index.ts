@@ -810,6 +810,19 @@ INSTRUCTIONS:
       throw new Error(`Failed to create episode: ${episodeError.message} (${episodeError.code})`);
     }
 
+    // Persist the user's prompt as a best-effort update so the memo can show it
+    // verbatim. Kept off the insert on purpose: if the custom_prompt column isn't
+    // migrated yet, this warns but never fails the analysis.
+    if (customInstructions) {
+      const { error: cpError } = await supabase
+        .from('episodes')
+        .update({ custom_prompt: customInstructions })
+        .eq('id', episode.id);
+      if (cpError) {
+        console.warn('Could not persist custom_prompt (is the migration applied?):', cpError.message);
+      }
+    }
+
     if (transcript?.transcriptText) {
       const { error: transcriptError } = await supabase
         .from('episode_transcripts')

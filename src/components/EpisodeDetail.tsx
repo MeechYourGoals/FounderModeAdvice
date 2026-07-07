@@ -77,6 +77,7 @@ interface Episode {
   url: string;
   founder_names: string | null;
   analyzed_by: string | null;
+  custom_prompt?: string | null;
   analyzed_profile_id?: string | null;
   analyzed_profile_name_snapshot?: string | null;
   user_startup_profiles?: {
@@ -233,7 +234,7 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
       const { data: episodeData, error: episodeError } = await supabase
         .from('episodes')
         .select(`
-          id, title, release_date, url, founder_names, analyzed_by, 
+          id, title, release_date, url, founder_names, analyzed_by, custom_prompt,
           companies (name, founding_year, current_stage, funding_raised, valuation, employee_count, industry, status)
         `)
         .eq('id', episodeId)
@@ -586,6 +587,20 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
               </AlertDialog>
             </div>
           </div>
+
+          {episode.custom_prompt && (
+            <>
+              <Separator />
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground/70 mb-3 sm:mb-4">Your prompt</h3>
+                <div className="rounded-xl border border-border/60 bg-muted/30 p-4">
+                  <p className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed text-foreground/90">
+                    {episode.custom_prompt}
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
 
           {episode.companies && (
             <>

@@ -398,6 +398,7 @@ export type Database = {
           channel_name: string | null
           company_id: string | null
           created_at: string | null
+          custom_prompt: string | null
           file_path: string | null
           founder_names: string | null
           founders: string[]
@@ -420,6 +421,7 @@ export type Database = {
           channel_name?: string | null
           company_id?: string | null
           created_at?: string | null
+          custom_prompt?: string | null
           file_path?: string | null
           founder_names?: string | null
           founders?: string[]
@@ -442,6 +444,7 @@ export type Database = {
           channel_name?: string | null
           company_id?: string | null
           created_at?: string | null
+          custom_prompt?: string | null
           file_path?: string | null
           founder_names?: string | null
           founders?: string[]
