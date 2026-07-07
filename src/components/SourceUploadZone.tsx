@@ -21,6 +21,8 @@ interface SourceUploadZoneProps {
   activeProfileId: string | null;
   /** Optional per-analysis instructions to tailor the insights. */
   customPrompt?: string;
+  /** Fires true while an upload is uploading/analyzing so the parent can lock shared inputs. */
+  onProcessingChange?: (processing: boolean) => void;
   onAnalyzed?: () => void;
 }
 
@@ -30,6 +32,7 @@ export const SourceUploadZone = ({
   activeProfile,
   activeProfileId,
   customPrompt,
+  onProcessingChange,
   onAnalyzed,
 }: SourceUploadZoneProps) => {
   const [isDragging, setIsDragging] = useState(false);
@@ -65,6 +68,7 @@ export const SourceUploadZone = ({
       setFileName(file.name);
       setUploading(true);
       setProgress(20);
+      onProcessingChange?.(true);
 
       let uploadedPath: string | null = null;
 
@@ -142,6 +146,7 @@ export const SourceUploadZone = ({
       } finally {
         setUploading(false);
         setAnalyzing(false);
+        onProcessingChange?.(false);
         setTimeout(() => {
           setProgress(0);
           setFileName(null);
@@ -149,7 +154,7 @@ export const SourceUploadZone = ({
         }, 2500);
       }
     },
-    [activeProfile, activeProfileId, customPrompt, onAnalyzed, refreshSubscription, toast],
+    [activeProfile, activeProfileId, customPrompt, onProcessingChange, onAnalyzed, refreshSubscription, toast],
   );
 
   const handleDrop = useCallback(
