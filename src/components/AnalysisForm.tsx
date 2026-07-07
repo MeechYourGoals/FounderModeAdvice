@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Loader2, ArrowLeft, FastForward, Building2, Check, ChevronDown, Globe } from "lucide-react";
+import { Loader2, ArrowLeft, FastForward, Building2, Check, ChevronDown, Globe, Sparkles } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useSubscription } from "@/contexts/SubscriptionContext";
@@ -54,6 +55,9 @@ export const AnalysisForm = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [progress, setProgress] = useState("");
   const [inputMode, setInputMode] = useState<"series" | "url" | "upload">("url");
+  // Optional per-analysis instructions to tailor the insights (not required).
+  const [customPrompt, setCustomPrompt] = useState("");
+  const [showCustomPrompt, setShowCustomPrompt] = useState(false);
   const [step, setStep] = useState<"episode" | "profile">("episode");
   const [savedProfiles, setSavedProfiles] = useState<SavedProfile[]>([]);
   const [startupContext, setStartupContext] = useState<any>(null);
@@ -267,7 +271,8 @@ export const AnalysisForm = () => {
           podcastName: podcastName.trim() || undefined,
           startupProfile: profile,
           startupProfileId: options?.profileId || undefined,
-          deckSummary: profile?.deck_summary || undefined
+          deckSummary: profile?.deck_summary || undefined,
+          customPrompt: customPrompt.trim() || undefined
         }
       });
 
@@ -297,6 +302,7 @@ export const AnalysisForm = () => {
 
         setEpisodeUrl("");
         setPodcastName("");
+        setCustomPrompt("");
         setStep("episode");
         setStartupContext(null);
         window.dispatchEvent(new CustomEvent('episodeAnalyzed'));
@@ -570,9 +576,47 @@ export const AnalysisForm = () => {
               canAnalyze={analysisCheck.allowed}
               activeProfile={activeProfile}
               activeProfileId={activeProfileId}
+              customPrompt={customPrompt.trim() || undefined}
             />
           </TabsContent>
         </Tabs>
+
+        {/* Optional custom instructions — preface any analysis to tailor the insights. */}
+        <div className="max-w-xl mx-auto">
+          {!showCustomPrompt && !customPrompt ? (
+            <button
+              type="button"
+              onClick={() => setShowCustomPrompt(true)}
+              disabled={isAnalyzing}
+              className="mx-auto flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground min-h-[44px] sm:min-h-0"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              Add custom instructions
+              <span className="text-muted-foreground/70">(optional)</span>
+            </button>
+          ) : (
+            <div className="space-y-1.5">
+              <label htmlFor="customPrompt" className="flex items-center gap-1.5 text-sm font-medium">
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                Custom instructions
+                <span className="font-normal text-muted-foreground">— optional</span>
+              </label>
+              <Textarea
+                id="customPrompt"
+                value={customPrompt}
+                onChange={(e) => setCustomPrompt(e.target.value)}
+                disabled={isAnalyzing}
+                rows={3}
+                maxLength={2000}
+                placeholder="Preface this analysis with your exact situation or question — e.g. “I own two car washes doing $1.4M and $1.1M and I’m eyeing a third for $2.1M. Given this source, how should I evaluate the deal and structure my next 90 days?”"
+                className="resize-y text-sm min-h-[92px]"
+              />
+              <p className="text-xs text-muted-foreground">
+                We’ll tailor every lesson and callout to this. Leave blank for a general analysis.
+              </p>
+            </div>
+          )}
+        </div>
 
         {inputMode !== "upload" && (
         <div className="space-y-3">

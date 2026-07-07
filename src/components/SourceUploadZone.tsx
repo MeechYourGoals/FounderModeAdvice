@@ -19,6 +19,8 @@ interface SourceUploadZoneProps {
   canAnalyze: boolean;
   activeProfile: unknown | null;
   activeProfileId: string | null;
+  /** Optional per-analysis instructions to tailor the insights. */
+  customPrompt?: string;
   onAnalyzed?: () => void;
 }
 
@@ -27,6 +29,7 @@ export const SourceUploadZone = ({
   canAnalyze,
   activeProfile,
   activeProfileId,
+  customPrompt,
   onAnalyzed,
 }: SourceUploadZoneProps) => {
   const [isDragging, setIsDragging] = useState(false);
@@ -89,6 +92,7 @@ export const SourceUploadZone = ({
             sourceFileName: file.name,
             startupProfile: activeProfile ?? undefined,
             startupProfileId: activeProfileId ?? undefined,
+            customPrompt: customPrompt?.trim() || undefined,
           },
         });
 
@@ -145,7 +149,7 @@ export const SourceUploadZone = ({
         }, 2500);
       }
     },
-    [activeProfile, activeProfileId, onAnalyzed, refreshSubscription, toast],
+    [activeProfile, activeProfileId, customPrompt, onAnalyzed, refreshSubscription, toast],
   );
 
   const handleDrop = useCallback(
