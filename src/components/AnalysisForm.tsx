@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Loader2, ArrowLeft, FastForward, Building2, Check, ChevronDown, Globe } from "lucide-react";
+import { Loader2, ArrowLeft, FastForward, Building2, Check, ChevronDown, Globe, Sparkles } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useSubscription } from "@/contexts/SubscriptionContext";
@@ -54,6 +55,11 @@ export const AnalysisForm = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [progress, setProgress] = useState("");
   const [inputMode, setInputMode] = useState<"series" | "url" | "upload">("url");
+  // Optional per-analysis instructions to tailor the insights (not required).
+  const [customPrompt, setCustomPrompt] = useState("");
+  const [showCustomPrompt, setShowCustomPrompt] = useState(false);
+  // True while an upload is uploading/analyzing so the shared instructions lock.
+  const [uploadBusy, setUploadBusy] = useState(false);
   const [step, setStep] = useState<"episode" | "profile">("episode");
   const [savedProfiles, setSavedProfiles] = useState<SavedProfile[]>([]);
   const [startupContext, setStartupContext] = useState<any>(null);
@@ -126,8 +132,10 @@ export const AnalysisForm = () => {
     };
     window.addEventListener("analyzeUrl", handler as EventListener);
     return () => window.removeEventListener("analyzeUrl", handler as EventListener);
+    // customPrompt included so the starter-video path forwards the user's current
+    // instructions instead of a stale (empty) closure value.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeProfile, isAnalyzing]);
+  }, [activeProfile, isAnalyzing, customPrompt]);
 
   const handleQuickImport = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -221,43 +229,41 @@ export const AnalysisForm = () => {
       setProgress(options?.progressLabel || (profile ? "Analyzing with your business context..." : "Analyzing episode..."));
     }
 
+    // Custom instructions produce a distinct, tailored analysis, so a URL the user
+    // already analyzed should not be blocked as a duplicate in that case.
+    const hasCustomInstructions = customPrompt.trim().length > 0;
+
     try {
-      if (manageState) setProgress("Checking for duplicates...");
-      const { data: { user } } = await supabase.auth.getUser();
-      let existingQuery = user?.id
-        ? supabase
-            .from('episodes')
-            .select('id, title, url')
-            .eq('url', url)
-            .eq('analyzed_by', user.id)
-            .limit(1)
-        : supabase
-            .from('episodes')
-            .select('id, title, url')
-            .eq('url', url)
-            .limit(1);
+      if (!hasCustomInstructions) {
+        if (manageState) setProgress("Checking for duplicates...");
+        const { data: { user } } = await supabase.auth.getUser();
+        const existingQuery = user?.id
+          ? supabase
+              .from('episodes')
+              .select('id, title, url')
+              .eq('url', url)
+              .eq('analyzed_by', user.id)
+              .limit(1)
+          : supabase
+              .from('episodes')
+              .select('id, title, url')
+              .eq('url', url)
+              .limit(1);
 
-      // analyzed_profile_id column is missing in DB
-      /*
-      if (options?.profileId) {
-        existingQuery = existingQuery.eq("analyzed_profile_id", options.profileId);
-      } else {
-        existingQuery = existingQuery.is("analyzed_profile_id", null);
-      }
-      */
-      const { data: existing } = await existingQuery;
+        const { data: existing } = await existingQuery;
 
-      if (existing && existing.length > 0) {
-        if (manageState) {
-          toast({
-            title: "Episode already analyzed",
-            description: `"${existing[0].title}" has already been analyzed for this profile. View it in your episodes list.`,
-          });
-          setIsAnalyzing(false);
-          setProgress("");
-          window.dispatchEvent(new CustomEvent('episodeAnalyzed'));
+        if (existing && existing.length > 0) {
+          if (manageState) {
+            toast({
+              title: "Episode already analyzed",
+              description: `"${existing[0].title}" has already been analyzed for this profile. View it in your episodes list.`,
+            });
+            setIsAnalyzing(false);
+            setProgress("");
+            window.dispatchEvent(new CustomEvent('episodeAnalyzed'));
+          }
+          return { success: false, reason: "duplicate" as const };
         }
-        return { success: false, reason: "duplicate" as const };
       }
 
       if (manageState) setProgress("Fetching episode data...");
@@ -267,7 +273,8 @@ export const AnalysisForm = () => {
           podcastName: podcastName.trim() || undefined,
           startupProfile: profile,
           startupProfileId: options?.profileId || undefined,
-          deckSummary: profile?.deck_summary || undefined
+          deckSummary: profile?.deck_summary || undefined,
+          customPrompt: customPrompt.trim() || undefined
         }
       });
 
@@ -297,6 +304,8 @@ export const AnalysisForm = () => {
 
         setEpisodeUrl("");
         setPodcastName("");
+        setCustomPrompt("");
+        setShowCustomPrompt(false);
         setStep("episode");
         setStartupContext(null);
         window.dispatchEvent(new CustomEvent('episodeAnalyzed'));
@@ -369,6 +378,12 @@ export const AnalysisForm = () => {
       setProgress("");
       await refreshSubscription();
       window.dispatchEvent(new CustomEvent('episodeAnalyzed'));
+
+      // Batch uses manageState:false, so clear the shared instructions here too.
+      if (successes.length > 0) {
+        setCustomPrompt("");
+        setShowCustomPrompt(false);
+      }
 
       if (successes.length > 0 && failures.length === 0) {
         toast({
@@ -570,9 +585,49 @@ export const AnalysisForm = () => {
               canAnalyze={analysisCheck.allowed}
               activeProfile={activeProfile}
               activeProfileId={activeProfileId}
+              customPrompt={customPrompt.trim() || undefined}
+              onProcessingChange={setUploadBusy}
+              onAnalyzed={() => { setCustomPrompt(""); setShowCustomPrompt(false); }}
             />
           </TabsContent>
         </Tabs>
+
+        {/* Optional custom instructions — preface any analysis to tailor the insights. */}
+        <div className="max-w-xl mx-auto">
+          {!showCustomPrompt && !customPrompt ? (
+            <button
+              type="button"
+              onClick={() => setShowCustomPrompt(true)}
+              disabled={isAnalyzing || uploadBusy}
+              className="mx-auto flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground min-h-[44px] sm:min-h-0"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              Add custom instructions
+              <span className="text-muted-foreground/70">(optional)</span>
+            </button>
+          ) : (
+            <div className="space-y-1.5">
+              <label htmlFor="customPrompt" className="flex items-center gap-1.5 text-sm font-medium">
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                Custom instructions
+                <span className="font-normal text-muted-foreground">— optional</span>
+              </label>
+              <Textarea
+                id="customPrompt"
+                value={customPrompt}
+                onChange={(e) => setCustomPrompt(e.target.value)}
+                disabled={isAnalyzing || uploadBusy}
+                rows={3}
+                maxLength={2000}
+                placeholder="Preface this analysis with your exact situation or question — e.g. “I own two car washes doing $1.4M and $1.1M and I’m eyeing a third for $2.1M. Given this source, how should I evaluate the deal and structure my next 90 days?”"
+                className="resize-y text-sm min-h-[92px]"
+              />
+              <p className="text-xs text-muted-foreground">
+                We’ll tailor every lesson and callout to this. Leave blank for a general analysis.
+              </p>
+            </div>
+          )}
+        </div>
 
         {inputMode !== "upload" && (
         <div className="space-y-3">

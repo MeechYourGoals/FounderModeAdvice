@@ -204,7 +204,15 @@ serve(async (req) => {
       sourceFileName,
       reanalyzeText,
       priorEpisodeId,
+      customPrompt,
     } = await req.json();
+
+    // Optional per-analysis instructions the user can preface any analysis with,
+    // to tailor the lessons/callouts to their exact situation or question.
+    const customInstructions =
+      typeof customPrompt === 'string' && customPrompt.trim().length > 0
+        ? customPrompt.trim().slice(0, 2000)
+        : '';
 
     // Re-analysis mode for uploaded documents: the client sends the previously
     // extracted transcript text directly (fetched from episode_transcripts under
@@ -521,7 +529,8 @@ CRITICAL REQUIREMENTS:
 - DO NOT provide mock or placeholder data
 - Extract the source or publication name from context if not provided
 - Do NOT assume the audience is raising venture capital; keep lessons applicable to many business types
-- Assign relevant TAGS to each lesson (e.g., #marketing, #hiring, #operations, #pricing, #growth)`;
+- Assign relevant TAGS to each lesson (e.g., #marketing, #hiring, #operations, #pricing, #growth)
+- If the user provides their own instructions or question, treat it as the TOP priority: select, frame, and prioritize the lessons and callouts so they directly serve that instruction — while still returning the exact required structure (10 lessons, 5 callouts)`;
 
     const userPrompt = `Analyze this content:
 ${isUpload ? `Source: Uploaded document — ${displayFileName}` : `URL: ${sourceUrl}`}
@@ -531,7 +540,13 @@ ${videoAuthor ? `Author/Creator: ${videoAuthor}` : ''}
 ${videoContext.metadata.description ? `Description: ${videoContext.metadata.description.slice(0, 1200)}` : ''}
 ${podcastName ? `Source name: ${podcastName}` : 'Source name: Please extract from the content'}
 ${groundingText ? `${groundingLabel}:
-${groundingText.slice(0, 30000)}` : 'Full text: Not available. Use the title, author, description, and any public knowledge of this source to extract the most useful business lessons you can. If there truly is nothing to work with, return an error rather than mock data.'}${viewerBusiness}
+${groundingText.slice(0, 30000)}` : 'Full text: Not available. Use the title, author, description, and any public knowledge of this source to extract the most useful business lessons you can. If there truly is nothing to work with, return an error rather than mock data.'}${viewerBusiness}${customInstructions ? `
+
+
+THE USER'S OWN INSTRUCTIONS FOR THIS ANALYSIS (highest priority — tailor every lesson and callout to directly serve this, while keeping the required structure):
+"""
+${customInstructions}
+"""` : ''}
 
 
 INSTRUCTIONS:
@@ -793,6 +808,19 @@ INSTRUCTIONS:
     if (episodeError) {
       console.error('Error creating episode:', episodeError);
       throw new Error(`Failed to create episode: ${episodeError.message} (${episodeError.code})`);
+    }
+
+    // Persist the user's prompt as a best-effort update so the memo can show it
+    // verbatim. Kept off the insert on purpose: if the custom_prompt column isn't
+    // migrated yet, this warns but never fails the analysis.
+    if (customInstructions) {
+      const { error: cpError } = await supabase
+        .from('episodes')
+        .update({ custom_prompt: customInstructions })
+        .eq('id', episode.id);
+      if (cpError) {
+        console.warn('Could not persist custom_prompt (is the migration applied?):', cpError.message);
+      }
     }
 
     if (transcript?.transcriptText) {
