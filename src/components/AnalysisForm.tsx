@@ -130,8 +130,10 @@ export const AnalysisForm = () => {
     };
     window.addEventListener("analyzeUrl", handler as EventListener);
     return () => window.removeEventListener("analyzeUrl", handler as EventListener);
+    // customPrompt included so the starter-video path forwards the user's current
+    // instructions instead of a stale (empty) closure value.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeProfile, isAnalyzing]);
+  }, [activeProfile, isAnalyzing, customPrompt]);
 
   const handleQuickImport = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -303,6 +305,7 @@ export const AnalysisForm = () => {
         setEpisodeUrl("");
         setPodcastName("");
         setCustomPrompt("");
+        setShowCustomPrompt(false);
         setStep("episode");
         setStartupContext(null);
         window.dispatchEvent(new CustomEvent('episodeAnalyzed'));
@@ -577,6 +580,7 @@ export const AnalysisForm = () => {
               activeProfile={activeProfile}
               activeProfileId={activeProfileId}
               customPrompt={customPrompt.trim() || undefined}
+              onAnalyzed={() => { setCustomPrompt(""); setShowCustomPrompt(false); }}
             />
           </TabsContent>
         </Tabs>
