@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -86,6 +86,171 @@ type ViewMode = "chronological" | "tag" | "folder";
 
 const PAGE_SIZE = 15;
 
+const parseIndustries = (industryString: string | null | undefined): string[] => {
+  if (!industryString) return [];
+  return [...new Set(industryString.split(/[,/]/).map(i => i.trim()).filter(Boolean))];
+};
+
+const getEpisodeTags = (ep: Episode): string[] => {
+  const names = new Set<string>();
+  ep.lessons?.forEach(l => l.lesson_tags?.forEach(lt => {
+    const n = lt.tags?.name?.trim();
+    if (n) names.add(n);
+  }));
+  return Array.from(names);
+};
+
+// Uploaded documents use a synthetic, non-navigable "document://" url.
+const isUploadedDocument = (url: string) => url.startsWith("document://");
+const getPlatformIcon = (url: string) =>
+  isUploadedDocument(url) ? <FileText className="w-4 h-4" />
+    : (url.includes("youtube.com") || url.includes("youtu.be")) ? <Youtube className="w-4 h-4" />
+    : <Headphones className="w-4 h-4" />;
+const getPlatformLabel = (url: string) =>
+  isUploadedDocument(url) ? "View Details"
+    : (url.includes("youtube.com") || url.includes("youtu.be")) ? "Watch Now"
+    : "Listen Now";
+
+interface MobileEpisodeCardProps {
+  episode: Episode;
+  onSelectEpisode: (id: string) => void;
+  folderAssignments: Record<string, string[]>;
+  foldersMap: Map<string, EpisodeFolder>;
+  selectedTags: Set<string>;
+  onToggleTag: (name: string) => void;
+  onOpenSource: (episode: Episode, e: React.MouseEvent) => void;
+  onExport: (episodeId: string, e: React.MouseEvent) => void;
+  onCopyLink: (url: string, e: React.MouseEvent) => void;
+  onDelete: (episodeId: string, e: React.MouseEvent) => void;
+  onAssignFolder: (episodeId: string, folderId: string) => void;
+  folders: EpisodeFolder[];
+  episodeTags: string[];
+}
+
+const MobileEpisodeCard = React.memo(({
+  episode,
+  onSelectEpisode,
+  folderAssignments,
+  foldersMap,
+  selectedTags,
+  onToggleTag,
+  onOpenSource,
+  onExport,
+  onCopyLink,
+  onDelete,
+  onAssignFolder,
+  folders,
+  episodeTags,
+}: MobileEpisodeCardProps) => {
+  const episodeFolders = (folderAssignments[episode.id] || [])
+    .map(fId => foldersMap.get(fId))
+    .filter(Boolean);
+
+  return (
+    <div
+      className="cv-row group p-4 min-h-[72px] border-b border-border/60 last:border-b-0 transition-all hover:bg-primary/[0.03] active:bg-primary/5 active:scale-[0.995] cursor-pointer touch-manipulation"
+      onClick={() => onSelectEpisode(episode.id)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === "Enter" && onSelectEpisode(episode.id)}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-sm line-clamp-2 mb-1">{episode.title}</p>
+          <div className="mb-1">
+            <Badge variant={isUniversalAnalysis(episode) ? "outline" : "secondary"} className="text-[10px]">
+              {getAnalysisProfileLabel(episode)}
+            </Badge>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            {episode.companies?.name && <span>{episode.companies.name}</span>}
+            {episode.founder_names && <span>{episode.founder_names}</span>}
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5 mt-2">
+            {episode.companies?.current_stage && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                {episode.companies.current_stage}
+              </Badge>
+            )}
+            {episodeTags.slice(0, 4).map(tagName => (
+              <Badge
+                key={tagName}
+                variant={selectedTags.has(tagName) ? "default" : "outline"}
+                className="cursor-pointer text-[10px] px-1.5 py-0 flex items-center gap-0.5"
+                onClick={(e) => { e.stopPropagation(); onToggleTag(tagName); }}
+              >
+                <Tag className="w-2.5 h-2.5" />{tagName}
+              </Badge>
+            ))}
+            {episodeFolders.map(f => (
+              <span key={f!.id} className="text-[10px] px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: f!.color }}>
+                {f!.name}
+              </span>
+            ))}
+            {episode.created_at && (
+              <span className="text-[10px] text-muted-foreground">
+                {new Date(episode.created_at).toLocaleDateString()}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-0.5 flex-shrink-0">
+          <BookmarkButton episodeId={episode.id} />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                <MoreVertical className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={(e) => onOpenSource(episode, e)}>
+                {getPlatformIcon(episode.url)}
+                <span className="ml-2">{getPlatformLabel(episode.url)}</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSelectEpisode(episode.id); }}>
+                <Eye className="w-4 h-4" /><span className="ml-2">View Details</span>
+              </DropdownMenuItem>
+              {folders.length > 0 && (
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger onClick={(e) => e.stopPropagation()}>
+                    <Folder className="w-4 h-4" /><span className="ml-2">Move to Folder</span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    {folders.map(folder => {
+                      const isAssigned = (folderAssignments[episode.id] || []).includes(folder.id);
+                      return (
+                        <DropdownMenuItem
+                          key={folder.id}
+                          onClick={(e) => { e.stopPropagation(); onAssignFolder(episode.id, folder.id); }}
+                        >
+                          <span className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: folder.color }} />
+                          {folder.name}
+                          {isAssigned && <span className="ml-auto text-primary">✓</span>}
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={(e) => onExport(episode.id, e)}>
+                <Download className="w-4 h-4" /><span className="ml-2">Export Episode</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => onCopyLink(episode.url, e)}>
+                <Copy className="w-4 h-4" /><span className="ml-2">Copy Link</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={(e) => onDelete(episode.id, e)} className="text-destructive focus:text-destructive">
+                <Trash2 className="w-4 h-4" /><span className="ml-2">Delete Analysis</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+    </div>
+  );
+});
+
 export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [allEpisodes, setAllEpisodes] = useState<Episode[]>([]);
@@ -141,20 +306,6 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const parseIndustries = (industryString: string | null | undefined): string[] => {
-    if (!industryString) return [];
-    return [...new Set(industryString.split(/[,\/]/).map(i => i.trim()).filter(Boolean))];
-  };
-
-  const getEpisodeTags = (ep: Episode): string[] => {
-    const names = new Set<string>();
-    ep.lessons?.forEach(l => l.lesson_tags?.forEach(lt => {
-      const n = lt.tags?.name?.trim();
-      if (n) names.add(n);
-    }));
-    return Array.from(names);
-  };
-
   const toggleIndustryFilter = (industry: string) => {
     triggerHapticFeedback('light');
     setSelectedIndustries(prev => {
@@ -166,7 +317,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     setCurrentPage(1);
   };
 
-  const toggleTag = (name: string) => {
+  const toggleTag = React.useCallback((name: string) => {
     triggerHapticFeedback('light');
     setSelectedTags(prev => {
       const next = new Set(prev);
@@ -179,7 +330,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
       return next;
     });
     setCurrentPage(1);
-  };
+  }, [setSearchParams]);
 
   const changeViewMode = (mode: ViewMode) => {
     triggerHapticFeedback('light');
@@ -191,33 +342,49 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     });
   };
 
-  // Derive unique options
-  const uniqueFounders = useMemo(() => {
-    const s = new Set<string>();
-    allEpisodes.forEach(ep => ep.founder_names?.split(',').forEach(n => s.add(n.trim())));
-    return Array.from(s).sort();
-  }, [allEpisodes]);
+  // Performance Optimization: Consolidate unique options extraction into a single pass (O(N) vs O(4N))
+  // and pre-calculate episode tags to avoid repeated nested loops.
+  const { uniqueFounders, uniqueCompanies, uniqueYears, uniqueTags, episodeTagsMap } = useMemo(() => {
+    const founders = new Set<string>();
+    const companies = new Set<string>();
+    const years = new Set<string>();
+    const tagCounts = new Map<string, number>();
+    const tagsMap: Record<string, string[]> = {};
 
-  const uniqueCompanies = useMemo(() => {
-    const s = new Set<string>();
-    allEpisodes.forEach(ep => ep.companies?.name && s.add(ep.companies.name));
-    return Array.from(s).sort();
-  }, [allEpisodes]);
-
-  const uniqueYears = useMemo(() => {
-    const s = new Set<string>();
-    allEpisodes.forEach(ep => ep.release_date && s.add(ep.release_date.slice(0, 4)));
-    return Array.from(s).sort().reverse();
-  }, [allEpisodes]);
-
-  // Unique tags with counts, sorted by frequency desc
-  const uniqueTags = useMemo(() => {
-    const counts = new Map<string, number>();
     allEpisodes.forEach(ep => {
-      getEpisodeTags(ep).forEach(t => counts.set(t, (counts.get(t) || 0) + 1));
+      // Founders
+      ep.founder_names?.split(',').forEach(n => founders.add(n.trim()));
+
+      // Companies
+      if (ep.companies?.name) companies.add(ep.companies.name);
+
+      // Years
+      if (ep.release_date) years.add(ep.release_date.slice(0, 4));
+
+      // Tags (O(lessons * tags) per episode)
+      const epTags = new Set<string>();
+      ep.lessons?.forEach(l => l.lesson_tags?.forEach(lt => {
+        const n = lt.tags?.name?.trim();
+        if (n) epTags.add(n);
+      }));
+      const tagList = Array.from(epTags);
+      tagsMap[ep.id] = tagList;
+      tagList.forEach(t => tagCounts.set(t, (tagCounts.get(t) || 0) + 1));
     });
-    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+
+    return {
+      uniqueFounders: Array.from(founders).sort(),
+      uniqueCompanies: Array.from(companies).sort(),
+      uniqueYears: Array.from(years).sort().reverse(),
+      uniqueTags: Array.from(tagCounts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])),
+      episodeTagsMap: tagsMap
+    };
   }, [allEpisodes]);
+
+  // Performance Optimization: Use a map for O(1) folder lookups
+  const foldersMap = useMemo(() => {
+    return new Map(folders.map(f => [f.id, f]));
+  }, [folders]);
 
   // Filter → Sort → Paginate
   const filteredEpisodes = useMemo(() => {
@@ -242,7 +409,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     // Tag Filter (OR semantics, case-insensitive)
     if (selectedTags.size > 0) {
       const lower = new Set(Array.from(selectedTags).map(t => t.toLowerCase()));
-      result = result.filter(ep => getEpisodeTags(ep).some(t => lower.has(t.toLowerCase())));
+      result = result.filter(ep => (episodeTagsMap[ep.id] || []).some(t => lower.has(t.toLowerCase())));
     }
 
     // New Filters
@@ -267,14 +434,14 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     }
 
     return result;
-  }, [allEpisodes, selectedIndustries, selectedTags, selectedFolderId, folderAssignments, founderFilter, companyFilter, yearFilter, search]);
+  }, [allEpisodes, selectedIndustries, selectedTags, episodeTagsMap, selectedFolderId, folderAssignments, founderFilter, companyFilter, yearFilter, search]);
 
   const sortedEpisodes = useMemo(() => {
     const sorted = [...filteredEpisodes];
     sorted.sort((a, b) => {
       if (sortColumn === "tag_count") {
-        const av = getEpisodeTags(a).length;
-        const bv = getEpisodeTags(b).length;
+        const av = (episodeTagsMap[a.id] || []).length;
+        const bv = (episodeTagsMap[b.id] || []).length;
         return sortDirection === "asc" ? av - bv : bv - av;
       }
       let aVal = "";
@@ -292,7 +459,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
       return sortDirection === "asc" ? cmp : -cmp;
     });
     return sorted;
-  }, [filteredEpisodes, sortColumn, sortDirection]);
+  }, [filteredEpisodes, episodeTagsMap, sortColumn, sortDirection]);
 
   const totalPages = Math.max(1, Math.ceil(sortedEpisodes.length / PAGE_SIZE));
   const paginatedEpisodes = sortedEpisodes.slice(
@@ -380,7 +547,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     if (assignmentsError) throw assignmentsError;
 
     const map: Record<string, string[]> = {};
-    ((assignments || []) as any[]).forEach((a: any) => {
+    ((assignments || []) as { episode_id: string; folder_id: string }[]).forEach((a) => {
       if (!map[a.episode_id]) map[a.episode_id] = [];
       map[a.episode_id].push(a.folder_id);
     });
@@ -416,7 +583,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
 
       const { data, error } = await supabase
         .from("episode_folders")
-        .insert(names.map(name => ({ user_id: user.id, name })) as any)
+        .insert(names.map(name => ({ user_id: user.id, name })) as unknown as any)
         .select("id, name, color")
         .order("name", { ascending: true });
 
@@ -434,8 +601,9 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
       setBulkFolderNames([""]);
       await fetchFolders();
       toast({ title: names.length === 1 ? "Folder created" : `Created ${names.length} folders` });
-    } catch (error: any) {
-      toast({ title: "Could not create folders", description: error?.message || "Please try again.", variant: "destructive" });
+    } catch (error) {
+      const err = error as { message?: string };
+      toast({ title: "Could not create folders", description: err?.message || "Please try again.", variant: "destructive" });
     } finally {
       setCreatingFolders(false);
     }
@@ -458,7 +626,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
       if (rows.length > 0) {
         const { error: moveError } = await supabase
           .from("episode_folder_assignments")
-          .insert(rows as any);
+          .insert(rows as unknown as any);
         if (moveError) {
           toast({ title: "Couldn't move episodes", description: moveError.message, variant: "destructive" });
           return;
@@ -483,7 +651,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     }
   };
 
-  const handleAssignFolder = async (episodeId: string, folderId: string) => {
+  const handleAssignFolder = React.useCallback(async (episodeId: string, folderId: string) => {
     triggerHapticFeedback('light');
 
     try {
@@ -502,16 +670,17 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
       } else {
         const { error } = await supabase
           .from("episode_folder_assignments")
-          .insert({ user_id: user.id, episode_id: episodeId, folder_id: folderId } as any);
+          .insert({ user_id: user.id, episode_id: episodeId, folder_id: folderId } as unknown as any);
         if (error) throw error;
       }
       await fetchFolders();
-    } catch (error: any) {
-      toast({ title: "Couldn't update folder", description: error?.message || "Please try again.", variant: "destructive" });
+    } catch (error) {
+      const err = error as { message?: string };
+      toast({ title: "Couldn't update folder", description: err?.message || "Please try again.", variant: "destructive" });
     }
-  };
+  }, [folderAssignments, toast]);
 
-  const handleDelete = async (episodeId: string, e: React.MouseEvent) => {
+  const handleDelete = React.useCallback(async (episodeId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     triggerHapticFeedback('medium');
     if (!confirm("Delete this episode analysis? This will also remove all associated lessons, callouts, and personalized insights.")) return;
@@ -530,7 +699,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
       setAllEpisodes(previous);
       toast({ title: "Delete failed", description: "Could not delete the episode. Please try again.", variant: "destructive" });
     }
-  };
+  }, [allEpisodes, toast]);
 
   useEffect(() => {
     fetchEpisodes();
@@ -573,6 +742,41 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     setLibraryPrefs({ sortColumn, sortDirection, viewMode });
   }, [sortColumn, sortDirection, viewMode]);
 
+  // Open the source (or, for uploaded documents which have no navigable URL, open details).
+  const openSource = useCallback((episode: Episode, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isUploadedDocument(episode.url)) {
+      onSelectEpisode(episode.id);
+    } else {
+      window.open(episode.url, "_blank");
+    }
+  }, [onSelectEpisode]);
+
+  const handleExport = useCallback((episodeId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedExportId(episodeId);
+    setExportModalOpen(true);
+  }, []);
+
+  const handleCopyLink = useCallback((url: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    triggerHapticFeedback('light');
+    navigator.clipboard.writeText(url);
+    toast({ title: "Link copied to clipboard" });
+  }, [toast]);
+
+  const onToggleTag = useCallback((name: string) => {
+    toggleTag(name);
+  }, [toggleTag]);
+
+  const onAssignFolder = useCallback((episodeId: string, folderId: string) => {
+    handleAssignFolder(episodeId, folderId);
+  }, [handleAssignFolder]);
+
+  const onDelete = useCallback((episodeId: string, e: React.MouseEvent) => {
+    handleDelete(episodeId, e);
+  }, [handleDelete]);
+
   if (loading) {
     return (
       <Card className="p-4 sm:p-6 shadow-card border-primary/10" role="status" aria-live="polite" aria-label="Loading your analyzed sources">
@@ -604,156 +808,12 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     );
   }
 
-  // Uploaded documents use a synthetic, non-navigable "document://" url.
-  const isUploadedDocument = (url: string) => url.startsWith("document://");
-  const getPlatformIcon = (url: string) =>
-    isUploadedDocument(url) ? <FileText className="w-4 h-4" />
-      : (url.includes("youtube.com") || url.includes("youtu.be")) ? <Youtube className="w-4 h-4" />
-      : <Headphones className="w-4 h-4" />;
-  const getPlatformLabel = (url: string) =>
-    isUploadedDocument(url) ? "View Details"
-      : (url.includes("youtube.com") || url.includes("youtu.be")) ? "Watch Now"
-      : "Listen Now";
-  // Open the source (or, for uploaded documents which have no navigable URL, open details).
-  const openSource = (episode: Episode, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (isUploadedDocument(episode.url)) {
-      onSelectEpisode(episode.id);
-    } else {
-      window.open(episode.url, "_blank");
-    }
-  };
-
-  const handleExport = (episodeId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSelectedExportId(episodeId);
-    setExportModalOpen(true);
-  };
-
-  const handleCopyLink = (url: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    triggerHapticFeedback('light');
-    navigator.clipboard.writeText(url);
-    toast({ title: "Link copied to clipboard" });
-  };
-
   if (allEpisodes.length === 0) {
     return <LibraryEmptyState />;
   }
 
   const startIdx = (currentPage - 1) * PAGE_SIZE + 1;
   const endIdx = Math.min(currentPage * PAGE_SIZE, sortedEpisodes.length);
-
-  // Mobile card view for each episode
-  const MobileEpisodeCard = ({ episode }: { episode: Episode }) => {
-    const episodeFolders = (folderAssignments[episode.id] || [])
-      .map(fId => folders.find(f => f.id === fId))
-      .filter(Boolean);
-
-    return (
-      <div
-        className="cv-row group p-4 min-h-[72px] border-b border-border/60 last:border-b-0 transition-all hover:bg-primary/[0.03] active:bg-primary/5 active:scale-[0.995] cursor-pointer touch-manipulation"
-        onClick={() => onSelectEpisode(episode.id)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => e.key === "Enter" && onSelectEpisode(episode.id)}
-      >
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <p className="font-medium text-sm line-clamp-2 mb-1">{episode.title}</p>
-            <div className="mb-1">
-              <Badge variant={isUniversalAnalysis(episode) ? "outline" : "secondary"} className="text-[10px]">
-                {getAnalysisProfileLabel(episode)}
-              </Badge>
-            </div>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-              {episode.companies?.name && <span>{episode.companies.name}</span>}
-              {episode.founder_names && <span>{episode.founder_names}</span>}
-            </div>
-            <div className="flex flex-wrap items-center gap-1.5 mt-2">
-              {episode.companies?.current_stage && (
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                  {episode.companies.current_stage}
-                </Badge>
-              )}
-              {getEpisodeTags(episode).slice(0, 4).map(tagName => (
-                <Badge
-                  key={tagName}
-                  variant={selectedTags.has(tagName) ? "default" : "outline"}
-                  className="cursor-pointer text-[10px] px-1.5 py-0 flex items-center gap-0.5"
-                  onClick={(e) => { e.stopPropagation(); toggleTag(tagName); }}
-                >
-                  <Tag className="w-2.5 h-2.5" />{tagName}
-                </Badge>
-              ))}
-              {episodeFolders.map(f => (
-                <span key={f!.id} className="text-[10px] px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: f!.color }}>
-                  {f!.name}
-                </span>
-              ))}
-              {episode.created_at && (
-                <span className="text-[10px] text-muted-foreground">
-                  {new Date(episode.created_at).toLocaleDateString()}
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-0.5 flex-shrink-0">
-            <BookmarkButton episodeId={episode.id} />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                  <MoreVertical className="w-4 h-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={(e) => openSource(episode, e)}>
-                  {getPlatformIcon(episode.url)}
-                  <span className="ml-2">{getPlatformLabel(episode.url)}</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSelectEpisode(episode.id); }}>
-                  <Eye className="w-4 h-4" /><span className="ml-2">View Details</span>
-                </DropdownMenuItem>
-                {folders.length > 0 && (
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger onClick={(e) => e.stopPropagation()}>
-                      <Folder className="w-4 h-4" /><span className="ml-2">Move to Folder</span>
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent>
-                      {folders.map(folder => {
-                        const isAssigned = (folderAssignments[episode.id] || []).includes(folder.id);
-                        return (
-                          <DropdownMenuItem
-                            key={folder.id}
-                            onClick={(e) => { e.stopPropagation(); handleAssignFolder(episode.id, folder.id); }}
-                          >
-                            <span className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: folder.color }} />
-                            {folder.name}
-                            {isAssigned && <span className="ml-auto text-primary">✓</span>}
-                          </DropdownMenuItem>
-                        );
-                      })}
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={(e) => handleExport(episode.id, e)}>
-                  <Download className="w-4 h-4" /><span className="ml-2">Export Episode</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={(e) => handleCopyLink(episode.url, e)}>
-                  <Copy className="w-4 h-4" /><span className="ml-2">Copy Link</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={(e) => handleDelete(episode.id, e)} className="text-destructive focus:text-destructive">
-                  <Trash2 className="w-4 h-4" /><span className="ml-2">Delete Analysis</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   const clearFilters = () => {
       setFounderFilter("all");
@@ -969,7 +1029,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
               ? uniqueTags.filter(([n]) => selectedTags.has(n))
               : uniqueTags
             ).map(([tagName]) => {
-              const eps = filteredEpisodes.filter(ep => getEpisodeTags(ep).some(t => t.toLowerCase() === tagName.toLowerCase()));
+              const eps = filteredEpisodes.filter(ep => (episodeTagsMap[ep.id] || []).some(t => t.toLowerCase() === tagName.toLowerCase()));
               if (eps.length === 0) return null;
               return (
                 <div key={tagName}>
@@ -978,7 +1038,24 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                     <span className="font-semibold text-sm">{tagName}</span>
                     <Badge variant="outline" className="text-[10px]">{eps.length}</Badge>
                   </div>
-                  {eps.map(ep => <MobileEpisodeCard key={ep.id} episode={ep} />)}
+                  {eps.map(ep => (
+                    <MobileEpisodeCard
+                      key={ep.id}
+                      episode={ep}
+                      onSelectEpisode={onSelectEpisode}
+                      folderAssignments={folderAssignments}
+                      foldersMap={foldersMap}
+                      selectedTags={selectedTags}
+                      onToggleTag={onToggleTag}
+                      onOpenSource={openSource}
+                      onExport={handleExport}
+                      onCopyLink={handleCopyLink}
+                      onDelete={onDelete}
+                      onAssignFolder={onAssignFolder}
+                      folders={folders}
+                      episodeTags={episodeTagsMap[ep.id] || []}
+                    />
+                  ))}
                 </div>
               );
             })}
@@ -1004,7 +1081,24 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                     <span className="font-semibold text-sm">{folder.name}</span>
                     <Badge variant="outline" className="text-[10px]">{eps.length}</Badge>
                   </div>
-                  {eps.map(ep => <MobileEpisodeCard key={ep.id} episode={ep} />)}
+                  {eps.map(ep => (
+                    <MobileEpisodeCard
+                      key={ep.id}
+                      episode={ep}
+                      onSelectEpisode={onSelectEpisode}
+                      folderAssignments={folderAssignments}
+                      foldersMap={foldersMap}
+                      selectedTags={selectedTags}
+                      onToggleTag={onToggleTag}
+                      onOpenSource={openSource}
+                      onExport={handleExport}
+                      onCopyLink={handleCopyLink}
+                      onDelete={onDelete}
+                      onAssignFolder={onAssignFolder}
+                      folders={folders}
+                      episodeTags={episodeTagsMap[ep.id] || []}
+                    />
+                  ))}
                 </div>
               );
             })}
@@ -1012,7 +1106,22 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
         ) : isMobile ? (
           <div>
             {paginatedEpisodes.map((episode) => (
-              <MobileEpisodeCard key={episode.id} episode={episode} />
+            <MobileEpisodeCard
+              key={episode.id}
+              episode={episode}
+              onSelectEpisode={onSelectEpisode}
+              folderAssignments={folderAssignments}
+              foldersMap={foldersMap}
+              selectedTags={selectedTags}
+              onToggleTag={onToggleTag}
+              onOpenSource={openSource}
+              onExport={handleExport}
+              onCopyLink={handleCopyLink}
+              onDelete={onDelete}
+              onAssignFolder={onAssignFolder}
+              folders={folders}
+              episodeTags={episodeTagsMap[episode.id] || []}
+            />
             ))}
           </div>
         ) : (
@@ -1044,7 +1153,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
               <TableBody>
                 {paginatedEpisodes.map((episode) => {
                   const episodeFolders = (folderAssignments[episode.id] || [])
-                    .map(fId => folders.find(f => f.id === fId))
+                    .map(fId => foldersMap.get(fId))
                     .filter(Boolean);
 
                   return (
@@ -1062,7 +1171,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                           </Badge>
                         </div>
                           <div className="flex gap-1 flex-wrap">
-                            {getEpisodeTags(episode).slice(0, 5).map(tagName => (
+                            {(episodeTagsMap[episode.id] || []).slice(0, 5).map(tagName => (
                               <Badge
                                 key={tagName}
                                 variant={selectedTags.has(tagName) ? "default" : "outline"}
