@@ -203,7 +203,7 @@ export const PublicLanding = () => {
                 id="scenarios"
                 eyebrow="Scenarios"
                 title="Who this is actually for."
-                lead="Persona-shaped workflows with the exact decisions, prompts, and operator libraries — from a YC batch to a Fortune 500 reduction."
+                lead="Persona-shaped workflows with the exact decisions, prompts, and operator libraries — from a YC batch founder searching for product market fit to a Fortune 500 CEO navigating layoffs."
               >
                 <m.div
                   className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
