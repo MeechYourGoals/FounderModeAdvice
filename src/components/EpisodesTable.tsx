@@ -70,6 +70,10 @@ interface Episode {
   }[];
 }
 
+interface EpisodeWithTags extends Episode {
+  computedTags: string[];
+}
+
 interface EpisodeFolder {
   id: string;
   name: string;
@@ -191,37 +195,47 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     });
   };
 
-  // Derive unique options
-  const uniqueFounders = useMemo(() => {
-    const s = new Set<string>();
-    allEpisodes.forEach(ep => ep.founder_names?.split(',').forEach(n => s.add(n.trim())));
-    return Array.from(s).sort();
+  // Performance optimization: Pre-calculate tags and consolidate loops
+  const episodesWithTags = useMemo<EpisodeWithTags[]>(() => {
+    return allEpisodes.map(ep => ({
+      ...ep,
+      computedTags: getEpisodeTags(ep)
+    }));
   }, [allEpisodes]);
 
-  const uniqueCompanies = useMemo(() => {
-    const s = new Set<string>();
-    allEpisodes.forEach(ep => ep.companies?.name && s.add(ep.companies.name));
-    return Array.from(s).sort();
-  }, [allEpisodes]);
+  const { uniqueFounders, uniqueCompanies, uniqueYears, uniqueTags } = useMemo(() => {
+    const foundersSet = new Set<string>();
+    const companiesSet = new Set<string>();
+    const yearsSet = new Set<string>();
+    const tagCounts = new Map<string, number>();
 
-  const uniqueYears = useMemo(() => {
-    const s = new Set<string>();
-    allEpisodes.forEach(ep => ep.release_date && s.add(ep.release_date.slice(0, 4)));
-    return Array.from(s).sort().reverse();
-  }, [allEpisodes]);
+    episodesWithTags.forEach(ep => {
+      // Founders
+      ep.founder_names?.split(',').forEach(n => foundersSet.add(n.trim()));
 
-  // Unique tags with counts, sorted by frequency desc
-  const uniqueTags = useMemo(() => {
-    const counts = new Map<string, number>();
-    allEpisodes.forEach(ep => {
-      getEpisodeTags(ep).forEach(t => counts.set(t, (counts.get(t) || 0) + 1));
+      // Companies
+      if (ep.companies?.name) companiesSet.add(ep.companies.name);
+
+      // Years
+      if (ep.release_date) yearsSet.add(ep.release_date.slice(0, 4));
+
+      // Tags
+      ep.computedTags.forEach(t => tagCounts.set(t, (tagCounts.get(t) || 0) + 1));
     });
-    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-  }, [allEpisodes]);
+
+    return {
+      uniqueFounders: Array.from(foundersSet).sort(),
+      uniqueCompanies: Array.from(companiesSet).sort(),
+      uniqueYears: Array.from(yearsSet).sort().reverse(),
+      uniqueTags: Array.from(tagCounts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    };
+  }, [episodesWithTags]);
+
+  const foldersMap = useMemo(() => new Map(folders.map(f => [f.id, f])), [folders]);
 
   // Filter → Sort → Paginate
   const filteredEpisodes = useMemo(() => {
-    let result = allEpisodes;
+    let result = episodesWithTags;
 
     // Industry Filter
     if (selectedIndustries.size > 0) {
@@ -242,7 +256,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     // Tag Filter (OR semantics, case-insensitive)
     if (selectedTags.size > 0) {
       const lower = new Set(Array.from(selectedTags).map(t => t.toLowerCase()));
-      result = result.filter(ep => getEpisodeTags(ep).some(t => lower.has(t.toLowerCase())));
+      result = result.filter(ep => ep.computedTags.some(t => lower.has(t.toLowerCase())));
     }
 
     // New Filters
@@ -267,14 +281,14 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     }
 
     return result;
-  }, [allEpisodes, selectedIndustries, selectedTags, selectedFolderId, folderAssignments, founderFilter, companyFilter, yearFilter, search]);
+  }, [episodesWithTags, selectedIndustries, selectedTags, selectedFolderId, folderAssignments, founderFilter, companyFilter, yearFilter, search]);
 
   const sortedEpisodes = useMemo(() => {
     const sorted = [...filteredEpisodes];
     sorted.sort((a, b) => {
       if (sortColumn === "tag_count") {
-        const av = getEpisodeTags(a).length;
-        const bv = getEpisodeTags(b).length;
+        const av = a.computedTags.length;
+        const bv = b.computedTags.length;
         return sortDirection === "asc" ? av - bv : bv - av;
       }
       let aVal = "";
@@ -645,9 +659,9 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
   const endIdx = Math.min(currentPage * PAGE_SIZE, sortedEpisodes.length);
 
   // Mobile card view for each episode
-  const MobileEpisodeCard = ({ episode }: { episode: Episode }) => {
+  const MobileEpisodeCard = ({ episode }: { episode: EpisodeWithTags }) => {
     const episodeFolders = (folderAssignments[episode.id] || [])
-      .map(fId => folders.find(f => f.id === fId))
+      .map(fId => foldersMap.get(fId))
       .filter(Boolean);
 
     return (
@@ -676,7 +690,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                   {episode.companies.current_stage}
                 </Badge>
               )}
-              {getEpisodeTags(episode).slice(0, 4).map(tagName => (
+              {episode.computedTags.slice(0, 4).map(tagName => (
                 <Badge
                   key={tagName}
                   variant={selectedTags.has(tagName) ? "default" : "outline"}
@@ -969,7 +983,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
               ? uniqueTags.filter(([n]) => selectedTags.has(n))
               : uniqueTags
             ).map(([tagName]) => {
-              const eps = filteredEpisodes.filter(ep => getEpisodeTags(ep).some(t => t.toLowerCase() === tagName.toLowerCase()));
+              const eps = filteredEpisodes.filter(ep => ep.computedTags.some(t => t.toLowerCase() === tagName.toLowerCase()));
               if (eps.length === 0) return null;
               return (
                 <div key={tagName}>
@@ -1044,7 +1058,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
               <TableBody>
                 {paginatedEpisodes.map((episode) => {
                   const episodeFolders = (folderAssignments[episode.id] || [])
-                    .map(fId => folders.find(f => f.id === fId))
+                    .map(fId => foldersMap.get(fId))
                     .filter(Boolean);
 
                   return (
@@ -1062,7 +1076,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                           </Badge>
                         </div>
                           <div className="flex gap-1 flex-wrap">
-                            {getEpisodeTags(episode).slice(0, 5).map(tagName => (
+                            {episode.computedTags.slice(0, 5).map(tagName => (
                               <Badge
                                 key={tagName}
                                 variant={selectedTags.has(tagName) ? "default" : "outline"}
@@ -1405,7 +1419,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
               .filter(([, ids]) => ids.includes(selectedFolderId))
               .map(([epId]) => epId)
           : undefined}
-        scopeLabel={selectedFolderId ? folders.find(f => f.id === selectedFolderId)?.name : undefined}
+        scopeLabel={selectedFolderId ? foldersMap.get(selectedFolderId)?.name : undefined}
         open={exportModalOpen}
         onOpenChange={setExportModalOpen}
       />
