@@ -1,9 +1,13 @@
-# Mobile Wrapping Guide — Despia, Capacitor, Expo/EAS
+# Mobile Wrapping Guide — Expo/EAS, Despia, Capacitor
 
 How to ship this web app as an iOS/Android app, and what is already wired up
 for each path. See `docs/store-readiness.md` for the store-compliance runbook
 and `docs/app-entry-and-runtime.md` for the app-vs-browser entry routing and
 runtime-detection model.
+
+**Current plan of record: Option C (Expo/EAS)** — the shell app in `native/`
+is committed and store-ready; build with `eas build`, submit with
+`eas submit`. Despia and Capacitor remain fully wired as alternatives.
 
 ## What the web app already does for native feel
 
@@ -60,21 +64,48 @@ Then per platform: signing, icons/splash (`resources/`), push entitlement
 (OneSignal), and the OAuth deep-link scheme `com.foundermodeadvice.app://`
 (already handled in `src/lib/capacitor.ts`).
 
-## Option C — Expo / EAS
+## Option C — Expo / EAS (plan of record)
 
-This is a Vite + React DOM app, **not** a React Native/Expo project, so
-`eas build` cannot build it directly. Two ways to use EAS:
+The Expo shell app lives in **`native/`** — a monorepo sibling of the web
+app. It renders the deployed web app in a `react-native-webview` and bridges
+native capabilities over postMessage. See `native/README.md` for the full
+run/build/submit guide.
 
-1. **WebView shell**: create a minimal Expo app whose root screen is
-   `react-native-webview` pointed at the production URL, then build that shell
-   with EAS. Append `?source=app` to the URL (or set a `Despia`-free custom
-   user agent and adapt `isNativeWrapper()`) so the web app enters
-   installed-app mode. You re-implement push/IAP bridges in the shell.
-2. **Full migration** to Expo Router + React Native — a rewrite of the UI
-   layer; only worth it if you need deep native UI later.
+What is wired up:
 
-Despia (A) and Capacitor (B) are strictly less work than an EAS shell today,
-because their bridges are already wired.
+- **Runtime detection**: the shell ships a Safari-like user agent with the
+  `FMAShell/<version>` token; `src/services/expoShellService.ts` +
+  `isNativeWrapper()` treat it as an installed app (auth-first entry, tab
+  bar, no pinch zoom). It also loads `/?source=app` as a second signal.
+- **Safe areas**: real device insets injected as `--safe-area-top/bottom`
+  (same convention Despia uses).
+- **Haptics**: `triggerHapticFeedback()` routes to expo-haptics via the
+  bridge, including success/warning/error notification patterns.
+- **IAP**: `presentPaywall`/`restorePurchases`/`presentCustomerCenter` send
+  bridge messages; the shell presents the native RevenueCat paywall/customer
+  center (react-native-purchases) and reports back through the same
+  `window.iapSuccess` callback Despia uses; the edge function re-verifies
+  entitlements server-side. Stripe/Paddle checkout is blocked in the shell,
+  same as other native runtimes.
+- **Push**: OneSignal initializes natively in the shell; `syncPushUser()`
+  maps the signed-in Supabase user id via the bridge (login + logout).
+- **Share**: `shareNative()` uses the native share sheet via the bridge.
+- **Theme**: status bar + root view follow dark/light theme changes.
+- **Navigation**: Android hardware back walks web history; external links
+  open the in-app browser; `mailto:`/`tel:` go to the OS; deep links
+  (`com.foundermodeadvice.app://` and https app links) route into the WebView.
+
+Quick reference (root `package.json` has `native:*` scripts):
+
+```bash
+cd native && npm install
+npm start                                   # Expo Go (IAP/push no-op there)
+eas build --profile production --platform all
+eas submit --platform ios && eas submit --platform android
+```
+
+The alternative remains a **full migration** to Expo Router + React Native —
+a rewrite of the UI layer; only worth it if you need deep native UI later.
 
 ## Smoke test checklist (any wrapper)
 

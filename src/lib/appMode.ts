@@ -1,5 +1,6 @@
 import { Capacitor } from "@capacitor/core";
 import { isDespia } from "@/services/despiaService";
+import { isExpoShell } from "@/services/expoShellService";
 
 /**
  * Centralized environment / app-mode detection.
@@ -36,13 +37,29 @@ export const isStandalonePWA = (): boolean => {
   return displayModeStandalone || iosStandalone;
 };
 
-/** Native wrapper: Capacitor (iOS/Android), Despia runtime, or an explicit app launch param. */
-export const isNativeWrapper = (): boolean => {
-  const hasAppParam =
-    typeof window !== "undefined" &&
-    new URLSearchParams(window.location.search).get("source") === "app";
-  return Capacitor.isNativePlatform() || isDespia() || hasAppParam;
+const APP_LAUNCH_FLAG = "fma-app-launch";
+
+/**
+ * `?source=app` marks an installed-app launch, but SPA navigations drop the
+ * query string — persist the flag for the session so detection survives the
+ * first route change.
+ */
+const hasAppLaunchParam = (): boolean => {
+  if (typeof window === "undefined") return false;
+  try {
+    if (new URLSearchParams(window.location.search).get("source") === "app") {
+      window.sessionStorage?.setItem(APP_LAUNCH_FLAG, "1");
+      return true;
+    }
+    return window.sessionStorage?.getItem(APP_LAUNCH_FLAG) === "1";
+  } catch {
+    return new URLSearchParams(window.location.search).get("source") === "app";
+  }
 };
+
+/** Native wrapper: Capacitor (iOS/Android), Despia or Expo shell runtime, or an explicit app launch param. */
+export const isNativeWrapper = (): boolean =>
+  Capacitor.isNativePlatform() || isDespia() || isExpoShell() || hasAppLaunchParam();
 
 /**
  * Whether the current context is an installed app experience that should open directly

@@ -4,6 +4,7 @@ import App from "./App.tsx";
 import "./index.css";
 import { initializeNativePlugins, handleBackButton, initKeyboardViewportWatcher } from "./lib/capacitor";
 import { isDespia } from "./services/despiaService";
+import { isExpoShell, syncShellTheme } from "./services/expoShellService";
 import { isNativeWrapper, isStandalonePWA, getRuntimeSurface } from "./lib/appMode";
 import { initPushNotifications } from "./services/pushService";
 import { initAnalytics, captureEvent } from "./services/analytics";
@@ -35,10 +36,10 @@ initPushNotifications();
 // installed PWA, gated to installed-app runtimes. No-op until configured.
 initAnalytics();
 
-const inInstalledApp = isDespia() || Capacitor.isNativePlatform();
+const inInstalledApp = isDespia() || isExpoShell() || Capacitor.isNativePlatform();
 if (inInstalledApp) {
   captureEvent("native_app_opened", {
-    runtime: isDespia() ? "despia" : "capacitor",
+    runtime: isDespia() ? "despia" : isExpoShell() ? "expo-shell" : "capacitor",
     platform: Capacitor.getPlatform(),
     surface: getRuntimeSurface(),
   });
@@ -46,6 +47,20 @@ if (inInstalledApp) {
 
 if (isDespia()) {
   console.log("Despia: Running inside Despia native runtime");
+}
+
+// Expo shell: keep the native status bar + root view in sync with the theme
+// (colors match --background in index.css for dark/light).
+if (isExpoShell()) {
+  const pushThemeToShell = () => {
+    const dark = document.documentElement.classList.contains("dark");
+    syncShellTheme(dark, dark ? "#0c0e15" : "#fbfcfe");
+  };
+  pushThemeToShell();
+  new MutationObserver(pushThemeToShell).observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["class"],
+  });
 }
 
 // Expose app version for Settings → About display

@@ -1,5 +1,6 @@
 import { Capacitor } from "@capacitor/core";
 import { isDespia, registerDespiaPush } from "@/services/despiaService";
+import { isExpoShell, registerShellPush, logoutShellUser } from "@/services/expoShellService";
 
 /**
  * Push notification registration + per-user mapping.
@@ -17,7 +18,7 @@ const ONESIGNAL_APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID as string | undef
 
 /** Installed-app runtimes where push registration is meaningful. */
 function inInstalledApp(): boolean {
-  return isDespia() || Capacitor.isNativePlatform();
+  return isDespia() || isExpoShell() || Capacitor.isNativePlatform();
 }
 
 type OneSignalSDK = {
@@ -36,7 +37,7 @@ let oneSignalReady: Promise<OneSignalSDK | null> | null = null;
 export function initPushNotifications(): Promise<OneSignalSDK | null> {
   if (oneSignalReady) return oneSignalReady;
 
-  if (isDespia() || !Capacitor.isNativePlatform() || !ONESIGNAL_APP_ID) {
+  if (isDespia() || isExpoShell() || !Capacitor.isNativePlatform() || !ONESIGNAL_APP_ID) {
     if (Capacitor.isNativePlatform() && !isDespia() && !ONESIGNAL_APP_ID) {
       console.log("OneSignal: VITE_ONESIGNAL_APP_ID not set — skipping push init");
     }
@@ -69,6 +70,13 @@ export async function syncPushUser(userId: string | null | undefined): Promise<v
   // Despia → native OneSignal external id via bridge (no logout bridge exposed).
   if (isDespia()) {
     if (userId) registerDespiaPush(userId);
+    return;
+  }
+
+  // Expo shell → native OneSignal in the shell (login + logout supported).
+  if (isExpoShell()) {
+    if (userId) registerShellPush(userId);
+    else logoutShellUser();
     return;
   }
 

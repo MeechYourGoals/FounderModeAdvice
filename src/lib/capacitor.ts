@@ -138,6 +138,12 @@ export type HapticType = 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 
 
 export async function triggerHapticFeedback(type: HapticType = 'light') {
   if (!isNative) {
+    const { isExpoShell, triggerShellHaptic } = await import('@/services/expoShellService');
+    if (isExpoShell()) {
+      triggerShellHaptic(type);
+      return;
+    }
+
     const { isDespia, triggerDespiaHaptic } = await import('@/services/despiaService');
     // Despia only speaks impact strengths; map outcome patterns to the
     // closest physical equivalent.

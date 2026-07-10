@@ -652,7 +652,8 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
               {lessons.map((lesson, index) => (
                 <div
                   key={lesson.id}
-                  className="group relative rounded-2xl border border-border/70 bg-background/40 p-4 sm:p-5 pl-5 sm:pl-6 transition-colors hover:border-primary/30"
+                  style={{ "--stagger-i": index } as React.CSSProperties}
+                  className="stagger-item group relative rounded-2xl border border-border/70 bg-background/40 p-4 sm:p-5 pl-5 sm:pl-6 transition-all hover:border-primary/30 active:border-primary/30 active:bg-primary/[0.04]"
                 >
                   <div aria-hidden className="absolute left-0 top-4 bottom-4 w-[3px] rounded-full bg-primary/60 transition-colors group-hover:bg-primary" />
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-2.5 gap-2">
@@ -780,8 +781,12 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
             Relevant for You <span className="text-muted-foreground font-normal">({callouts.length})</span>
           </h2>
           <div className="space-y-3 sm:space-y-4">
-            {callouts.map((callout) => (
-              <div key={callout.id} className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 bg-card rounded-2xl border border-border/70 transition-colors hover:border-accent/30">
+            {callouts.map((callout, index) => (
+              <div
+                key={callout.id}
+                style={{ "--stagger-i": index } as React.CSSProperties}
+                className="stagger-item flex items-start gap-3 sm:gap-4 p-3 sm:p-4 bg-card rounded-2xl border border-border/70 transition-all hover:border-accent/30 active:border-accent/30 active:bg-accent/[0.04]"
+              >
                 <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent">
                   <Lightbulb className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </span>

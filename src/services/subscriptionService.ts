@@ -9,6 +9,12 @@ import {
   pickHighestSubscriptionTier,
 } from '@/types/subscription';
 import { isDespia, launchDespiaPaywall } from './despiaService';
+import {
+  isExpoShell,
+  launchShellPaywall,
+  openShellCustomerCenter,
+  restoreShellPurchasesAndWait,
+} from './expoShellService';
 
 /** Founder/Super Admin emails with unlimited access - no feature limits */
 const FOUNDER_EMAILS = ['ccamechi@gmail.com'];
@@ -57,6 +63,13 @@ let RevenueCatUI: typeof import('@revenuecat/purchases-capacitor-ui').RevenueCat
 export async function initializeRevenueCat(userId: string): Promise<void> {
   if (isDespia()) {
     console.log('RevenueCat: Skipping initialization on Despia platform (native handling)');
+    return;
+  }
+
+  if (isExpoShell()) {
+    // The Expo shell owns the RevenueCat SDK; identification happens through
+    // the shell bridge (see SubscriptionContext / identifyShellUser).
+    console.log('RevenueCat: Skipping web initialization inside the Expo shell');
     return;
   }
 
@@ -172,6 +185,14 @@ export async function purchasePackage(packageId: string): Promise<boolean> {
     }
   }
 
+  if (isExpoShell()) {
+    // The shell exposes purchases through the native RevenueCat paywall;
+    // success arrives asynchronously via the iapSuccess callback.
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+    return launchShellPaywall(user.id, undefined, true);
+  }
+
   if (!Purchases || !Capacitor.isNativePlatform()) {
     return false;
   }
@@ -226,6 +247,13 @@ export async function presentPaywall(
     }
   }
 
+  // Expo shell: native RevenueCat paywall in the shell; success arrives via iapSuccess.
+  if (isExpoShell()) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return 'ERROR';
+    return launchShellPaywall(user.id, requiredEntitlement) ? 'OPENED' : 'ERROR';
+  }
+
   if (!RevenueCatUI || !Capacitor.isNativePlatform()) {
     console.warn('RevenueCat UI: Not available — cannot present paywall');
     return 'ERROR';
@@ -266,6 +294,12 @@ export async function presentPaywallAlways(): Promise<PaywallResult> {
     }
   }
 
+  if (isExpoShell()) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return 'ERROR';
+    return launchShellPaywall(user.id, undefined, true) ? 'OPENED' : 'ERROR';
+  }
+
   if (!RevenueCatUI || !Capacitor.isNativePlatform()) {
     return 'ERROR';
   }
@@ -293,6 +327,12 @@ export async function presentPaywallAlways(): Promise<PaywallResult> {
  * This provides a self-service UI for users to manage, cancel, or restore subscriptions.
  */
 export async function presentCustomerCenter(): Promise<void> {
+  if (isExpoShell()) {
+    // Shell presents the RevenueCat Customer Center natively.
+    openShellCustomerCenter();
+    return;
+  }
+
   if (isDespia()) {
     try {
       // Despia does not expose the RevenueCatUI Customer Center object to JS.
@@ -321,6 +361,22 @@ export async function presentCustomerCenter(): Promise<void> {
 
 // Restore purchases via RevenueCat
 export async function restorePurchases(): Promise<SubscriptionTier> {
+  if (isExpoShell()) {
+    // Shell restores natively and acks over the bridge. Throw on failure or
+    // timeout so callers show an error toast instead of a false "restored".
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Sign in to restore purchases');
+
+    const ok = await restoreShellPurchasesAndWait(user.id);
+    if (!ok) throw new Error('Restore did not complete');
+
+    // Post-restore only: the edge function re-verifies with RevenueCat and
+    // writes the verified tier (the fallback argument is never trusted).
+    await syncSubscriptionToSupabase('free');
+    const info = await getSubscriptionInfo();
+    return info?.tier ?? 'free';
+  }
+
   if (!Purchases || !Capacitor.isNativePlatform()) {
     return 'free';
   }
@@ -499,7 +555,7 @@ export async function incrementAnalysisCount(): Promise<number> {
 
 // Get Stripe checkout URL (for web payments)
 export async function getStripeCheckoutUrl(priceId: string): Promise<string | null> {
-  if (Capacitor.isNativePlatform() || isDespia()) {
+  if (Capacitor.isNativePlatform() || isDespia() || isExpoShell()) {
     console.warn('Stripe checkout blocked in native app context; use RevenueCat/Despia IAP instead.');
     return null;
   }
@@ -526,7 +582,7 @@ export async function getStripeCheckoutUrl(priceId: string): Promise<string | nu
 
 // Get Stripe customer portal URL
 export async function getStripePortalUrl(): Promise<string | null> {
-  if (Capacitor.isNativePlatform() || isDespia()) {
+  if (Capacitor.isNativePlatform() || isDespia() || isExpoShell()) {
     console.warn('Stripe customer portal blocked in native app context; use native subscription management instead.');
     return null;
   }

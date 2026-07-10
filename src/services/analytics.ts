@@ -1,6 +1,7 @@
 import { Capacitor } from "@capacitor/core";
 import despia from "despia-native";
 import { isDespia } from "@/services/despiaService";
+import { isExpoShell } from "@/services/expoShellService";
 import { isStandalonePWA } from "@/lib/appMode";
 import { initPostHogWeb } from "@/services/posthogLoader";
 
@@ -32,7 +33,7 @@ let initialized = false;
  * PWA), matching the push gating. Widen this if you want web analytics too.
  */
 function inInstalledApp(): boolean {
-  return isDespia() || Capacitor.isNativePlatform() || isStandalonePWA();
+  return isDespia() || isExpoShell() || Capacitor.isNativePlatform() || isStandalonePWA();
 }
 
 function bridge(command: string): void {

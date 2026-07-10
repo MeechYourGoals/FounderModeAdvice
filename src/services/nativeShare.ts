@@ -8,6 +8,7 @@
  */
 import despia from "despia-native";
 import { isDespia } from "./despiaService";
+import { isExpoShell, shareViaShell } from "./expoShellService";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 
 export interface ShareInput {
@@ -17,7 +18,7 @@ export interface ShareInput {
 }
 
 export type ShareResult =
-  | { ok: true; transport: "despia" | "webshare" | "clipboard" }
+  | { ok: true; transport: "despia" | "shell" | "webshare" | "clipboard" }
   | { ok: false; reason: "cancelled" | "unsupported" | "error"; error?: unknown };
 
 export async function shareNative(input: ShareInput): Promise<ShareResult> {
@@ -44,7 +45,12 @@ export async function shareNative(input: ShareInput): Promise<ShareResult> {
     }
   }
 
-  // 2. Web Share API
+  // 2. Expo shell native share sheet (WebViews often lack navigator.share)
+  if (isExpoShell() && shareViaShell(payload)) {
+    return { ok: true, transport: "shell" };
+  }
+
+  // 3. Web Share API
   if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
     try {
       await navigator.share(payload);
