@@ -74,11 +74,12 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       } else if (isDespiaApp) {
         const tier = await getDespiaEntitlements();
         await syncSubscriptionToSupabase(tier);
-      } else if (isShellApp) {
-        // Expo shell owns the RevenueCat SDK; the edge function re-verifies the
-        // entitlement server-side (the fallback tier is never trusted).
-        await syncSubscriptionToSupabase('free');
       }
+      // Expo shell: no RevenueCat sync on plain refreshes. The edge function
+      // only knows RevenueCat, so syncing here would overwrite a web
+      // (Paddle/Stripe) subscription with "free" just for opening the app.
+      // Sync happens only after a shell purchase/restore (see the purchase
+      // callback below and restorePurchases in subscriptionService).
 
       const info = await getSubscriptionInfo();
       setSubscription(info);
@@ -107,7 +108,12 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
     const handleNativePurchaseSuccess = (transactionData?: unknown) => {
       console.log('Native purchase callback received, refreshing subscription', transactionData);
-      void refreshSubscription();
+      void (async () => {
+        // Shell purchase/restore just changed RevenueCat state — have the edge
+        // function re-verify and persist the new tier before reading it back.
+        if (isShellApp) await syncSubscriptionToSupabase('free');
+        await refreshSubscription();
+      })();
     };
 
     window.onRevenueCatPurchase = handleNativePurchaseSuccess;

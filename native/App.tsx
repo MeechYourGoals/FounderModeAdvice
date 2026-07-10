@@ -50,7 +50,9 @@ type ShellExtra = {
 
 const extra: ShellExtra = (Constants.expoConfig?.extra as ShellExtra) ?? {};
 const WEB_URL = (extra.webUrl || "https://foundermodeadvice.com").replace(/\/+$/, "");
+const WEB_HOST = new URL(WEB_URL).hostname;
 const START_URL = `${WEB_URL}/?source=app`;
+const APP_SCHEME = "com.foundermodeadvice.app";
 
 /**
  * Full Safari/Chrome-like user agent with our token appended. Google OAuth
@@ -64,7 +66,7 @@ const USER_AGENT =
 
 /** Hosts allowed to load inside the WebView (app + auth + backend flows). */
 const INTERNAL_HOST_PATTERNS = [
-  new URL(WEB_URL).hostname,
+  WEB_HOST,
   "localhost",
   ".supabase.co",
   ".lovable.app",
@@ -78,9 +80,25 @@ const INTERNAL_HOST_PATTERNS = [
 const isInternalHost = (url: string): boolean => {
   try {
     const host = new URL(url).hostname;
+    // Dotted patterns match the exact base domain or a true dot-separated
+    // subdomain — never suffix lookalikes like "fakesupabase.co".
     return INTERNAL_HOST_PATTERNS.some((p) =>
-      p.startsWith(".") ? host.endsWith(p.slice(1)) || host.endsWith(p) : host === p,
+      p.startsWith(".") ? host === p.slice(1) || host.endsWith(p) : host === p,
     );
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Only the app's own origin may drive the native bridge. Auth/backend hosts
+ * are allowed to *render* inside the WebView, but any message they post
+ * (paywall, logout, share, …) is ignored.
+ */
+const isTrustedBridgeOrigin = (url: string | undefined): boolean => {
+  try {
+    const host = new URL(url ?? "").hostname;
+    return host === WEB_HOST || host === "localhost";
   } catch {
     return false;
   }
@@ -122,7 +140,7 @@ function loadOneSignal(): any | null {
 
 let revenueCatConfigured = false;
 
-function configureRevenueCat(userId: string): PurchasesModule | null {
+async function configureRevenueCat(userId: string): Promise<PurchasesModule | null> {
   const Purchases = loadPurchases();
   if (!Purchases) return null;
 
@@ -138,7 +156,9 @@ function configureRevenueCat(userId: string): PurchasesModule | null {
       Purchases.configure({ apiKey, appUserID: userId });
       revenueCatConfigured = true;
     } else {
-      void Purchases.logIn(userId);
+      // Await the identity switch so purchase UI can never run against the
+      // previous (or anonymous) subscriber on a shared device.
+      await Purchases.logIn(userId);
     }
     return Purchases;
   } catch (err) {
@@ -155,7 +175,7 @@ type BridgeMessage =
   | { type: "logout" }
   | { type: "paywall"; userId: string; requiredEntitlement?: string; always?: boolean }
   | { type: "customerCenter" }
-  | { type: "restorePurchases" }
+  | { type: "restorePurchases"; userId?: string }
   | { type: "pushRegister"; userId: string }
   | { type: "share"; title?: string; text?: string; url?: string }
   | { type: "openExternal"; url: string }
@@ -186,6 +206,7 @@ function Shell() {
   const insets = useSafeAreaInsets();
   const webViewRef = useRef<WebView>(null);
   const canGoBackRef = useRef(false);
+  const currentUrlRef = useRef(START_URL);
   const [loadError, setLoadError] = useState(false);
   const [dark, setDark] = useState(true);
   const [background, setBackground] = useState("#0c0e15");
@@ -231,19 +252,27 @@ function Shell() {
   useEffect(() => {
     if (!incomingUrl) return;
     try {
-      const parsed = ExpoLinking.parse(incomingUrl);
-      const path = parsed.path ? `/${parsed.path.replace(/^\/+/, "")}` : "/";
-      const query = Object.entries(parsed.queryParams ?? {})
-        .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
-        .join("&");
-      const target = `${WEB_URL}${path}${query ? `?${query}` : ""}`;
-      if (target !== START_URL) {
+      let target: string | null = null;
+      if (incomingUrl.startsWith(`${APP_SCHEME}://`)) {
+        // Custom scheme: URL parsers put the first segment in the *host*
+        // (com.foundermodeadvice.app://auth/callback → host "auth", path
+        // "/callback"), so keep everything after :// verbatim as the web path.
+        const rest = incomingUrl.slice(`${APP_SCHEME}://`.length).replace(/^\/+/, "");
+        target = `${WEB_URL}/${rest}`;
+      } else {
+        // https universal/app links: only our own host is routable.
+        const parsed = new URL(incomingUrl);
+        if (/^https?:$/.test(parsed.protocol) && parsed.hostname === WEB_HOST) {
+          target = `${WEB_URL}${parsed.pathname}${parsed.search}`;
+        }
+      }
+      if (target && target !== START_URL) {
         webViewRef.current?.injectJavaScript(
           `window.location.href=${JSON.stringify(target)};true;`,
         );
       }
     } catch {
-      // Ignore unparseable URLs.
+      // Ignore unparseable URLs (e.g. exp:// development launches).
     }
   }, [incomingUrl]);
 
@@ -255,6 +284,14 @@ function Shell() {
 
   const handleMessage = useCallback(
     async (event: WebViewMessageEvent) => {
+      // The bridge is app-origin-only: pages from allow-listed third-party
+      // hosts (auth, storage) render in this WebView but cannot drive native
+      // actions like paywalls, logout, or the share sheet.
+      if (!isTrustedBridgeOrigin(event.nativeEvent.url || currentUrlRef.current)) {
+        console.warn("Ignoring bridge message from untrusted origin", event.nativeEvent.url);
+        return;
+      }
+
       let message: BridgeMessage;
       try {
         message = JSON.parse(event.nativeEvent.data);
@@ -268,7 +305,7 @@ function Shell() {
           break;
 
         case "identify": {
-          configureRevenueCat(message.userId);
+          await configureRevenueCat(message.userId);
           const OneSignal = loadOneSignal();
           if (OneSignal && extra.oneSignalAppId) {
             try {
@@ -295,7 +332,7 @@ function Shell() {
         }
 
         case "paywall": {
-          const Purchases = configureRevenueCat(message.userId);
+          const Purchases = await configureRevenueCat(message.userId);
           const RevenueCatUI = loadPurchasesUI();
           if (!Purchases || !RevenueCatUI) {
             console.warn("Paywall unavailable (Expo Go or missing RevenueCat key)");
@@ -331,13 +368,28 @@ function Shell() {
         }
 
         case "restorePurchases": {
-          const Purchases = loadPurchases();
-          if (!Purchases || !revenueCatConfigured) break;
+          // Explicitly ack success/failure so the web layer never shows a
+          // false "restored" toast (it awaits __fmaShellRestoreResult).
+          const ackRestore = (ok: boolean) =>
+            webViewRef.current?.injectJavaScript(
+              `window.__fmaShellRestoreResult&&window.__fmaShellRestoreResult(${ok});true;`,
+            );
+          const Purchases = message.userId
+            ? await configureRevenueCat(message.userId)
+            : revenueCatConfigured
+              ? loadPurchases()
+              : null;
+          if (!Purchases) {
+            ackRestore(false);
+            break;
+          }
           try {
             await Purchases.restorePurchases();
+            ackRestore(true);
             notifyPurchaseSuccess();
           } catch (err) {
             console.warn("Restore failed", err);
+            ackRestore(false);
           }
           break;
         }
@@ -446,6 +498,7 @@ function Shell() {
           injectedJavaScript={safeAreaJS}
           onNavigationStateChange={(nav) => {
             canGoBackRef.current = nav.canGoBack;
+            currentUrlRef.current = nav.url;
           }}
           onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
           onLoadEnd={() => SplashScreen.hideAsync().catch(() => {})}

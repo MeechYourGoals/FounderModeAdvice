@@ -37,18 +37,18 @@
     },
     "plugins": [
       [
+        "onesignal-expo-plugin",
+        {
+          "mode": "production"
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/splash-icon.png",
           "imageWidth": 160,
           "resizeMode": "contain",
           "backgroundColor": "#0c0e15"
-        }
-      ],
-      [
-        "onesignal-expo-plugin",
-        {
-          "mode": "production"
         }
       ]
     ],

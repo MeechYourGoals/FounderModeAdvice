@@ -13,7 +13,7 @@ import {
   isExpoShell,
   launchShellPaywall,
   openShellCustomerCenter,
-  restoreShellPurchases,
+  restoreShellPurchasesAndWait,
 } from './expoShellService';
 
 /** Founder/Super Admin emails with unlimited access - no feature limits */
@@ -362,10 +362,17 @@ export async function presentCustomerCenter(): Promise<void> {
 // Restore purchases via RevenueCat
 export async function restorePurchases(): Promise<SubscriptionTier> {
   if (isExpoShell()) {
-    // Shell restores natively and reports back through iapSuccess; the server
-    // sync that follows re-verifies the entitlement, so return the current
-    // server-known tier rather than guessing.
-    restoreShellPurchases();
+    // Shell restores natively and acks over the bridge. Throw on failure or
+    // timeout so callers show an error toast instead of a false "restored".
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Sign in to restore purchases');
+
+    const ok = await restoreShellPurchasesAndWait(user.id);
+    if (!ok) throw new Error('Restore did not complete');
+
+    // Post-restore only: the edge function re-verifies with RevenueCat and
+    // writes the verified tier (the fallback argument is never trusted).
+    await syncSubscriptionToSupabase('free');
     const info = await getSubscriptionInfo();
     return info?.tier ?? 'free';
   }

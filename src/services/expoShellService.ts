@@ -21,7 +21,7 @@ type ShellMessage =
   | { type: "logout" }
   | { type: "paywall"; userId: string; requiredEntitlement?: string; always?: boolean }
   | { type: "customerCenter" }
-  | { type: "restorePurchases" }
+  | { type: "restorePurchases"; userId: string }
   | { type: "pushRegister"; userId: string }
   | { type: "share"; title: string; text: string; url: string }
   | { type: "openExternal"; url: string }
@@ -30,6 +30,8 @@ type ShellMessage =
 declare global {
   interface Window {
     ReactNativeWebView?: { postMessage: (data: string) => void };
+    /** One-shot ack injected by the shell when a native restore settles. */
+    __fmaShellRestoreResult?: (ok: boolean) => void;
   }
 }
 
@@ -76,8 +78,28 @@ export const launchShellPaywall = (
 
 export const openShellCustomerCenter = (): boolean => postToShell({ type: "customerCenter" });
 
-/** Restore purchases natively; entitlement changes come back via iapSuccess. */
-export const restoreShellPurchases = (): boolean => postToShell({ type: "restorePurchases" });
+/**
+ * Restore purchases natively and wait for the shell's explicit ack. Resolves
+ * true only when the native RevenueCat restore completed; false on failure,
+ * timeout, or when the bridge is unavailable — so callers can surface an
+ * honest error instead of a false "restored" toast.
+ */
+export const restoreShellPurchasesAndWait = (
+  userId: string,
+  timeoutMs = 20_000,
+): Promise<boolean> => {
+  if (!isExpoShell()) return Promise.resolve(false);
+  return new Promise((resolve) => {
+    const settle = (ok: boolean) => {
+      window.clearTimeout(timer);
+      window.__fmaShellRestoreResult = undefined;
+      resolve(ok);
+    };
+    const timer = window.setTimeout(() => settle(false), timeoutMs);
+    window.__fmaShellRestoreResult = (ok) => settle(Boolean(ok));
+    if (!postToShell({ type: "restorePurchases", userId })) settle(false);
+  });
+};
 
 export const registerShellPush = (userId: string): void => {
   postToShell({ type: "pushRegister", userId });

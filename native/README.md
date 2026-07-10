@@ -93,4 +93,21 @@ review notes) lives in `docs/store-readiness.md`.
 - Purchases: web sends `paywall` / `restorePurchases` / `customerCenter`
   bridge messages → shell presents RevenueCat native UI → shell calls
   `window.iapSuccess()` → web re-verifies the entitlement server-side.
+  Restore explicitly acks success/failure back to the web layer.
+- Bridge security: only pages on the app's own origin can send bridge
+  messages; allow-listed third-party hosts (auth, storage) render in the
+  WebView but cannot drive native actions.
 - Offline / renderer crash → branded retry screen, auto-recover on retry.
+
+## Known limitation — Google OAuth in the WebView
+
+Google sign-in runs inside the WebView using a browser-like user agent — the
+same mechanism the Despia wrapper for this app uses. Google officially
+discourages embedded-WebView OAuth (`disallowed_useragent`), and while the
+browser UA keeps it working today, Google could tighten detection. Verify
+Google sign-in on real hardware in every TestFlight/internal-testing round
+(it's in the `docs/store-readiness.md` checklist). If it breaks, the fix is
+to route OAuth through `expo-web-browser`'s `openAuthSessionAsync` and
+return via the app scheme — that requires moving the PKCE exchange out of
+the WebView's storage, so treat it as a deliberate follow-up, not a quick
+patch. Email/password and Apple sign-in are unaffected.
