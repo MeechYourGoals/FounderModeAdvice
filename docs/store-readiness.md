@@ -89,12 +89,20 @@ STRIPE_WEBHOOK_SECRET
 STRIPE_SEED_PRICE_ID
 STRIPE_SERIES_Z_PRICE_ID
 REVENUECAT_API_KEY
+REVENUECAT_WEBHOOK_AUTH_TOKEN
 ONESIGNAL_APP_ID
 ONESIGNAL_REST_API_KEY
 APP_URL=https://foundermodeadvice.com
 ```
 
 `sync-revenuecat-subscription` refuses to overwrite subscription state if `REVENUECAT_API_KEY` is missing.
+
+`revenuecat-webhook` keeps subscriptions in sync when state changes outside
+the app (renewals, cancellations, expirations, billing issues). It requires
+both `REVENUECAT_API_KEY` (server-side re-verification — the webhook payload
+is never trusted) and `REVENUECAT_WEBHOOK_AUTH_TOKEN` (shared secret; generate
+a long random string and configure the same value as the webhook's
+Authorization header in the RevenueCat dashboard).
 
 ## Required frontend env vars
 
@@ -185,8 +193,14 @@ When native projects are generated, add iOS `PrivacyInfo.xcprivacy` entries for 
 8. Copy iOS public SDK key to VITE_REVENUECAT_IOS_API_KEY.
 9. Copy Android public SDK key to VITE_REVENUECAT_ANDROID_API_KEY.
 10. Copy secret API key to Supabase secret REVENUECAT_API_KEY.
-11. Confirm Android subscription management opens Google Play subscriptions and iOS opens Apple subscriptions.
-12. Run sandbox purchase and restore tests.
+11. Open Integrations → Webhooks → Add webhook:
+    - URL: https://iffcuueutmsusgdfekvm.supabase.co/functions/v1/revenuecat-webhook
+    - Authorization header: the value of the REVENUECAT_WEBHOOK_AUTH_TOKEN Supabase secret
+    - Events: all subscription lifecycle events (or at minimum initial purchase,
+      renewal, cancellation, uncancellation, expiration, billing issue, product change).
+    - Send a test event and confirm a 200 response in the webhook log.
+12. Confirm Android subscription management opens Google Play subscriptions and iOS opens Apple subscriptions.
+13. Run sandbox purchase and restore tests.
 ```
 
 ## Agentic browser script — App Store Connect

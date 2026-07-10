@@ -8,6 +8,11 @@ verify_jwt = false
 [functions.stripe-webhook]
 verify_jwt = false
 
+# RevenueCat calls this with its own shared-secret Authorization header
+# (REVENUECAT_WEBHOOK_AUTH_TOKEN), not a Supabase JWT.
+[functions.revenuecat-webhook]
+verify_jwt = false
+
 [functions.send-daily-prompt]
 verify_jwt = false
 
