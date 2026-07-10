@@ -26,7 +26,7 @@ export const LibraryEmptyState = () => {
   return (
     <Card className="p-6 sm:p-10 text-center space-y-6">
       <div>
-        <div className="relative mx-auto mb-4 w-fit">
+        <div className="animate-float-soft relative mx-auto mb-4 w-fit">
           <div aria-hidden className="absolute -inset-3 rounded-full bg-primary/15 blur-xl" />
           <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-[inset_0_1px_0_0_hsl(var(--primary)/0.2)]">
             <Play className="h-6 w-6" />

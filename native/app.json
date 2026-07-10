@@ -1,0 +1,62 @@
+{
+  "expo": {
+    "name": "Founder Mode Advice",
+    "slug": "founder-mode-advice",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "com.foundermodeadvice.app",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#0c0e15",
+    "ios": {
+      "bundleIdentifier": "com.foundermodeadvice.app",
+      "supportsTablet": true,
+      "associatedDomains": ["applinks:foundermodeadvice.com"],
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.foundermodeadvice.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0c0e15"
+      },
+      "predictiveBackGestureEnabled": false,
+      "intentFilters": [
+        {
+          "autoVerify": true,
+          "action": "VIEW",
+          "data": [{ "scheme": "https", "host": "foundermodeadvice.com" }],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "resizeMode": "contain",
+          "backgroundColor": "#0c0e15"
+        }
+      ],
+      [
+        "onesignal-expo-plugin",
+        {
+          "mode": "production"
+        }
+      ]
+    ],
+    "extra": {
+      "webUrl": "https://foundermodeadvice.com",
+      "oneSignalAppId": "",
+      "revenueCatIosApiKey": "",
+      "revenueCatAndroidApiKey": ""
+    }
+  }
+}

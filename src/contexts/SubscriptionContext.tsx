@@ -18,6 +18,7 @@ import {
   presentPaywallAlways as presentPaywallAlwaysService,
   presentCustomerCenter as presentCustomerCenterService,
 } from '@/services/subscriptionService';
+import { isExpoShell, identifyShellUser } from '@/services/expoShellService';
 import type { SubscriptionInfo, SubscriptionTier } from '@/types/subscription';
 import { STRIPE_PRICE_IDS, REVENUECAT_ENTITLEMENTS } from '@/types/subscription';
 import type { PaywallResult } from '@/services/subscriptionService';
@@ -53,6 +54,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const [error, setError] = useState<string | null>(null);
   const isNative = Capacitor.isNativePlatform();
   const isDespiaApp = isDespia();
+  const isShellApp = isExpoShell();
 
   const refreshSubscription = useCallback(async () => {
     if (!user) {
@@ -72,6 +74,10 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       } else if (isDespiaApp) {
         const tier = await getDespiaEntitlements();
         await syncSubscriptionToSupabase(tier);
+      } else if (isShellApp) {
+        // Expo shell owns the RevenueCat SDK; the edge function re-verifies the
+        // entitlement server-side (the fallback tier is never trusted).
+        await syncSubscriptionToSupabase('free');
       }
 
       const info = await getSubscriptionInfo();
@@ -92,15 +98,15 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     } finally {
       setLoading(false);
     }
-  }, [user, isNative, isDespiaApp]);
+  }, [user, isNative, isDespiaApp, isShellApp]);
 
-  // Despia Native reports purchase/restore completion through global callbacks.
-  // Register them in one place so callbacks cannot overwrite each other.
+  // Despia and the Expo shell report purchase/restore completion through global
+  // callbacks. Register them in one place so callbacks cannot overwrite each other.
   useEffect(() => {
-    if (!isDespiaApp) return;
+    if (!isDespiaApp && !isShellApp) return;
 
     const handleNativePurchaseSuccess = (transactionData?: unknown) => {
-      console.log('Despia: Purchase callback received, refreshing subscription', transactionData);
+      console.log('Native purchase callback received, refreshing subscription', transactionData);
       void refreshSubscription();
     };
 
@@ -111,7 +117,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       window.onRevenueCatPurchase = undefined;
       window.iapSuccess = undefined;
     };
-  }, [isDespiaApp, refreshSubscription]);
+  }, [isDespiaApp, isShellApp, refreshSubscription]);
 
   // Initialize RevenueCat and load subscription on mount
   useEffect(() => {
@@ -120,10 +126,15 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         await initializeRevenueCat(user.id);
         await identifyUser(user.id);
       }
+      if (user && isShellApp) {
+        // Configure RevenueCat/OneSignal in the shell with the Supabase user id
+        // so server-side entitlement verification keys off the same identity.
+        identifyShellUser(user.id);
+      }
       await refreshSubscription();
     }
     init();
-  }, [user, isNative, isDespiaApp, refreshSubscription]);
+  }, [user, isNative, isDespiaApp, isShellApp, refreshSubscription]);
 
   const canCreateProfile = useCallback(() => {
     if (!subscription?.limits) {
@@ -154,7 +165,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const upgradeTo = useCallback(async (tier: SubscriptionTier) => {
     if (tier === 'free') return;
 
-    if (isDespiaApp || isNative) {
+    if (isDespiaApp || isNative || isShellApp) {
       // Native: RevenueCat paywall.
       const result = await presentPaywallService(REVENUECAT_ENTITLEMENTS.PRO);
       if (result === 'PURCHASED' || result === 'RESTORED') {
@@ -178,10 +189,10 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         },
       });
     }
-  }, [isNative, isDespiaApp, refreshSubscription, user]);
+  }, [isNative, isDespiaApp, isShellApp, refreshSubscription, user]);
 
   const manageSubscription = useCallback(async () => {
-    if (isDespiaApp || isNative) {
+    if (isDespiaApp || isNative || isShellApp) {
       // Use RevenueCat Customer Center for native subscription management
       await presentCustomerCenterService();
       await refreshSubscription();
@@ -196,7 +207,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         throw new Error('No billing portal available for this account');
       }
     }
-  }, [isNative, isDespiaApp, refreshSubscription]);
+  }, [isNative, isDespiaApp, isShellApp, refreshSubscription]);
 
   const handleRestorePurchases = useCallback(async () => {
     if (isDespiaApp) {
@@ -247,7 +258,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         presentPaywall: handlePresentPaywall,
         presentPaywallAlways: handlePresentPaywallAlways,
         presentCustomerCenter: handlePresentCustomerCenter,
-        isNative: isNative || isDespiaApp,
+        isNative: isNative || isDespiaApp || isShellApp,
       }}
     >
       {children}

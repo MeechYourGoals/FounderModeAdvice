@@ -1,15 +1,20 @@
 import { useTheme } from "next-themes";
 import { Toaster as Sonner, toast } from "sonner";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme();
+  // Mobile: the bottom edge belongs to the tab bar, so toasts drop from the
+  // top (safe-area offsets live in index.css). Desktop keeps bottom-right.
+  const isMobile = useMediaQuery("(max-width: 1023px)");
 
   return (
     <Sonner
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
+      position={isMobile ? "top-center" : "bottom-right"}
       toastOptions={{
         classNames: {
           toast:

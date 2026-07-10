@@ -2,7 +2,7 @@
 
 Last updated: 2026-06-08
 
-This repo is a Vite/React/Supabase app with Capacitor and Despia native hooks. It is not an Expo project today: there is no `app.json`, `app.config.ts`, `eas.json`, `ios/`, or `android/` project committed. Use **Despia** for the fastest web-wrapped native launch, or generate Capacitor projects with the scripts added in `package.json`.
+This repo is a Vite/React/Supabase app with an **Expo/EAS shell app committed in `native/`** (plan of record for the store launch — see `native/README.md` and `docs/mobile-wrapping.md`), plus Capacitor and Despia native hooks as alternatives.
 
 ## Current repo-contained readiness status
 
@@ -11,7 +11,7 @@ This repo is a Vite/React/Supabase app with Capacitor and Despia native hooks. I
 | Web/PWA | 90 | Buildable Vite app, app manifest, safe-area UI, scoped offline cache. Broad Supabase service-worker runtime caching is intentionally disabled. |
 | Despia native wrapper | 90 | Native share/haptics/paywall hooks exist; purchase success is only trusted after callback + server RevenueCat verification. |
 | Capacitor native wrapper | 88 | Config/scripts exist, but native `ios/` and `android/` projects must be generated and configured externally before store upload. |
-| Expo/EAS | 35 | Not configured. Use only after adding an Expo wrapper or migrating to React Native. |
+| Expo/EAS | 88 | Shell app committed in `native/` (SDK 57): WebView + bridge (haptics/IAP/push/share/theme), `eas.json` build+submit profiles. Remaining: `eas init` (project id), EAS env vars (RevenueCat keys, OneSignal id), store credentials. |
 | Store compliance | 90 | In-app deletion, legal routes, IAP boundaries, private-content RLS hardening, screenshot tooling, and review notes exist. External dashboards/secrets/privacy forms remain blockers. |
 
 ## Required preflight commands

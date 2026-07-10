@@ -510,6 +510,27 @@ All colors MUST be HSL.
   }
 }
 
+/* Staggered list entrance for mobile cards: each item rises in sequence
+   (set --stagger-i per item; the delay is capped so long lists never feel
+   slow). `backwards` keeps late items invisible until their turn. Mobile
+   only — desktop tables render instantly. */
+@media (max-width: 1023px) {
+  .stagger-item {
+    animation: stagger-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+    animation-delay: calc(min(var(--stagger-i, 0), 8) * 45ms);
+  }
+}
+@keyframes stagger-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* PWA standalone & Despia native mode adjustments */
 @media (display-mode: standalone) {
   body {
@@ -538,6 +559,18 @@ All colors MUST be HSL.
 body.keyboard-open .mobile-bottom-nav {
   transform: translateY(110%);
   pointer-events: none;
+}
+
+/* Toast positioning inside the app shell: keep Sonner clear of the notch when
+   dropping from the top, and clear of the tab bar if a caller ever positions
+   one at the bottom. */
+@media (max-width: 1023px) {
+  [data-sonner-toaster][data-y-position="top"] {
+    top: calc(var(--safe-area-top) + 8px) !important;
+  }
+  [data-sonner-toaster][data-y-position="bottom"] {
+    bottom: calc(5.5rem + var(--safe-area-bottom)) !important;
+  }
 }
 
 /* Improve touch targets on mobile - use min-h-11 (44px) for primary actions */
@@ -768,6 +801,9 @@ body.keyboard-open .mobile-bottom-nav {
 /* page; users who ask for reduced motion (or whose battery saver     */
 /* sets it) get the static composition instead. One-shot entrance     */
 /* transitions handled by motion.tsx are already gated in JS.         */
+/* Navigation/entrance animations (route push, list stagger, the      */
+/* animate-* entrance utilities) are gated here too — `backwards`     */
+/* fill modes mean animation:none leaves elements fully visible.      */
 /* ------------------------------------------------------------------ */
 @media (prefers-reduced-motion: reduce) {
   .animate-float,
@@ -777,7 +813,16 @@ body.keyboard-open .mobile-bottom-nav {
   .aurora-blob-1,
   .aurora-blob-2,
   .aurora-blob-3,
-  .cta-aurora {
+  .cta-aurora,
+  .route-screen,
+  .stagger-item,
+  .animate-slide-up,
+  .animate-scale-in,
+  .animate-fade-in,
+  .animate-drill-in,
+  .animate-screen-in,
+  .animate-tab-pop,
+  .animate-float-soft {
     animation: none !important;
   }
 }

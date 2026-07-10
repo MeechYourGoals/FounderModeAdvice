@@ -41,6 +41,16 @@ import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 
 const queryClient = new QueryClient();
 
+// Lazy-route fallback: a centered spinner instead of a blank flash while the
+// chunk downloads (matters most on mobile connections).
+function RouteFallback() {
+  return (
+    <div className="flex min-h-[60vh] items-center justify-center" role="status" aria-label="Loading">
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+    </div>
+  );
+}
+
 // Component to handle subscription callback messages
 function SubscriptionCallback() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -121,19 +131,19 @@ const App = () => (
               <Route path="/favorites" element={<Favorites />} />
               <Route
                 path="/scenarios"
-                element={<Suspense fallback={null}><ScenariosHub /></Suspense>}
+                element={<Suspense fallback={<RouteFallback />}><ScenariosHub /></Suspense>}
               />
               <Route
                 path="/scenarios/:slug"
-                element={<Suspense fallback={null}><ScenarioPage /></Suspense>}
+                element={<Suspense fallback={<RouteFallback />}><ScenarioPage /></Suspense>}
               />
               <Route
                 path="/blog"
-                element={<Suspense fallback={null}><BlogIndex /></Suspense>}
+                element={<Suspense fallback={<RouteFallback />}><BlogIndex /></Suspense>}
               />
               <Route
                 path="/blog/:slug"
-                element={<Suspense fallback={null}><BlogPost /></Suspense>}
+                element={<Suspense fallback={<RouteFallback />}><BlogPost /></Suspense>}
               />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

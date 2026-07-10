@@ -4,13 +4,13 @@ import { Building2, Bookmark, Users, Settings as SettingsIcon, Check, Globe } fr
 import { cn } from "@/lib/utils";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
 import { useActiveProfile } from "@/contexts/ActiveProfileContext";
 
 /**
@@ -101,10 +101,11 @@ export const MobileBottomNav = () => {
           onClick={() => goHomeWith({ panel: "bookmarks" })}
         />
 
-        {/* Center: Analyzing-As lens */}
+        {/* Center: Analyzing-As lens. A vaul drawer (not a modal sheet) so it
+            drags like a native iOS page sheet and scales the screen behind. */}
         <div className="flex-1 flex justify-center">
-          <Sheet open={lensOpen} onOpenChange={setLensOpen}>
-            <SheetTrigger asChild>
+          <Drawer open={lensOpen} onOpenChange={setLensOpen}>
+            <DrawerTrigger asChild>
               <button
                 aria-label={`Founder Mode Advice. Analyzing as ${lensLabel}. Tap to start a new analysis.`}
                 onClick={() => triggerHapticFeedback("light")}
@@ -118,15 +119,15 @@ export const MobileBottomNav = () => {
                   draggable={false}
                 />
               </button>
-            </SheetTrigger>
-            <SheetContent side="bottom" className="pb-[calc(1rem+var(--safe-area-bottom))]">
-              <SheetHeader className="text-left">
-                <SheetTitle>Analyzing as</SheetTitle>
-                <SheetDescription>
+            </DrawerTrigger>
+            <DrawerContent className="px-4 pb-[calc(1rem+var(--safe-area-bottom))]">
+              <DrawerHeader className="px-0 text-left">
+                <DrawerTitle>Analyzing as</DrawerTitle>
+                <DrawerDescription>
                   Pick the lens used to personalize every insight, chat, and recommendation.
-                </SheetDescription>
-              </SheetHeader>
-              <div className="mt-4 space-y-1">
+                </DrawerDescription>
+              </DrawerHeader>
+              <div className="max-h-[55vh] space-y-1 overflow-y-auto overscroll-contain">
                 <button
                   onClick={() => selectLens(null)}
                   className={cn(
@@ -186,8 +187,8 @@ export const MobileBottomNav = () => {
                   <div className="flex-1 text-sm font-medium">Manage business profiles</div>
                 </button>
               </div>
-            </SheetContent>
-          </Sheet>
+            </DrawerContent>
+          </Drawer>
         </div>
 
         <SideItem

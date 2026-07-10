@@ -93,6 +93,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
   const [loading, setLoading] = useState(true);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [selectedExportId, setSelectedExportId] = useState<string | undefined>();
+  const [deleteCandidateId, setDeleteCandidateId] = useState<string | null>(null);
   const { toast } = useToast();
   const isMobile = useMediaQuery("(max-width: 767px)");
 
@@ -511,10 +512,19 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     }
   };
 
-  const handleDelete = async (episodeId: string, e: React.MouseEvent) => {
+  // Two-step delete: the menu action arms the styled AlertDialog (native
+  // window.confirm looks broken inside WebView wrappers), confirm performs
+  // the optimistic delete.
+  const handleDelete = (episodeId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     triggerHapticFeedback('medium');
-    if (!confirm("Delete this episode analysis? This will also remove all associated lessons, callouts, and personalized insights.")) return;
+    setDeleteCandidateId(episodeId);
+  };
+
+  const confirmDeleteEpisode = async () => {
+    const episodeId = deleteCandidateId;
+    setDeleteCandidateId(null);
+    if (!episodeId) return;
     triggerHapticFeedback('heavy');
 
     const previous = allEpisodes;
@@ -644,15 +654,17 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
   const startIdx = (currentPage - 1) * PAGE_SIZE + 1;
   const endIdx = Math.min(currentPage * PAGE_SIZE, sortedEpisodes.length);
 
-  // Mobile card view for each episode
-  const MobileEpisodeCard = ({ episode }: { episode: Episode }) => {
+  // Mobile card view for each episode. `index` drives the staggered entrance
+  // (see .stagger-item in index.css); items past the cap animate together.
+  const MobileEpisodeCard = ({ episode, index = 0 }: { episode: Episode; index?: number }) => {
     const episodeFolders = (folderAssignments[episode.id] || [])
       .map(fId => folders.find(f => f.id === fId))
       .filter(Boolean);
 
     return (
       <div
-        className="cv-row group p-4 min-h-[72px] border-b border-border/60 last:border-b-0 transition-all hover:bg-primary/[0.03] active:bg-primary/5 active:scale-[0.995] cursor-pointer touch-manipulation"
+        style={{ "--stagger-i": index } as React.CSSProperties}
+        className="stagger-item cv-row group p-4 min-h-[72px] border-b border-border/60 last:border-b-0 transition-all hover:bg-primary/[0.03] active:bg-primary/5 active:scale-[0.995] cursor-pointer touch-manipulation"
         onClick={() => onSelectEpisode(episode.id)}
         role="button"
         tabIndex={0}
@@ -978,7 +990,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                     <span className="font-semibold text-sm">{tagName}</span>
                     <Badge variant="outline" className="text-[10px]">{eps.length}</Badge>
                   </div>
-                  {eps.map(ep => <MobileEpisodeCard key={ep.id} episode={ep} />)}
+                  {eps.map((ep, i) => <MobileEpisodeCard key={ep.id} episode={ep} index={i} />)}
                 </div>
               );
             })}
@@ -1004,15 +1016,15 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                     <span className="font-semibold text-sm">{folder.name}</span>
                     <Badge variant="outline" className="text-[10px]">{eps.length}</Badge>
                   </div>
-                  {eps.map(ep => <MobileEpisodeCard key={ep.id} episode={ep} />)}
+                  {eps.map((ep, i) => <MobileEpisodeCard key={ep.id} episode={ep} index={i} />)}
                 </div>
               );
             })}
           </div>
         ) : isMobile ? (
           <div>
-            {paginatedEpisodes.map((episode) => (
-              <MobileEpisodeCard key={episode.id} episode={episode} />
+            {paginatedEpisodes.map((episode, i) => (
+              <MobileEpisodeCard key={episode.id} episode={episode} index={i} />
             ))}
           </div>
         ) : (
@@ -1393,6 +1405,32 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
               }}
             >
               Delete folder
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!deleteCandidateId}
+        onOpenChange={(open) => {
+          if (!open) setDeleteCandidateId(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this analysis?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the analysis along with all of its lessons,
+              callouts, and personalized insights.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={confirmDeleteEpisode}
+            >
+              Delete analysis
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
