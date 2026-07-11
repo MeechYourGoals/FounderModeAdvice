@@ -61,6 +61,14 @@ async function upsertSubscription(data: any, env: PaddleEnv) {
     return;
   }
 
+  // Anti-spoof: customData.userId is client-supplied. Verify the Paddle
+  // customer's email matches the claimed user's email before granting.
+  const owns = await verifyUserOwnsCustomer(userId, customerId, env);
+  if (!owns) {
+    console.warn(`Rejecting subscription ${id}: customer ${customerId} does not match claimed userId ${userId}`);
+    return;
+  }
+
   const tier = productIdToTier(productId);
 
   // Record the raw subscription in every environment (audit trail)…
