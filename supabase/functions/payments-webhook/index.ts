@@ -1,5 +1,31 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { verifyWebhook, EventName, type PaddleEnv } from '../_shared/paddle.ts';
+import { verifyWebhook, EventName, gatewayFetch, type PaddleEnv } from '../_shared/paddle.ts';
+
+// Guard against customData.userId spoofing: verify the Paddle customer's
+// email actually matches the auth user for the claimed userId. Without this,
+// anyone can open Paddle checkout from devtools with a victim's UUID and
+// grant/strip a paid plan on their account.
+async function verifyUserOwnsCustomer(
+  userId: string,
+  customerId: string,
+  env: PaddleEnv,
+): Promise<boolean> {
+  try {
+    const { data: authUser, error } = await getSupabase().auth.admin.getUserById(userId);
+    if (error || !authUser?.user?.email) return false;
+    const userEmail = authUser.user.email.toLowerCase().trim();
+
+    const res = await gatewayFetch(env, `/customers/${encodeURIComponent(customerId)}`);
+    if (!res.ok) return false;
+    const body = await res.json();
+    const customerEmail = String(body?.data?.email ?? '').toLowerCase().trim();
+    if (!customerEmail) return false;
+    return customerEmail === userEmail;
+  } catch (e) {
+    console.error('verifyUserOwnsCustomer failed', e);
+    return false;
+  }
+}
 
 let _supabase: ReturnType<typeof createClient> | null = null;
 function getSupabase() {
@@ -32,6 +58,14 @@ async function upsertSubscription(data: any, env: PaddleEnv) {
   const productId = item?.product?.importMeta?.externalId;
   if (!priceId || !productId) {
     console.warn('Skipping subscription: missing importMeta.externalId');
+    return;
+  }
+
+  // Anti-spoof: customData.userId is client-supplied. Verify the Paddle
+  // customer's email matches the claimed user's email before granting.
+  const owns = await verifyUserOwnsCustomer(userId, customerId, env);
+  if (!owns) {
+    console.warn(`Rejecting subscription ${id}: customer ${customerId} does not match claimed userId ${userId}`);
     return;
   }
 
@@ -90,12 +124,21 @@ async function handleCanceled(data: any, env: PaddleEnv) {
     return;
   }
 
-  const userId = customData?.userId;
-  if (userId) {
+  // Only downgrade the user_subscriptions row that actually owns this
+  // paddle_subscription_id — never trust customData.userId on cancel, since
+  // a spoofed cancel could otherwise strip a victim's plan.
+  const { data: subRow } = await getSupabase()
+    .from('subscriptions')
+    .select('user_id')
+    .eq('paddle_subscription_id', id)
+    .eq('environment', env)
+    .maybeSingle();
+  const ownerUserId = (subRow as { user_id?: string } | null)?.user_id;
+  if (ownerUserId) {
     await getSupabase()
       .from('user_subscriptions')
       .update({ tier: 'free', status: 'canceled', updated_at: new Date().toISOString() })
-      .eq('user_id', userId);
+      .eq('user_id', ownerUserId);
   }
 }
 
