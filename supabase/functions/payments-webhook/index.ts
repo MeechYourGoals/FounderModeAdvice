@@ -124,12 +124,21 @@ async function handleCanceled(data: any, env: PaddleEnv) {
     return;
   }
 
-  const userId = customData?.userId;
-  if (userId) {
+  // Only downgrade the user_subscriptions row that actually owns this
+  // paddle_subscription_id — never trust customData.userId on cancel, since
+  // a spoofed cancel could otherwise strip a victim's plan.
+  const { data: subRow } = await getSupabase()
+    .from('subscriptions')
+    .select('user_id')
+    .eq('paddle_subscription_id', id)
+    .eq('environment', env)
+    .maybeSingle();
+  const ownerUserId = (subRow as { user_id?: string } | null)?.user_id;
+  if (ownerUserId) {
     await getSupabase()
       .from('user_subscriptions')
       .update({ tier: 'free', status: 'canceled', updated_at: new Date().toISOString() })
-      .eq('user_id', userId);
+      .eq('user_id', ownerUserId);
   }
 }
 
