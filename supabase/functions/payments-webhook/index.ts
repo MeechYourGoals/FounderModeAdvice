@@ -1,5 +1,31 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { verifyWebhook, EventName, type PaddleEnv } from '../_shared/paddle.ts';
+import { verifyWebhook, EventName, gatewayFetch, type PaddleEnv } from '../_shared/paddle.ts';
+
+// Guard against customData.userId spoofing: verify the Paddle customer's
+// email actually matches the auth user for the claimed userId. Without this,
+// anyone can open Paddle checkout from devtools with a victim's UUID and
+// grant/strip a paid plan on their account.
+async function verifyUserOwnsCustomer(
+  userId: string,
+  customerId: string,
+  env: PaddleEnv,
+): Promise<boolean> {
+  try {
+    const { data: authUser, error } = await getSupabase().auth.admin.getUserById(userId);
+    if (error || !authUser?.user?.email) return false;
+    const userEmail = authUser.user.email.toLowerCase().trim();
+
+    const res = await gatewayFetch(env, `/customers/${encodeURIComponent(customerId)}`);
+    if (!res.ok) return false;
+    const body = await res.json();
+    const customerEmail = String(body?.data?.email ?? '').toLowerCase().trim();
+    if (!customerEmail) return false;
+    return customerEmail === userEmail;
+  } catch (e) {
+    console.error('verifyUserOwnsCustomer failed', e);
+    return false;
+  }
+}
 
 let _supabase: ReturnType<typeof createClient> | null = null;
 function getSupabase() {
