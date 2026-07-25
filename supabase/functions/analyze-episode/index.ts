@@ -509,9 +509,10 @@ serve(async (req) => {
     });
 
 
-    // Optional context about the viewer's own business, used to bias examples/jargon.
+    // Optional context about the viewer's business — used ONLY for callouts in this pass.
+    // Lessons must stay universal; profile-specific application happens in a later personalization pass.
     const viewerBusiness = resolvedStartupProfile && (resolvedStartupProfile.company_name || resolvedStartupProfile.industry || resolvedStartupProfile.stage)
-      ? `\n\nViewer's business context (adapt examples, jargon, KPIs, and risks to THIS type of business — do NOT assume a venture-backed tech startup unless stated):
+      ? `\n\nViewer's business context (use ONLY when writing the 5 callouts — do NOT name, reference, or tailor the 10 lessons to this business; lessons must stay generic and source-grounded):
 - Business: ${resolvedStartupProfile.company_name || 'Not specified'}
 - Industry: ${resolvedStartupProfile.industry || 'Not specified'}
 - Stage/type: ${resolvedStartupProfile.stage || 'Not specified'}
@@ -522,15 +523,18 @@ ${resolvedStartupProfile.description ? `- About: ${resolvedStartupProfile.descri
     const systemPrompt = `You are an expert at extracting practical business lessons from ANY piece of content — articles, blog posts, newsletters, social posts, PDFs, notes, podcasts, and videos — for founders, operators, and business owners across every industry, including local shops, restaurants, agencies, creators, service businesses, ecommerce brands, bootstrapped companies, and venture-backed startups.
 
 CRITICAL REQUIREMENTS:
-- Extract EXACTLY 10 tactical lessons ranked by actionability and impact (each 3-4 sentences with specific context)
-- Extract EXACTLY 5 business-relevant callouts (key takeaways useful to a business builder at any stage or size)
+- Extract EXACTLY 10 UNIVERSAL tactical lessons ranked by actionability and impact (each 3-4 sentences with specific context from the source)
+- Lessons must be generic takeaways any business builder could use — grounded only in the source content and its examples
+- NEVER name, reference, or tailor a lesson to the viewer's company, product, brand, or business profile (even if that context is provided). Profile-specific advice is generated separately.
+- You MAY cite companies/products discussed IN THE SOURCE (e.g. Uber, the speaker's company) — but not the viewer's own business
+- Extract EXACTLY 5 business-relevant callouts (key takeaways). If viewer business context is provided, frame callouts for that industry/stage — but still ground them in the source
 - Research and include actual company data (funding, valuation, stage, employee count) when the subject is a company; mark "Unknown" or "Not disclosed" otherwise
 - Cite specific examples and stories from the source's author or creator
 - DO NOT provide mock or placeholder data
 - Extract the source or publication name from context if not provided
 - Do NOT assume the audience is raising venture capital; keep lessons applicable to many business types
 - Assign relevant TAGS to each lesson (e.g., #marketing, #hiring, #operations, #pricing, #growth)
-- If the user provides their own instructions or question, treat it as the TOP priority: select, frame, and prioritize the lessons and callouts so they directly serve that instruction — while still returning the exact required structure (10 lessons, 5 callouts)`;
+- If the user provides their own instructions or question, treat it as the TOP priority: select, frame, and prioritize the lessons and callouts so they directly serve that instruction — while still returning the exact required structure (10 lessons, 5 callouts) and keeping lessons universal (not naming the viewer's company)`;
 
     const userPrompt = `Analyze this content:
 ${isUpload ? `Source: Uploaded document — ${displayFileName}` : `URL: ${sourceUrl}`}
@@ -553,8 +557,8 @@ INSTRUCTIONS:
 1. Read the actual content and extract real insights from it
 2. Identify the author or creator(s) and the company or topic discussed
 3. Research relevant metrics (funding, valuation, stage, employees, industry) when applicable
-4. Extract EXACTLY 10 tactical, actionable lessons with specific context from the author's stories and points
-5. Extract EXACTLY 5 business-relevant callouts useful to a builder of any business type
+4. Extract EXACTLY 10 UNIVERSAL tactical, actionable lessons with specific context from the author's stories and points — do NOT mention the viewer's company/product/brand in lesson text
+5. Extract EXACTLY 5 business-relevant callouts; if viewer business context is provided, make callouts feel relevant to that business type without rewriting the lessons
 6. Rank lessons by actionability (1-10) and impact (1-10)
 7. Include author attribution for each lesson
 8. Assign 1-3 relevant tags to each lesson (e.g. #growth, #culture, #pricing)
@@ -608,7 +612,7 @@ INSTRUCTIONS:
                     items: {
                       type: "object",
                       properties: {
-                        text: { type: "string", description: "3-4 sentence detailed lesson with specific context" },
+                        text: { type: "string", description: "3-4 sentence UNIVERSAL lesson with specific context from the source. Do not name or reference the viewer's company, product, or brand." },
                         impactScore: { type: "integer", minimum: 1, maximum: 10 },
                         actionabilityScore: { type: "integer", minimum: 1, maximum: 10 },
                         category: { type: "string", description: "Primary category e.g., Product, Growth" },
@@ -977,7 +981,7 @@ INSTRUCTIONS:
       
       for (const lesson of insertedLessons) {
         const personalizationPrompt = `
-Business Context:
+Business Context (THIS is the viewer's business — personalize for them):
 - Business: ${profileToUse.company_name}
 - Stage/type: ${profileToUse.stage}
 - Funding: ${profileToUse.funding_raised || 'Not specified'}
@@ -986,17 +990,17 @@ Business Context:
 - Description: ${profileToUse.description}
 ${profileToUse.deck_summary ? `- Additional context: ${profileToUse.deck_summary}` : ''}
 
-Universal Lesson from Episode:
+Universal Lesson from Episode (generic — do not merely restate it):
 "${lesson.lesson_text}"
 
-Generate a personalized insight in JSON format:
+Generate a profile-specific insight in JSON format:
 {
-  "personalizedText": "2-3 sentences explaining how this lesson specifically applies to THIS business and what they should focus on",
+  "personalizedText": "2-3 sentences explaining how this universal lesson applies specifically to ${profileToUse.company_name || 'this business'}. Name the business and give concrete, tailored guidance — this is the profile-specific application, not a rewrite of the generic lesson.",
   "relevanceScore": 1-10 (how relevant is this lesson to their specific situation),
-  "actionItems": ["Specific action 1", "Specific action 2", "Specific action 3"]
+  "actionItems": ["Specific action 1 for this business", "Specific action 2 for this business", "Specific action 3 for this business"]
 }
 
-Adapt the language, examples, KPIs, risks, and recommended actions to their industry and business type. Do NOT assume they are a venture-backed tech startup raising capital unless their stage/industry indicates it — tailor advice for the kind of business they actually run (e.g. a local shop, restaurant, agency, creator, service business, ecommerce brand, or bootstrapped company). Make it tactical and specific.`;
+Adapt the language, examples, KPIs, risks, and recommended actions to their industry and business type. Do NOT assume they are a venture-backed tech startup raising capital unless their stage/industry indicates it — tailor advice for the kind of business they actually run (e.g. a local shop, restaurant, agency, creator, service business, ecommerce brand, or bootstrapped company). Make it tactical and specific to ${profileToUse.company_name || 'this business'}.`;
 
           try {
             const personalizationResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {

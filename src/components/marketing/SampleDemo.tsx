@@ -147,7 +147,7 @@ export const SampleDemo = () => {
                 <div className="grid gap-4 sm:grid-cols-2 sm:items-stretch">
                   <div className="rounded-lg border border-border/60 bg-background/50 p-4 space-y-2 h-full">
                     <p className="text-sm font-medium uppercase tracking-wide text-foreground/70">
-                      General insight
+                      Top lesson
                     </p>
                     <p className="text-base leading-relaxed text-foreground">
                       {group.general}
@@ -155,7 +155,7 @@ export const SampleDemo = () => {
                   </div>
                   <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-2 h-full">
                     <p className="text-sm font-medium uppercase tracking-wide text-primary">
-                      Tailored to {SAMPLE_PRIMARY_NAME}
+                      Lesson for {SAMPLE_PRIMARY_NAME}
                     </p>
                     <p className="text-base leading-relaxed text-foreground">
                       {group.tailored}
