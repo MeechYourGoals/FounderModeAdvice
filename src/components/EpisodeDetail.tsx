@@ -642,12 +642,15 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
       <div className="grid gap-4 sm:gap-6 xl:grid-cols-2 xl:items-start">
         {lessons.length > 0 && (
           <Card className="min-w-0 p-4 sm:p-8">
-            <h2 className="text-title-3 sm:text-title-2 mb-4 sm:mb-6 flex items-center gap-2.5">
+            <h2 className="text-title-3 sm:text-title-2 mb-1 sm:mb-1.5 flex items-center gap-2.5">
               <span className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                 <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
               </span>
               Top Lessons <span className="text-muted-foreground font-normal">({lessons.length})</span>
             </h2>
+            <p className="text-sm text-muted-foreground mb-4 sm:mb-6 ml-10 sm:ml-11">
+              Generic takeaways from the source — not tailored to your business
+            </p>
             <div className="space-y-4 sm:space-y-5">
               {lessons.map((lesson, index) => (
                 <div
@@ -696,14 +699,17 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
         {personalizedInsights.length > 0 && (
           <Card className="glass relative min-w-0 overflow-hidden p-4 sm:p-8 border-primary/15">
             <div aria-hidden className="absolute inset-x-0 top-0 h-[3px]" style={{ background: 'var(--gradient-primary)' }} />
-            <h2 className="text-title-3 sm:text-title-2 mb-4 sm:mb-6 flex items-center gap-2.5">
+            <h2 className="text-title-3 sm:text-title-2 mb-1 sm:mb-1.5 flex items-center gap-2.5">
               <span className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                 <Target className="w-4 h-4 sm:w-5 sm:h-5" />
               </span>
-              {isUniversalAnalysis(episode)
-                ? "Universal insights"
-                : `Personalized for ${getAnalysisProfileLabel(episode)}`} <span className="text-muted-foreground font-normal">({personalizedInsights.length})</span>
+              Lessons for Your Profile <span className="text-muted-foreground font-normal">({personalizedInsights.length})</span>
             </h2>
+            <p className="text-sm text-muted-foreground mb-4 sm:mb-6 ml-10 sm:ml-11">
+              {isUniversalAnalysis(episode)
+                ? "How each lesson applies in a general business context"
+                : `How each lesson applies specifically to ${getAnalysisProfileLabel(episode)}`}
+            </p>
             <div className="space-y-4 sm:space-y-6">
               {lessons.map((lesson) => {
                 const insight = personalizedInsights.find(i => i.lesson_id === lesson.id);
@@ -712,13 +718,12 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
                 return (
                   <div key={lesson.id} className="space-y-3 sm:space-y-4">
                     <div className="p-3 sm:p-5 bg-card rounded-2xl border border-primary/15 shadow-sm">
-                      <div className="flex-1 mb-3">
-                        <h3 className="text-headline sm:text-title-3 mb-2 leading-snug max-w-[65ch]">{lesson.lesson_text}</h3>
-                        <div className="flex gap-2 mb-3 flex-wrap">
-                          <ScorePill label="Impact" score={lesson.impact_score} />
-                          <ScorePill label="Action" score={lesson.actionability_score} />
-                        </div>
-                      </div>
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+                        From Top Lessons
+                      </p>
+                      <p className="text-sm text-muted-foreground leading-relaxed max-w-[65ch] mb-3 line-clamp-2">
+                        {lesson.lesson_text}
+                      </p>
 
                       <div className="bg-primary/8 border border-primary/15 p-3 sm:p-4 rounded-xl">
                         <div className="flex items-start gap-2.5 mb-3">
@@ -728,7 +733,7 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
                           <div className="flex-1 min-w-0">
                             <p className="text-[11px] font-semibold uppercase tracking-wide text-primary mb-1">
                               {isUniversalAnalysis(episode)
-                                ? "Universal analysis"
+                                ? "Applied for you"
                                 : `For ${getAnalysisProfileLabel(episode)}`}
                             </p>
                             <p className="text-body-lg text-foreground leading-relaxed max-w-[65ch]">{insight.personalized_text}</p>
@@ -751,8 +756,10 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
                           </div>
                         )}
 
-                        <div className="mt-3">
+                        <div className="mt-3 flex flex-wrap gap-2">
                           <ScorePill label="Relevance" score={insight.relevance_score} />
+                          <ScorePill label="Impact" score={lesson.impact_score} />
+                          <ScorePill label="Action" score={lesson.actionability_score} />
                         </div>
                         <InsightComments
                           api={commentsApi}

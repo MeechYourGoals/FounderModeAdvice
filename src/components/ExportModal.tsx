@@ -130,7 +130,7 @@ export const ExportModal = ({ episodeId, episodeIds, scopeLabel, open, onOpenCha
       const data = await getExportArray();
 
       const csvRows = [];
-      csvRows.push(['Episode Title', 'Analyzed For', 'Company', 'Founders', 'Release Date', 'Lesson', 'Category', 'Impact', 'Actionability', 'Personalized Insight', 'Action Items', 'Insight Relevance', 'URL']);
+      csvRows.push(['Episode Title', 'Analyzed For', 'Company', 'Founders', 'Release Date', 'Top Lesson', 'Category', 'Impact', 'Actionability', 'Lesson for Your Profile', 'Action Items', 'Insight Relevance', 'URL']);
       
       data?.forEach((episode: any) => {
         episode.lessons?.forEach((lesson: any) => {
@@ -193,7 +193,7 @@ export const ExportModal = ({ episodeId, episodeIds, scopeLabel, open, onOpenCha
             
             const insight = lesson.personalized_insights?.[0];
             if (insight) {
-              markdown += `\n   **💡 Personalized for ${getAnalysisProfileLabel(episode)}:**\n`;
+              markdown += `\n   **💡 Lesson for your profile (${getAnalysisProfileLabel(episode)}):**\n`;
               markdown += `   ${insight.personalized_text}\n`;
               
               if (insight.action_items && Array.isArray(insight.action_items)) {
