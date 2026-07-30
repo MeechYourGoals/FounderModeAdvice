@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { VideoChatSheet } from "@/components/VideoChatSheet";
+import { AnalysisDiscussionSheet } from "@/components/AnalysisDiscussionSheet";
 import { ExportModal } from "@/components/ExportModal";
 import { AnalysisShareDialog } from "@/components/AnalysisShareDialog";
 import { InsightComments } from "@/components/InsightComments";
@@ -530,6 +531,14 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
                 {episode.analyzed_by === currentUserId && (
                   <VideoChatSheet videoId={episode.id} videoTitle={episode.title} />
                 )}
+                <AnalysisDiscussionSheet
+                  episodeId={episode.id}
+                  episodeTitle={episode.title}
+                  isOwner={isEpisodeOwner}
+                  ownerNeedsUpgrade={ownerNeedsUpgrade}
+                  onInviteClick={isEpisodeOwner ? () => setShareOpen(true) : undefined}
+                  compactTrigger
+                />
                 <Button
                   variant="secondary"
                   size="sm"
