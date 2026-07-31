@@ -3,8 +3,8 @@ import {
   buildInviteLink,
   generateInviteToken,
   hashInviteToken,
-  sendInviteEmail,
 } from "@/services/folderSharing";
+
 
 export const PENDING_ANALYSIS_INVITE_KEY = "fma_pending_analysis_invite";
 
@@ -58,7 +58,7 @@ export async function createAnalysisInvite(params: { episodeId: string; email: s
   if (error) throw error;
 
   const link = `${buildInviteLink(rawToken).replace("/invite/", "/analysis-invite/")}`;
-  void sendInviteEmail({ email, link, folderId: params.episodeId });
+
   return { invite: data as AnalysisInvite, link, rawToken };
 }
 

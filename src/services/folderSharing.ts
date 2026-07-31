@@ -71,29 +71,12 @@ export function buildInviteLink(rawToken: string): string {
   return `${getAppBaseUrl()}/invite/${rawToken}`;
 }
 
-export interface InviteEmailPayload {
-  email: string;
-  link: string;
-  folderId: string;
-}
-
 /**
- * Email delivery seam. v1 is link-based, so this is a no-op that just surfaces
- * the link in development. When an email provider is configured, implement
- * delivery here (ideally by invoking a Supabase Edge Function that holds the
- * provider's API key server-side) — no caller needs to change.
+ * Invites are link-based: creating one returns a private URL that the owner
+ * shares themselves (Slack, iMessage, their own email client). No mail
+ * provider is involved.
  */
-export async function sendInviteEmail(
-  payload: InviteEmailPayload,
-): Promise<{ delivered: boolean }> {
-  if (import.meta.env.DEV) {
-    console.info(
-      "[folderSharing] Invite created. Email delivery is not configured; share this link:",
-      payload.link,
-    );
-  }
-  return { delivered: false };
-}
+
 
 export interface CreatedInvite {
   invite: FolderInvite;
@@ -133,8 +116,8 @@ export async function createFolderInvite(params: {
   if (error) throw error;
 
   const link = buildInviteLink(rawToken);
-  void sendInviteEmail({ email, link, folderId: params.folderId });
   return { invite: data, link, rawToken };
+
 }
 
 /** Active (non-revoked) invites/collaborators for a folder the caller owns. */
