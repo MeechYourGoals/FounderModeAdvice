@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { listEpisodeCollaborators, type EpisodeCollaborator } from "@/services/insightComments";
 import {
@@ -11,6 +11,11 @@ import {
   type DiscussionMessage,
 } from "@/services/analysisDiscussion";
 
+/** A discussion message plus client-only optimistic-send state. */
+export interface LocalDiscussionMessage extends DiscussionMessage {
+  localStatus?: "sending" | "failed";
+}
+
 export interface AnalysisDiscussionApi {
   /** Initial load only — silent reloads (polls) never toggle this. */
   loading: boolean;
@@ -19,10 +24,13 @@ export interface AnalysisDiscussionApi {
   collaborators: EpisodeCollaborator[];
   /** Display label for a user id: their email, "You" for the current user. */
   labelFor: (userId: string) => string;
-  messages: DiscussionMessage[];
+  messages: LocalDiscussionMessage[];
   /** Messages from others newer than the user's read cursor. */
   unreadCount: number;
+  /** Optimistic: the message appears immediately; failures stay in the thread for retry. */
   send: (body: string) => Promise<void>;
+  retrySend: (messageId: string) => Promise<void>;
+  discardFailed: (messageId: string) => void;
   edit: (messageId: string, body: string) => Promise<void>;
   remove: (messageId: string) => Promise<void>;
   markRead: () => Promise<void>;
@@ -35,11 +43,12 @@ export interface AnalysisDiscussionApi {
  */
 export function useAnalysisDiscussion(episodeId: string | null): AnalysisDiscussionApi {
   const { user } = useAuth();
-  const [messages, setMessages] = useState<DiscussionMessage[]>([]);
+  const [messages, setMessages] = useState<LocalDiscussionMessage[]>([]);
   const [collaborators, setCollaborators] = useState<EpisodeCollaborator[]>([]);
   const [lastReadAt, setLastReadAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const tempIdRef = useRef(0);
 
   const load = useCallback(
     async (options?: { silent?: boolean }) => {
@@ -58,7 +67,9 @@ export function useAnalysisDiscussion(episodeId: string | null): AnalysisDiscuss
           listEpisodeCollaborators(episodeId).catch(() => [] as EpisodeCollaborator[]),
           getDiscussionLastReadAt(episodeId).catch(() => null),
         ]);
-        setMessages(messageRows);
+        // Server rows replace confirmed state; in-flight/failed optimistic
+        // sends survive the refresh so they aren't wiped by a poll.
+        setMessages((prev) => [...messageRows, ...prev.filter((m) => m.localStatus)]);
         setCollaborators(collaboratorRows);
         setLastReadAt((prev) => {
           // Keep the freshest cursor: an optimistic markRead() may have already
@@ -98,18 +109,66 @@ export function useAnalysisDiscussion(episodeId: string | null): AnalysisDiscuss
     if (!user) return 0;
     const cutoff = lastReadAt ? new Date(lastReadAt).getTime() : 0;
     return messages.filter(
-      (m) => m.author_user_id !== user.id && new Date(m.created_at).getTime() > cutoff,
+      (m) =>
+        !m.localStatus &&
+        m.author_user_id !== user.id &&
+        new Date(m.created_at).getTime() > cutoff,
     ).length;
   }, [messages, lastReadAt, user]);
 
+  const deliver = useCallback(
+    async (tempId: string, episode: string, body: string) => {
+      try {
+        const created = await createDiscussionMessage(episode, body);
+        setMessages((prev) => prev.map((m) => (m.id === tempId ? created : m)));
+      } catch {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === tempId ? { ...m, localStatus: "failed" as const } : m)),
+        );
+      }
+    },
+    [],
+  );
+
   const send = useCallback(
     async (body: string) => {
-      if (!episodeId) throw new Error("Missing analysis id.");
-      const created = await createDiscussionMessage(episodeId, body);
-      setMessages((prev) => [...prev, created]);
+      if (!episodeId || !user) throw new Error("Missing analysis id.");
+      const trimmed = body.trim();
+      if (!trimmed) return;
+      const tempId = `local-${++tempIdRef.current}`;
+      const now = new Date().toISOString();
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: tempId,
+          episode_id: episodeId,
+          author_user_id: user.id,
+          body: trimmed,
+          created_at: now,
+          updated_at: now,
+          localStatus: "sending",
+        },
+      ]);
+      await deliver(tempId, episodeId, trimmed);
     },
-    [episodeId],
+    [episodeId, user, deliver],
   );
+
+  const retrySend = useCallback(
+    async (messageId: string) => {
+      const failed = messages.find((m) => m.id === messageId && m.localStatus === "failed");
+      if (!failed || !episodeId) return;
+      setMessages((prev) =>
+        prev.map((m) => (m.id === messageId ? { ...m, localStatus: "sending" as const } : m)),
+      );
+      await deliver(messageId, episodeId, failed.body);
+    },
+    [messages, episodeId, deliver],
+  );
+
+  const discardFailed = useCallback((messageId: string) => {
+    setMessages((prev) => prev.filter((m) => m.id !== messageId));
+  }, []);
 
   const edit = useCallback(async (messageId: string, body: string) => {
     const updated = await updateDiscussionMessage(messageId, body);
@@ -137,6 +196,8 @@ export function useAnalysisDiscussion(episodeId: string | null): AnalysisDiscuss
     messages,
     unreadCount,
     send,
+    retrySend,
+    discardFailed,
     edit,
     remove,
     markRead,

@@ -81,6 +81,54 @@ export async function getDiscussionLastReadAt(episodeId: string): Promise<string
   return (data?.last_read_at as string | undefined) ?? null;
 }
 
+/**
+ * Unread message counts per episode for the current user, for badge chips on
+ * lists of shared analyses. Two batched queries; RLS scopes both to episodes
+ * the caller can access.
+ */
+export async function getUnreadDiscussionCounts(episodeIds: string[]): Promise<Record<string, number>> {
+  if (episodeIds.length === 0) return {};
+  const {
+    data: { user },
+  } = await supabaseTyped.auth.getUser();
+  if (!user) return {};
+
+  const [messagesRes, readsRes] = await Promise.all([
+    supabase
+      .from("analysis_discussion_messages")
+      .select("episode_id, author_user_id, created_at")
+      .in("episode_id", episodeIds),
+    supabase
+      .from("analysis_discussion_reads")
+      .select("episode_id, last_read_at")
+      .eq("user_id", user.id)
+      .in("episode_id", episodeIds),
+  ]);
+  if (messagesRes.error) throw messagesRes.error;
+  if (readsRes.error) throw readsRes.error;
+
+  const readCutoffs = new Map<string, number>(
+    ((readsRes.data ?? []) as { episode_id: string; last_read_at: string }[]).map((r) => [
+      r.episode_id,
+      new Date(r.last_read_at).getTime(),
+    ]),
+  );
+
+  const counts: Record<string, number> = {};
+  for (const m of (messagesRes.data ?? []) as {
+    episode_id: string;
+    author_user_id: string;
+    created_at: string;
+  }[]) {
+    if (m.author_user_id === user.id) continue;
+    const cutoff = readCutoffs.get(m.episode_id) ?? 0;
+    if (new Date(m.created_at).getTime() > cutoff) {
+      counts[m.episode_id] = (counts[m.episode_id] ?? 0) + 1;
+    }
+  }
+  return counts;
+}
+
 export async function markDiscussionRead(episodeId: string): Promise<void> {
   const {
     data: { user },
