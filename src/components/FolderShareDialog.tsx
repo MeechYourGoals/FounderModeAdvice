@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Check, Copy, Loader2, Trash2, UserPlus, Users } from "lucide-react";
+import { Check, Copy, Link2, Loader2, Trash2, Users } from "lucide-react";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { hasSharing } from "@/types/subscription";
 import { UpgradePrompt } from "@/components/subscription";
@@ -98,12 +98,12 @@ export const FolderShareDialog = ({
         /* clipboard may be blocked; the link is shown for manual copy */
       }
       toast({
-        title: "Invite link ready",
-        description: "Share the link with your collaborator to give them access.",
+        title: "Link created and copied",
+        description: "Send it to your collaborator to give them access.",
       });
     } catch (err) {
       toast({
-        title: "Couldn't create invite",
+        title: "Couldn't create link",
         description: err instanceof Error ? err.message : "Please try again.",
         variant: "destructive",
       });
@@ -149,8 +149,9 @@ export const FolderShareDialog = ({
             <Users className="h-4 w-4" /> Share “{folderName}”
           </DialogTitle>
           <DialogDescription>
-            Invite teammates or advisors to this folder. They can view its insights and
-            join the comment threads — and see nothing else in your workspace.
+            Create a private link for a teammate or advisor. They can view this folder's
+            insights and join the comment threads — and see nothing else in your workspace.
+            You send the link however you like; we don't email it for you.
           </DialogDescription>
         </DialogHeader>
 
@@ -165,7 +166,7 @@ export const FolderShareDialog = ({
           <>
         <form onSubmit={handleInvite} className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="invite-email">Invite by email</Label>
+            <Label htmlFor="invite-email">Who is this link for?</Label>
             <div className="flex gap-2">
               <Input
                 id="invite-email"
@@ -179,11 +180,14 @@ export const FolderShareDialog = ({
                 {inviting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <UserPlus className="h-4 w-4" />
+                  <Link2 className="h-4 w-4" />
                 )}
-                <span className="ml-2 hidden sm:inline">Invite</span>
+                <span className="ml-2 hidden sm:inline">Create link</span>
               </Button>
             </div>
+            <p className="text-[11px] text-muted-foreground">
+              Their email locks the link to that person — you still send it yourself.
+            </p>
           </div>
         </form>
 
