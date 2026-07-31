@@ -33,6 +33,28 @@ CREATE TRIGGER update_analysis_discussion_messages_updated_at
   BEFORE UPDATE ON public.analysis_discussion_messages
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
+-- RLS restricts which rows an UPDATE may touch, not which columns — without
+-- this guard an author could retarget their own message to another episode's
+-- thread. Identity columns are immutable; edits may change the body only.
+CREATE OR REPLACE FUNCTION public.reject_discussion_message_identity_change()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+BEGIN
+  IF NEW.episode_id IS DISTINCT FROM OLD.episode_id
+     OR NEW.author_user_id IS DISTINCT FROM OLD.author_user_id THEN
+    RAISE EXCEPTION 'episode_id and author_user_id cannot be changed';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS analysis_discussion_messages_identity_guard ON public.analysis_discussion_messages;
+CREATE TRIGGER analysis_discussion_messages_identity_guard
+  BEFORE UPDATE ON public.analysis_discussion_messages
+  FOR EACH ROW EXECUTE FUNCTION public.reject_discussion_message_identity_change();
+
 -- Per-user read cursors driving the unread indicator on Discussion buttons.
 CREATE TABLE IF NOT EXISTS public.analysis_discussion_reads (
   episode_id uuid NOT NULL REFERENCES public.episodes(id) ON DELETE CASCADE,
@@ -70,13 +92,22 @@ WITH CHECK (
   )
 );
 
+-- Editing requires ongoing episode access, so a revoked collaborator cannot
+-- keep rewriting their old messages. The identity-guard trigger above keeps
+-- episode_id/author_user_id frozen regardless.
 DROP POLICY IF EXISTS "Authors can edit their discussion messages" ON public.analysis_discussion_messages;
 CREATE POLICY "Authors can edit their discussion messages"
 ON public.analysis_discussion_messages
 FOR UPDATE
 TO authenticated
-USING (author_user_id = auth.uid())
-WITH CHECK (author_user_id = auth.uid());
+USING (
+  author_user_id = auth.uid()
+  AND public.user_can_access_episode(episode_id, auth.uid())
+)
+WITH CHECK (
+  author_user_id = auth.uid()
+  AND public.user_can_access_episode(episode_id, auth.uid())
+);
 
 -- Authors can delete their own messages; episode owners can moderate any
 -- message on their analyses.
@@ -116,9 +147,53 @@ ON public.analysis_discussion_reads
 FOR UPDATE
 TO authenticated
 USING (user_id = auth.uid())
-WITH CHECK (user_id = auth.uid());
+WITH CHECK (
+  user_id = auth.uid()
+  AND public.user_can_access_episode(episode_id, auth.uid())
+);
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.analysis_discussion_messages TO authenticated;
 GRANT ALL ON public.analysis_discussion_messages TO service_role;
 GRANT SELECT, INSERT, UPDATE ON public.analysis_discussion_reads TO authenticated;
 GRANT ALL ON public.analysis_discussion_reads TO service_role;
+
+-- ---------- Hardening: insight_comments (pre-existing table) ----------
+-- The legacy UPDATE policy has the same shape as the hole fixed above: it
+-- only checks authorship, so an author could retarget a comment's episode /
+-- insight columns or keep editing after access was revoked. Freeze identity
+-- columns and require ongoing episode access to edit.
+
+CREATE OR REPLACE FUNCTION public.reject_insight_comment_identity_change()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+BEGIN
+  IF NEW.episode_id IS DISTINCT FROM OLD.episode_id
+     OR NEW.insight_type IS DISTINCT FROM OLD.insight_type
+     OR NEW.insight_id IS DISTINCT FROM OLD.insight_id
+     OR NEW.author_user_id IS DISTINCT FROM OLD.author_user_id THEN
+    RAISE EXCEPTION 'comment identity columns cannot be changed';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS insight_comments_identity_guard ON public.insight_comments;
+CREATE TRIGGER insight_comments_identity_guard
+  BEFORE UPDATE ON public.insight_comments
+  FOR EACH ROW EXECUTE FUNCTION public.reject_insight_comment_identity_change();
+
+DROP POLICY IF EXISTS "Authors can edit their comments" ON public.insight_comments;
+CREATE POLICY "Authors can edit their comments"
+ON public.insight_comments
+FOR UPDATE
+TO authenticated
+USING (
+  author_user_id = auth.uid()
+  AND public.user_can_access_episode(episode_id, auth.uid())
+)
+WITH CHECK (
+  author_user_id = auth.uid()
+  AND public.user_can_access_episode(episode_id, auth.uid())
+);
