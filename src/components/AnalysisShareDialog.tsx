@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Check, Copy, Loader2, Trash2, UserPlus, Users } from "lucide-react";
+import { Check, Copy, Link2, Loader2, Trash2, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { hasSharing } from "@/types/subscription";
@@ -88,12 +88,12 @@ export const AnalysisShareDialog = ({ episodeId, episodeTitle, open, onOpenChang
         // Clipboard can be blocked in some browsers.
       }
       toast({
-        title: "Invite link ready",
-        description: "Share the link with your teammate or advisor.",
+        title: "Link created and copied",
+        description: "Send it to your teammate or advisor.",
       });
     } catch (error) {
       toast({
-        title: "Couldn't create invite",
+        title: "Couldn't create link",
         description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       });
@@ -124,7 +124,9 @@ export const AnalysisShareDialog = ({ episodeId, episodeTitle, open, onOpenChang
             <Users className="h-4 w-4" /> Share analysis
           </DialogTitle>
           <DialogDescription>
-            Invite teammates or advisors to view “{episodeTitle}”, comment on individual insights, and tag each other in the discussion.
+            Create a private link that lets a teammate or advisor view “{episodeTitle}”, comment on
+            individual insights, and tag each other in the discussion. You send the link
+            yourself — we don't email it for you.
           </DialogDescription>
         </DialogHeader>
 
@@ -136,7 +138,7 @@ export const AnalysisShareDialog = ({ episodeId, episodeTitle, open, onOpenChang
         ) : (
           <div className="space-y-3">
             <form onSubmit={handleInvite} className="space-y-1.5">
-              <Label htmlFor="analysis-invite-email">Invite by email</Label>
+              <Label htmlFor="analysis-invite-email">Who is this link for?</Label>
               <div className="flex gap-2">
                 <Input
                   id="analysis-invite-email"
@@ -146,10 +148,15 @@ export const AnalysisShareDialog = ({ episodeId, episodeTitle, open, onOpenChang
                   placeholder="advisor@company.com"
                 />
                 <Button type="submit" disabled={inviting || !episodeId}>
-                  {inviting ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+                  {inviting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
+                  <span className="ml-2 hidden sm:inline">Create link</span>
                 </Button>
               </div>
+              <p className="text-[11px] text-muted-foreground">
+                Their email locks the link to that person — you still send it yourself.
+              </p>
             </form>
+
 
             {latestLink && (
               <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
