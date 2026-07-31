@@ -10,6 +10,26 @@ import { initPushNotifications } from "./services/pushService";
 import { initAnalytics, captureEvent } from "./services/analytics";
 import { Capacitor } from "@capacitor/core";
 
+// Dev / Lovable-preview only: purge any service worker + Workbox caches left
+// behind on this origin by an earlier build. The PWA plugin doesn't emit a
+// service worker in dev, so a previously-registered SW would keep serving its
+// cached app shell forever — which is exactly the "preview shows an old
+// version" symptom. Production builds are untouched.
+if (import.meta.env.DEV && typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+  void (async () => {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    if (regs.length === 0) return;
+    await Promise.all(regs.map((r) => r.unregister()));
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    }
+    // One reload to leave the stale-controlled page behind.
+    window.location.reload();
+  })();
+}
+
+
 // Initialize native plugins (Capacitor)
 initializeNativePlugins();
 handleBackButton();
