@@ -11,6 +11,7 @@ import { getAnalysisProfileLabel } from "@/lib/analysisProfile";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { InsightComments } from "@/components/InsightComments";
 import { useInsightComments } from "@/hooks/useInsightComments";
+import { AnalysisDiscussionSheet } from "@/components/AnalysisDiscussionSheet";
 
 const SharedAnalysis = () => {
   const { episodeId } = useParams<{ episodeId: string }>();
@@ -91,12 +92,19 @@ const SharedAnalysis = () => {
               {episode.founder_names && (
                 <p className="mt-2 text-muted-foreground">with {episode.founder_names}</p>
               )}
-              <Button asChild size="sm" className="mt-4">
-                <a href={episode.url} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Open source video
-                </a>
-              </Button>
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <Button asChild size="sm">
+                  <a href={episode.url} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Open source video
+                  </a>
+                </Button>
+                <AnalysisDiscussionSheet
+                  episodeId={episode.id}
+                  episodeTitle={episode.title}
+                  isOwner={false}
+                />
+              </div>
             </Card>
 
             <Card className="p-6">

@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { listSharedFolders, type SharedFolderSummary } from "@/services/folderSharing";
 import { listSharedAnalyses, type SharedAnalysisSummary } from "@/services/analysisSharing";
+import { getUnreadDiscussionCounts } from "@/services/analysisDiscussion";
 import { getAnalysisProfileLabel } from "@/lib/analysisProfile";
 
 /** Skeleton mirror of the shared-content cards, shown while lists load. */
@@ -46,6 +47,7 @@ const SharedWithMe = () => {
   const isMobile = useMediaQuery("(max-width: 1023px)");
   const [folders, setFolders] = useState<SharedFolderSummary[]>([]);
   const [analyses, setAnalyses] = useState<SharedAnalysisSummary[]>([]);
+  const [unread, setUnread] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -56,6 +58,11 @@ const SharedWithMe = () => {
       ]);
       setFolders(sharedFolders);
       setAnalyses(sharedAnalyses);
+      // Unread discussion badges are best-effort — never block the page on them.
+      const counts = await getUnreadDiscussionCounts(sharedAnalyses.map((a) => a.id)).catch(
+        () => ({}) as Record<string, number>,
+      );
+      setUnread(counts);
     } catch (err) {
       console.error("Failed to load shared content", err);
     }
@@ -91,7 +98,8 @@ const SharedWithMe = () => {
             <span className="font-display font-medium italic text-gradient">with you</span>
           </h1>
           <p className="text-muted-foreground mb-8">
-            Insight folders other founders have invited you to. You have read-only access to each.
+            Analyses and folders other founders have invited you to. Open one to read the insights
+            and join its discussion.
           </p>
 
           {loading || authLoading ? (
@@ -135,6 +143,14 @@ const SharedWithMe = () => {
                               <span className="text-xs text-muted-foreground truncate">{analysis.founder_names || "Invited insight"}</span>
                             </div>
                           </div>
+                          {(unread[analysis.id] ?? 0) > 0 && (
+                            <span
+                              aria-label={`${unread[analysis.id]} unread discussion messages`}
+                              className="ml-auto mt-0.5 flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-semibold text-primary-foreground animate-scale-in"
+                            >
+                              {unread[analysis.id]}
+                            </span>
+                          )}
                         </div>
                       </Card>
                     ))}
