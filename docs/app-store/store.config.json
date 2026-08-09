@@ -1,0 +1,16 @@
+{
+  "configVersion": 0,
+  "apple": {
+    "info": {
+      "en-US": {
+        "title": "Founder Mode Advice",
+        "subtitle": "Turn insight into action",
+        "description": "Founder Mode Advice turns the material founders study into operating guidance they can use.\n\nSubmit a supported public source or your own document. The app extracts source-grounded lessons, risks, action items, and advice tailored to a business profile. Save the result as an operating memo, organize it in your private library, and—where included in your plan—ask follow-up questions grounded in the source, export insights, or collaborate with invited teammates.\n\nAI output can be incomplete or inaccurate and is not professional advice. You are responsible for having rights to content you submit.",
+        "keywords": ["founder", "startup", "operator", "strategy", "podcast", "transcript", "advisor", "business", "memo", "insights", "library"],
+        "marketingUrl": "https://foundermodeadvice.com/",
+        "supportUrl": "https://foundermodeadvice.com/contact",
+        "privacyPolicyUrl": "https://foundermodeadvice.com/privacy-policy"
+      }
+    }
+  }
+}

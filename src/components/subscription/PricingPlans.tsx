@@ -12,7 +12,7 @@ interface PricingPlansProps {
 }
 
 export function PricingPlans({ onSelect, showCurrentPlan = true }: PricingPlansProps) {
-  const { subscription, upgradeTo, loading } = useSubscription();
+  const { subscription, upgradeTo, loading, isNative } = useSubscription();
 
   const tiers = Object.entries(TIER_PRICING) as [SubscriptionTier, TierPricing][];
 
@@ -44,6 +44,8 @@ export function PricingPlans({ onSelect, showCurrentPlan = true }: PricingPlansP
             (subscription?.tier === 'seed' && tierKey === 'series_z');
           const { price, suffix } = tierKey === 'free'
             ? { price: 'Free', suffix: '' }
+            : isNative
+              ? { price: 'View App Store price', suffix: '' }
             : { price: `$${tier.price}`, suffix: '/month' };
 
           return (

@@ -6,22 +6,27 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "environment": "development",
+      "env": { "FMA_APP_ENV": "development" }
     },
     "preview": {
       "distribution": "internal",
-      "channel": "preview"
+      "environment": "preview",
+      "env": { "FMA_APP_ENV": "preview" }
     },
     "production": {
       "autoIncrement": true,
-      "channel": "production"
+      "environment": "production",
+      "env": {
+        "FMA_APP_ENV": "production",
+        "FMA_WEB_URL": "https://foundermodeadvice.com"
+      }
     }
   },
   "submit": {
     "production": {
-      "ios": {
-        "ascAppId": "REPLACE_WITH_APP_STORE_CONNECT_APP_ID"
-      },
+      "ios": {},
       "android": {
         "serviceAccountKeyPath": "./play-service-account.json",
         "track": "internal"

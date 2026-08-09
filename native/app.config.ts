@@ -12,15 +12,31 @@ import type { ConfigContext, ExpoConfig } from "expo/config";
  *   FMA_REVENUECAT_IOS_API_KEY      — RevenueCat public SDK key (iOS)
  *   FMA_REVENUECAT_ANDROID_API_KEY  — RevenueCat public SDK key (Android)
  */
-export default ({ config }: ConfigContext): ExpoConfig => ({
-  ...(config as ExpoConfig),
-  extra: {
+export default ({ config }: ConfigContext): ExpoConfig => {
+  const profile = process.env.EAS_BUILD_PROFILE;
+  const webUrl = process.env.FMA_WEB_URL || config.extra?.webUrl;
+  const iosKey = process.env.FMA_REVENUECAT_IOS_API_KEY || config.extra?.revenueCatIosApiKey;
+
+  if (profile === "production") {
+    if (webUrl !== "https://foundermodeadvice.com") {
+      throw new Error("Production builds must use https://foundermodeadvice.com");
+    }
+    if (!iosKey || !String(iosKey).startsWith("appl_") || String(iosKey).startsWith("test_")) {
+      throw new Error("Production iOS builds require the Apple app-specific RevenueCat public SDK key (appl_…). Test Store keys are forbidden.");
+    }
+  }
+
+  return {
+    ...(config as ExpoConfig),
+    extra: {
     ...config.extra,
-    webUrl: process.env.FMA_WEB_URL || config.extra?.webUrl,
+    appEnvironment: process.env.FMA_APP_ENV || "development",
+    webUrl,
     oneSignalAppId: process.env.FMA_ONESIGNAL_APP_ID || config.extra?.oneSignalAppId,
     revenueCatIosApiKey:
-      process.env.FMA_REVENUECAT_IOS_API_KEY || config.extra?.revenueCatIosApiKey,
+      iosKey,
     revenueCatAndroidApiKey:
       process.env.FMA_REVENUECAT_ANDROID_API_KEY || config.extra?.revenueCatAndroidApiKey,
-  },
-});
+    },
+  };
+};
