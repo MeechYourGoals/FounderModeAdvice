@@ -1,5 +1,7 @@
 # Mobile Wrapping Guide — Expo/EAS, Despia, Capacitor
 
+> **Plan of record confirmed (2026-08-09):** Option C (Expo/EAS shell in `native/`) ships to the App Store — release runbook in [`docs/app-store/`](app-store/APP_STORE_READINESS.md). Despia/Capacitor sections remain for reference.
+
 How to ship this web app as an iOS/Android app, and what is already wired up
 for each path. See `docs/store-readiness.md` for the store-compliance runbook
 and `docs/app-entry-and-runtime.md` for the app-vs-browser entry routing and

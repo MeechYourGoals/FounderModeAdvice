@@ -1,5 +1,7 @@
 # Founder Mode Advice — Store Readiness Runbook
 
+> **SUPERSEDED (2026-08-09):** the canonical iOS release package now lives in [`docs/app-store/`](app-store/APP_STORE_READINESS.md) (Expo/EAS shell + RevenueCat + Paddle web billing). This file predates the Paddle migration and the revenuecat-webhook; treat it as historical background only.
+
 Last updated: 2026-06-08
 
 This repo is a Vite/React/Supabase app with an **Expo/EAS shell app committed in `native/`** (plan of record for the store launch — see `native/README.md` and `docs/mobile-wrapping.md`), plus Capacitor and Despia native hooks as alternatives.

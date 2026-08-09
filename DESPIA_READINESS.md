@@ -1,5 +1,7 @@
 # Despia / Native Readiness — Founder Mode Advice
 
+> **SUPERSEDED (2026-08-09):** the store vehicle is the Expo/EAS shell in `native/`, not Despia/Capacitor — see [`docs/app-store/`](docs/app-store/APP_STORE_READINESS.md). Kept for the OTA-vs-rebuild ledger and historical context.
+
 Single-page deployment source of truth for shipping this app to iOS/Android.
 
 > **This app is not a plain Lovable web app.** It is a **Capacitor-primary +
