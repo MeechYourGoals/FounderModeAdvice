@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 import { isDespia } from "@/services/despiaService";
+import { isExpoShell, promptShellPush } from "@/services/expoShellService";
 import { Capacitor } from "@capacitor/core";
 
 interface Prefs {
@@ -30,7 +31,7 @@ export const NotificationSettings = () => {
   const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const inInstalledApp = isDespia() || Capacitor.isNativePlatform();
+  const inInstalledApp = isDespia() || isExpoShell() || Capacitor.isNativePlatform();
 
   useEffect(() => {
     if (!user) return;
@@ -57,6 +58,12 @@ export const NotificationSettings = () => {
   const updatePref = async (patch: Partial<Prefs>) => {
     if (!user) return;
     triggerHapticFeedback("light");
+    // Turning a push preference ON is the contextual moment to request OS
+    // permission in the Expo shell (registration itself happens silently at
+    // login; see pushService.syncPushUser).
+    if (isExpoShell() && Object.values(patch).some(Boolean)) {
+      promptShellPush();
+    }
     const next = { ...prefs, ...patch };
     setPrefs(next);
     setSaving(true);

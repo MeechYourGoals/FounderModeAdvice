@@ -22,24 +22,24 @@ const RefundPolicy = () => {
         <h1 className="text-4xl font-bold tracking-tight mb-8">Refund Policy</h1>
 
         <div className="prose prose-slate dark:prose-invert max-w-none space-y-6">
-          <p className="text-muted-foreground italic">
-            Last Updated: {new Date().toLocaleDateString()}
-          </p>
+          <p className="text-muted-foreground italic">Last Updated: August 9, 2026</p>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">1. 30-Day Money-Back Guarantee</h2>
+            <h2 className="text-2xl font-semibold mb-4">1. 30-Day Money-Back Guarantee (Web Purchases)</h2>
             <p>
-              Saint Marlo Labs LLC ("we", "us") offers a 30-day money-back guarantee on all
-              subscriptions to Founder Mode Advice. If you are not satisfied with your purchase,
-              you may request a full refund within 30 days of the original order date.
+              Saint Marlo Labs LLC ("we", "us") offers a 30-day money-back guarantee on
+              subscriptions purchased on our website. If you are not satisfied with your
+              purchase, you may request a full refund within 30 days of the original order
+              date. Purchases made inside the iOS or Android app are billed by Apple or
+              Google and follow their refund process instead — see Section 5.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">2. How to Request a Refund</h2>
+            <h2 className="text-2xl font-semibold mb-4">2. How to Request a Refund (Web Purchases)</h2>
             <p>
-              Our order process is conducted by our online reseller Paddle.com. Paddle is the
-              Merchant of Record for all our orders and handles all refunds.
+              Our web order process is conducted by our online reseller Paddle.com. Paddle is
+              the Merchant of Record for our web orders and handles those refunds.
             </p>
             <p>
               To request a refund, visit{" "}
@@ -74,14 +74,35 @@ const RefundPolicy = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">4. Cancellations</h2>
             <p>
-              You can cancel your subscription at any time from your account settings or via the
-              customer portal provided by Paddle. Cancellation stops future renewals; access to
-              paid features continues until the end of the current billing period.
+              You can cancel your subscription at any time from your account settings (web:
+              Paddle customer portal; iOS/Android: Manage Subscription, which opens your App
+              Store or Google Play subscription settings). Cancellation stops future
+              renewals; access to paid features continues until the end of the current
+              billing period.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">5. Contact</h2>
+            <h2 className="text-2xl font-semibold mb-4">5. Purchases Made Through Apple or Google</h2>
+            <p>
+              If you subscribed inside our iOS app, your purchase is processed by Apple, and
+              refunds are granted at Apple's discretion under Apple's terms — request one at{" "}
+              <a
+                href="https://reportaproblem.apple.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-primary"
+              >
+                reportaproblem.apple.com
+              </a>
+              . If you subscribed inside our Android app, refunds follow Google Play's
+              policy. We cannot issue refunds for purchases billed by Apple or Google, but
+              contact us and we'll help however we can.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-semibold mb-4">6. Contact</h2>
             <p>
               Questions about this policy?{" "}
               <a

@@ -1,0 +1,150 @@
+{
+  "_comment": "Exact non-secret values for authenticated console configuration (Apple Developer, App Store Connect, RevenueCat, Expo/EAS, Supabase, OneSignal). NO secrets belong in this file — secret NAMES are listed with where to set them. Values marked DECISION_PENDING are enumerated in BLOCKERS.md and must be confirmed by the owner before use. Values marked CAPTURE are produced during console work and should be recorded back here.",
+
+  "app": {
+    "displayName": "Founder Mode Advice",
+    "iosBundleId": "com.foundermodeadvice.app",
+    "androidPackage": "com.foundermodeadvice.app",
+    "urlScheme": "com.foundermodeadvice.app",
+    "associatedDomain": "applinks:foundermodeadvice.com",
+    "webOrigin": "https://foundermodeadvice.com",
+    "version": "1.0.0",
+    "buildNumberStrategy": "EAS remote (appVersionSource=remote, autoIncrement on production profile)",
+    "primaryLanguage": "en-US",
+    "suggestedSku": "FMA-IOS-001"
+  },
+
+  "legalEntity": {
+    "name": "Saint Marlo Labs LLC",
+    "type": "Delaware limited liability company (per privacy policy)",
+    "supportEmail": "CA@saintmarlolabs.com",
+    "note": "VERIFY the Apple Developer membership is the ORGANIZATION account for Saint Marlo Labs LLC (or an individual account the owner explicitly accepts as seller of record). Seller name shown on the App Store comes from the membership, not from this repo."
+  },
+
+  "urls": {
+    "marketing": "https://foundermodeadvice.com",
+    "support": "https://foundermodeadvice.com/contact",
+    "privacyPolicy": "https://foundermodeadvice.com/privacy-policy",
+    "termsOfService": "https://foundermodeadvice.com/terms-of-service",
+    "refundPolicy": "https://foundermodeadvice.com/refund-policy",
+    "accountDeletion": "https://foundermodeadvice.com/account-deletion",
+    "faq": "https://foundermodeadvice.com/faq",
+    "note": "The routes /privacy-policy, /terms-of-service, /refund-policy, /account-deletion, /contact, /faq are the REAL app routes (older docs mentioning /privacy and /terms are wrong)."
+  },
+
+  "appleSubscriptions": {
+    "subscriptionGroupReferenceName": "Founder Mode Advice Subscriptions",
+    "products": [
+      {
+        "productId": "seed_monthly",
+        "referenceName": "The C-Suite Monthly",
+        "displayName": "The C-Suite",
+        "description": "20 analyses/month, private document upload, up to 5 business profiles.",
+        "duration": "1 month",
+        "priceUSD": 9.99,
+        "trial": "none (no trial exists anywhere in repo/site — adding one is a business decision)",
+        "groupLevel": 2
+      },
+      {
+        "productId": "series_z_monthly",
+        "referenceName": "The Boardroom Monthly",
+        "displayName": "The Boardroom",
+        "description": "Unlimited analyses and profiles, Ask-the-video AI chat, exports, team sharing.",
+        "duration": "1 month",
+        "priceUSD": 19.99,
+        "trial": "none",
+        "groupLevel": 1
+      }
+    ],
+    "availability": "CONFIRMED 2026-08-09: all territories (App Store prices auto-derived from USD base; complete EU DSA trader declaration during ASC setup)",
+    "taxCategory": "App Store default for software/SaaS (no special category established)",
+    "note": "Product IDs are IMMUTABLE once created and must match REVENUECAT_MAPPING.md and src/types/subscription.ts exactly. Prices must stay at $9.99/$19.99 USD to match in-app copy (FAQ/marketing) and Paddle web pricing."
+  },
+
+  "revenueCat": {
+    "project": "Founder Mode Advice (create or reuse — inspect before creating)",
+    "appleApp": {
+      "bundleId": "com.foundermodeadvice.app",
+      "publicSdkKeyEnvVar": "FMA_REVENUECAT_IOS_API_KEY (starts with appl_; set as EAS environment variable in development/preview/production)"
+    },
+    "entitlements": "CONFIRMED 2026-08-09: two per-tier entitlements — seed_subscription ← seed_monthly, series_z_subscription ← series_z_monthly (details in REVENUECAT_MAPPING.md)",
+    "offering": {
+      "identifier": "default",
+      "packages": [
+        { "identifier": "$rc_monthly", "product": "series_z_monthly", "note": "flagship plan as the standard monthly package" },
+        { "identifier": "c_suite_monthly", "product": "seed_monthly", "note": "custom package identifier" }
+      ]
+    },
+    "paywall": "RevenueCat Paywall (v2 template) attached to offering 'default'; must show both packages, localized StoreKit prices, and footer links to privacy policy + terms URLs above",
+    "appleServerNotifications": {
+      "productionUrl": "CAPTURE from RevenueCat (Apple App settings → Apple Server Notifications)",
+      "sandboxUrl": "CAPTURE from RevenueCat",
+      "whereToSet": "App Store Connect → App → App Information → App Store Server Notifications (V2) — production AND sandbox"
+    },
+    "webhook": {
+      "url": "https://iffcuueutmsusgdfekvm.supabase.co/functions/v1/revenuecat-webhook",
+      "authorizationHeaderSecretName": "REVENUECAT_WEBHOOK_AUTH",
+      "whereToSetSecret": "Supabase project → Edge Functions secrets AND the same literal value in RevenueCat → Project → Integrations → Webhooks → Authorization header",
+      "events": "all subscription lifecycle events (initial purchase, renewal, cancellation, expiration, billing issue, refund, transfer)"
+    },
+    "secretApiKeys": {
+      "REVENUECAT_API_KEY": "RevenueCat secret API key (v1) — set ONLY in Supabase Edge Function secrets; used by sync-revenuecat-subscription and revenuecat-webhook for server-side verification. Never expose to client."
+    }
+  },
+
+  "expoEas": {
+    "owner": "CAPTURE — run `eas init` in native/ with the owner account; writes extra.eas.projectId to app.json",
+    "projectId": "CAPTURE from eas init",
+    "ascAppId": "CAPTURE — numeric Apple ID of the App Store Connect app record; set in native/eas.json submit.production.ios.ascAppId (or leave empty and let eas submit resolve interactively)",
+    "environmentVariables": {
+      "production": {
+        "FMA_REVENUECAT_IOS_API_KEY": "appl_… (public SDK key — plain visibility)",
+        "FMA_REVENUECAT_ANDROID_API_KEY": "goog_… (only when Android ships)",
+        "FMA_ONESIGNAL_APP_ID": "OneSignal app id (optional until push enabled)",
+        "FMA_WEB_URL": "leave unset (defaults to https://foundermodeadvice.com)"
+      },
+      "preview": "same names; may point FMA_WEB_URL at a staging origin",
+      "development": "same names; Test Store key allowed here ONLY"
+    }
+  },
+
+  "supabase": {
+    "projectRef": "iffcuueutmsusgdfekvm",
+    "functionSecretsRequired": [
+      "SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY",
+      "LOVABLE_API_KEY", "SUPADATA_API_KEY",
+      "REVENUECAT_API_KEY", "REVENUECAT_WEBHOOK_AUTH",
+      "PADDLE_LIVE_API_KEY", "PAYMENTS_LIVE_WEBHOOK_SECRET",
+      "PADDLE_SANDBOX_API_KEY", "PAYMENTS_SANDBOX_WEBHOOK_SECRET",
+      "ONESIGNAL_APP_ID", "ONESIGNAL_REST_API_KEY", "CRON_SECRET", "APP_URL"
+    ],
+    "deployFunctions": ["revenuecat-webhook (NEW)", "sync-revenuecat-subscription (UPDATED)", "delete-user-account (UPDATED)"],
+    "note": "send-daily-prompt cron must send header x-cron-secret: $CRON_SECRET — the snippet in the old root APP_REVIEW_NOTES.md omitted it and would 401."
+  },
+
+  "oneSignal": {
+    "appId": "CAPTURE from OneSignal dashboard (Settings → Keys & IDs)",
+    "iosPushCertificate": "Configure APNs (p8 key upload happens in OneSignal dashboard — user-assisted, never in chat)",
+    "externalIdMapping": "Supabase auth user id is used as the OneSignal external user id"
+  },
+
+  "universalLinks": {
+    "aasaPath": "https://foundermodeadvice.com/.well-known/apple-app-site-association",
+    "requiredContent": {
+      "applinks": {
+        "apps": [],
+        "details": [
+          { "appID": "<APPLE_TEAM_ID>.com.foundermodeadvice.app", "paths": ["*"] }
+        ]
+      }
+    },
+    "status": "NOT DEPLOYED — requires the Apple Team ID; without it, universal links stay dormant (custom scheme still works). Add the file under public/.well-known/ once the Team ID is known, served as application/json without redirect."
+  },
+
+  "screenshots": {
+    "iphone69": "1320x2868 portrait (3-10 images)",
+    "ipad13": "2064x2752 portrait (3-10 images)",
+    "rawCaptures": "app-store-assets/screenshots/raw-web-captures/",
+    "brief": "docs/app-store/SCREENSHOT_BRIEF.md"
+  }
+}

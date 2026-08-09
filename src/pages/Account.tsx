@@ -313,13 +313,24 @@ const Account = () => {
                         This action cannot be undone. This will permanently delete your
                         account and remove all your data from our servers.
                         {subscription?.tier !== 'free' && (
-                          <p className="mt-2 font-semibold text-amber-600">
-                            Note: If you have an active subscription, please cancel it in the App Store/Stripe before deleting your account.
-                          </p>
+                          <span className="mt-2 block font-semibold text-amber-600">
+                            Deleting your account does not cancel an active subscription —
+                            Apple (or your payment provider) will keep billing you until you
+                            cancel it. Cancel first via Manage Subscription below.
+                          </span>
                         )}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
+                      {subscription?.tier !== 'free' && (
+                        <Button
+                          variant="outline"
+                          disabled={isBillingBusy}
+                          onClick={handleManageSubscription}
+                        >
+                          Manage Subscription
+                        </Button>
+                      )}
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={handleDeleteAccount}

@@ -1,5 +1,7 @@
 # Founder Mode Advice — App Store Listing Copy
 
+> **SUPERSEDED (2026-08-09):** current listing copy (multi-source positioning, both paid plans) is [`docs/app-store/APP_STORE_METADATA.md`](app-store/APP_STORE_METADATA.md) and `native/store.config.json`. The YouTube-only copy below is outdated.
+
 ## App Name
 Founder Mode Advice
 
