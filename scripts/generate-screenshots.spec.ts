@@ -8,10 +8,8 @@ const DEMO_PASSWORD = process.env.APP_SCREENSHOT_PASSWORD;
 
 // App Store / Play Store representative device sizes.
 const DEVICES = [
-  { name: 'iphone-6.7', width: 1290, height: 2796 },
-  { name: 'iphone-6.5', width: 1242, height: 2688 },
-  { name: 'ipad-12.9', width: 2048, height: 2732 },
-  { name: 'android-phone', width: 1080, height: 2400 },
+  { name: 'iphone-6.9', width: 1320, height: 2868 },
+  { name: 'ipad-13', width: 2064, height: 2752 },
 ];
 
 async function captureScreenshots(page: Page, name: string) {

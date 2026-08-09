@@ -8,6 +8,7 @@ import * as WebBrowser from "expo-web-browser";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  AppState,
   BackHandler,
   Linking,
   Platform,
@@ -111,7 +112,7 @@ type PurchasesUIModule = typeof import("react-native-purchases-ui").default;
 
 function loadPurchases(): PurchasesModule | null {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     return require("react-native-purchases").default ?? null;
   } catch {
     return null;
@@ -120,7 +121,7 @@ function loadPurchases(): PurchasesModule | null {
 
 function loadPurchasesUI(): PurchasesUIModule | null {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     return require("react-native-purchases-ui").default ?? null;
   } catch {
     return null;
@@ -131,7 +132,7 @@ function loadPurchasesUI(): PurchasesUIModule | null {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function loadOneSignal(): any | null {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     return require("react-native-onesignal").OneSignal ?? null;
   } catch {
     return null;
@@ -211,6 +212,8 @@ function Shell() {
   const [dark, setDark] = useState(true);
   const [background, setBackground] = useState("#0c0e15");
   const [webViewKey, setWebViewKey] = useState(0);
+  const [revenueCatReady, setRevenueCatReady] = useState(false);
+  const purchaseInFlight = useRef(false);
   const incomingUrl = ExpoLinking.useURL();
 
   // Keep Android nav bar / root view in sync with the web theme.
@@ -305,7 +308,7 @@ function Shell() {
           break;
 
         case "identify": {
-          await configureRevenueCat(message.userId);
+          setRevenueCatReady(Boolean(await configureRevenueCat(message.userId)));
           const OneSignal = loadOneSignal();
           if (OneSignal && extra.oneSignalAppId) {
             try {
@@ -321,21 +324,28 @@ function Shell() {
           const OneSignal = loadOneSignal();
           try {
             OneSignal?.logout();
-          } catch {}
+          } catch {
+            // Logout cleanup is best-effort.
+          }
           const Purchases = loadPurchases();
           if (Purchases && revenueCatConfigured) {
             try {
               await Purchases.logOut();
-            } catch {}
+            } catch {
+              // RevenueCat may already be anonymous.
+            }
           }
           break;
         }
 
         case "paywall": {
+          if (purchaseInFlight.current) break;
+          purchaseInFlight.current = true;
           const Purchases = await configureRevenueCat(message.userId);
           const RevenueCatUI = loadPurchasesUI();
           if (!Purchases || !RevenueCatUI) {
             console.warn("Paywall unavailable (Expo Go or missing RevenueCat key)");
+            purchaseInFlight.current = false;
             break;
           }
           try {
@@ -351,6 +361,8 @@ function Shell() {
             }
           } catch (err) {
             console.warn("Paywall failed", err);
+          } finally {
+            purchaseInFlight.current = false;
           }
           break;
         }
@@ -384,9 +396,10 @@ function Shell() {
             break;
           }
           try {
-            await Purchases.restorePurchases();
-            ackRestore(true);
-            notifyPurchaseSuccess();
+            const info = await Purchases.restorePurchases();
+            const restored = Object.keys(info.entitlements.active).length > 0;
+            ackRestore(restored);
+            if (restored) notifyPurchaseSuccess();
           } catch (err) {
             console.warn("Restore failed", err);
             ackRestore(false);
@@ -413,7 +426,9 @@ function Shell() {
                 ? { message: message.text || message.title || "", url: message.url }
                 : { message: [message.text, message.url].filter(Boolean).join("\n") },
             );
-          } catch {}
+          } catch {
+            // The user may dismiss the native share sheet.
+          }
           break;
 
         case "openExternal":
@@ -443,6 +458,25 @@ function Shell() {
       }
     }
   }, []);
+
+  // Keep server-enforced access in sync when StoreKit changes while the app is
+  // running (renewal, revocation, billing recovery, or another-device purchase).
+  useEffect(() => {
+    if (!revenueCatReady) return;
+    const Purchases = loadPurchases();
+    if (!Purchases) return;
+    const onCustomerInfo = () => notifyPurchaseSuccess();
+    Purchases.addCustomerInfoUpdateListener(onCustomerInfo);
+    const appState = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        void Purchases.getCustomerInfo().then(onCustomerInfo).catch(() => {});
+      }
+    });
+    return () => {
+      Purchases.removeCustomerInfoUpdateListener(onCustomerInfo);
+      appState.remove();
+    };
+  }, [notifyPurchaseSuccess, revenueCatReady]);
 
   const onShouldStartLoadWithRequest = useCallback((request: WebViewNavigation) => {
     const { url } = request;
