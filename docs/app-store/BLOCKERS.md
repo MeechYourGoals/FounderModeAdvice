@@ -16,14 +16,14 @@ documented. See APP_STORE_READINESS.md for the full matrix.
 | 7 | **Production EAS build + TestFlight run of the FINAL TEST GATE** (purchases, restore, deletion, iPad QA) — nothing in this sandbox can execute an iOS binary | Owner devices | RELEASE_CHECKLIST.md §Test gate |
 | 8 | **App-record screenshots** — authenticated storyboard frames + paywall review screenshot need the seeded demo account and a native build | Owner/designer | SCREENSHOT_BRIEF.md |
 
-## Decisions pending (defaults proposed — confirm before console work)
+## Decisions
 
-| # | Decision | Recommendation | Why it's open |
-| --- | --- | --- | --- |
-| D1 | **RevenueCat entitlement structure** | Option A: two entitlements (`seed_subscription`, `series_z_subscription`), one per tier | Repo supports both shapes; single-entitlement over-grants C-Suite → Boardroom (REVENUECAT_MAPPING.md) |
-| D2 | **Territories** | All territories (Apple default), EU only after DSA trader info is ready | Never established in repo/site; EU adds DSA requirements |
-| D3 | **iPad in v1** | SHIP iPad (supportsTablet already true; responsive layouts exist; orientations configured) — pull only if TestFlight iPad QA (test-gate step 20) finds material breakage | Real-device QA impossible from this sandbox |
-| D4 | **Annual plans / trials** | v1 = monthly only, no trials (matches code, site, Paddle) | Test-gate mention of "annual" has no product backing — adding SKUs is a business decision |
+| # | Decision | Status |
+| --- | --- | --- |
+| D1 | **RevenueCat entitlement structure** | ✅ CONFIRMED by owner 2026-08-09: Option A — two entitlements, `seed_subscription` ← seed_monthly and `series_z_subscription` ← series_z_monthly (as specified in REVENUECAT_MAPPING.md) |
+| D2 | **Territories** | ✅ CONFIRMED by owner 2026-08-09: ALL territories; complete the EU DSA trader declaration (publishable address/contact) during ASC setup so EU isn't dropped |
+| D3 | **iPad in v1** | Proposed: SHIP iPad (supportsTablet true; responsive layouts; orientations configured) — pull only if TestFlight iPad QA (test-gate step 20) finds material breakage |
+| D4 | **Annual plans / trials** | Proposed: v1 = monthly only, no trials (matches code, site, Paddle) — adding SKUs later is a business decision |
 
 ## Known accepted risks (not blockers, disclosed)
 
