@@ -23,7 +23,7 @@ const TermsOfService = () => {
 
         <div className="prose prose-slate dark:prose-invert max-w-none space-y-6">
           <p className="text-muted-foreground italic">
-            Last Updated: {new Date().toLocaleDateString()}
+            Last Updated: August 9, 2026
           </p>
 
           <section>
@@ -75,8 +75,16 @@ const TermsOfService = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">4. Payments &amp; Subscriptions</h2>
             <p>
-              Our order process is conducted by our online reseller{" "}
-              <strong>Paddle.com</strong>. Paddle.com is the Merchant of Record for all our
+              <strong>Purchases inside our iOS or Android app</strong> are processed by Apple
+              (App Store) or Google (Google Play) as auto-renewing subscriptions billed to
+              your Apple Account or Google account. The price, billing period, and renewal
+              terms are shown at checkout; you can manage or cancel anytime in your device's
+              subscription settings, and Apple/Google handle billing and refunds under their
+              terms.
+            </p>
+            <p>
+              <strong>Purchases on our website</strong> are conducted by our online reseller{" "}
+              <strong>Paddle.com</strong>. Paddle.com is the Merchant of Record for our web
               orders. Paddle provides all customer service inquiries and handles returns. By
               purchasing a subscription, you also agree to Paddle's{" "}
               <a

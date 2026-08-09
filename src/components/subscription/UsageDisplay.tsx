@@ -4,7 +4,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Users, Bookmark, Video, Crown, Settings } from 'lucide-react';
-import { TIER_PRICING } from '@/types/subscription';
+import { TIER_PRICING, tierPriceLabel } from '@/types/subscription';
 import { cn } from '@/lib/utils';
 
 interface UsageDisplayProps {
@@ -13,7 +13,7 @@ interface UsageDisplayProps {
 }
 
 export function UsageDisplay({ showUpgrade = true, compact = false }: UsageDisplayProps) {
-  const { subscription, loading, upgradeTo, manageSubscription } = useSubscription();
+  const { subscription, loading, upgradeTo, manageSubscription, isNative } = useSubscription();
 
   if (loading || !subscription) {
     return (
@@ -145,7 +145,7 @@ export function UsageDisplay({ showUpgrade = true, compact = false }: UsageDispl
             <CardDescription>
               {tier === 'free'
                 ? 'Upgrade for more profiles, bookmarks, and analyses'
-                : tierInfo.priceDisplay}
+                : tierPriceLabel(tier, { native: isNative })}
             </CardDescription>
           </div>
           {tier !== 'free' && (

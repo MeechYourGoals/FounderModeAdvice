@@ -1,7 +1,11 @@
 import { readFileSync } from 'node:fs';
 
 const clientSource = readFileSync(new URL('../src/types/subscription.ts', import.meta.url), 'utf8');
-const edgeSource = readFileSync(new URL('../supabase/functions/sync-revenuecat-subscription/index.ts', import.meta.url), 'utf8');
+// The edge-side map lives in the shared module used by BOTH the
+// sync-revenuecat-subscription function and the revenuecat-webhook function.
+const edgeSource = readFileSync(new URL('../supabase/functions/_shared/revenuecat.ts', import.meta.url), 'utf8');
+const syncSource = readFileSync(new URL('../supabase/functions/sync-revenuecat-subscription/index.ts', import.meta.url), 'utf8');
+const webhookSource = readFileSync(new URL('../supabase/functions/revenuecat-webhook/index.ts', import.meta.url), 'utf8');
 
 const requiredMappings = new Map([
   ['Founder Mode Advisor Pro', 'series_z'],
@@ -37,4 +41,11 @@ for (const helper of requiredClientHelpers) {
   assertContains(clientSource, helper, 'client subscription helpers');
 }
 
-console.log(`Verified ${requiredMappings.size} RevenueCat identifier mappings across client and edge function.`);
+// Both entitlement-writing functions must consume the shared verifier so the
+// map can never fork between them again.
+assertContains(syncSource, 'syncUserEntitlements', 'sync function');
+assertContains(syncSource, '_shared/revenuecat.ts', 'sync function import');
+assertContains(webhookSource, 'syncUserEntitlements', 'webhook function');
+assertContains(webhookSource, '_shared/revenuecat.ts', 'webhook function import');
+
+console.log(`Verified ${requiredMappings.size} RevenueCat identifier mappings across client and edge functions.`);

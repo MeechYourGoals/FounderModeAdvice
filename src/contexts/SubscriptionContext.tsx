@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { useAuth } from '@/hooks/useAuth';
 import { useDespia } from '@/hooks/use-despia';
@@ -125,6 +125,25 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     };
   }, [isDespiaApp, isShellApp, refreshSubscription]);
 
+  // Entitlement freshness on foreground: renewals, cancellations, billing
+  // issues, and cross-device purchases land in Supabase (RevenueCat webhook /
+  // Paddle webhook), so re-reading on every return to the app keeps gating
+  // honest without touching the store SDKs. Throttled to avoid visibility
+  // flapping hammering the backend.
+  const lastForegroundRefreshRef = useRef(0);
+  useEffect(() => {
+    if (!user) return;
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      const now = Date.now();
+      if (now - lastForegroundRefreshRef.current < 30_000) return;
+      lastForegroundRefreshRef.current = now;
+      void refreshSubscription();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [user, refreshSubscription]);
+
   // Initialize RevenueCat and load subscription on mount
   useEffect(() => {
     async function init() {
@@ -168,32 +187,41 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     await refreshSubscription();
   }, [refreshSubscription]);
 
+  // One purchase flow at a time — a double-tap on any Upgrade button must
+  // not stack paywalls or checkouts.
+  const upgradeInFlightRef = useRef(false);
+
   const upgradeTo = useCallback(async (tier: SubscriptionTier) => {
     if (tier === 'free') return;
-
-    if (isDespiaApp || isNative || isShellApp) {
-      // Native: RevenueCat paywall.
-      const result = await presentPaywallService(REVENUECAT_ENTITLEMENTS.PRO);
-      if (result === 'PURCHASED' || result === 'RESTORED') {
-        await refreshSubscription();
+    if (upgradeInFlightRef.current) return;
+    upgradeInFlightRef.current = true;
+    try {
+      if (isDespiaApp || isNative || isShellApp) {
+        // Native: RevenueCat paywall.
+        const result = await presentPaywallService(REVENUECAT_ENTITLEMENTS.PRO);
+        if (result === 'PURCHASED' || result === 'RESTORED') {
+          await refreshSubscription();
+        }
+      } else {
+        // Web: Paddle overlay checkout.
+        const { initializePaddle, getPaddlePriceId } = await import('@/lib/paddle');
+        await initializePaddle();
+        const priceId = tier === 'seed' ? 'c_suite_monthly' : 'boardroom_monthly';
+        const paddlePriceId = await getPaddlePriceId(priceId);
+        window.Paddle.Checkout.open({
+          items: [{ priceId: paddlePriceId, quantity: 1 }],
+          customer: user?.email ? { email: user.email } : undefined,
+          customData: { userId: user?.id ?? '' },
+          settings: {
+            displayMode: 'overlay',
+            successUrl: `${window.location.origin}/?checkout=success`,
+            allowLogout: false,
+            variant: 'one-page',
+          },
+        });
       }
-    } else {
-      // Web: Paddle overlay checkout.
-      const { initializePaddle, getPaddlePriceId } = await import('@/lib/paddle');
-      await initializePaddle();
-      const priceId = tier === 'seed' ? 'c_suite_monthly' : 'boardroom_monthly';
-      const paddlePriceId = await getPaddlePriceId(priceId);
-      window.Paddle.Checkout.open({
-        items: [{ priceId: paddlePriceId, quantity: 1 }],
-        customer: user?.email ? { email: user.email } : undefined,
-        customData: { userId: user?.id ?? '' },
-        settings: {
-          displayMode: 'overlay',
-          successUrl: `${window.location.origin}/?checkout=success`,
-          allowLogout: false,
-          variant: 'one-page',
-        },
-      });
+    } finally {
+      upgradeInFlightRef.current = false;
     }
   }, [isNative, isDespiaApp, isShellApp, refreshSubscription, user]);
 

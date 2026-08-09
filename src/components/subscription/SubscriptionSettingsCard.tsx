@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CreditCard, RotateCcw, Users, Bookmark, Video } from "lucide-react";
-import { TIER_PRICING, isUnlimited } from "@/types/subscription";
+import { TIER_PRICING, isUnlimited, tierPriceLabel } from "@/types/subscription";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 
 /**
@@ -71,8 +71,8 @@ export function SubscriptionSettingsCard() {
               {!isFree && <Badge variant="secondary">Active</Badge>}
             </div>
           </div>
-          <p className="text-lg font-semibold text-primary">
-            {isFree ? "Free" : tierInfo.priceDisplay}
+          <p className={isNative && !isFree ? "text-sm font-medium text-muted-foreground" : "text-lg font-semibold text-primary"}>
+            {tierPriceLabel(tier, { native: isNative })}
           </p>
         </div>
 

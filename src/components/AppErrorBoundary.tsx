@@ -70,7 +70,7 @@ export class AppErrorBoundary extends Component<Props, State> {
         </p>
         <p style={{ fontSize: "0.9rem", color: "#9aa1b5", maxWidth: "26rem", margin: 0 }}>
           Your analyses and bookmarks are safe. Reload to pick up where you left off — if this
-          keeps happening, email support@foundermodeadvice.com.
+          keeps happening, email CA@saintmarlolabs.com.
         </p>
         <button
           onClick={() => window.location.reload()}

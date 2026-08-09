@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge';
 import { Check, Crown, Star, ArrowUp } from 'lucide-react';
 import { TIER_PRICING, type SubscriptionTier, type TierPricing } from '@/types/subscription';
+import { SubscriptionDisclosure } from './SubscriptionDisclosure';
 import { cn } from '@/lib/utils';
 
 interface PricingPlansProps {
@@ -12,7 +13,7 @@ interface PricingPlansProps {
 }
 
 export function PricingPlans({ onSelect, showCurrentPlan = true }: PricingPlansProps) {
-  const { subscription, upgradeTo, loading } = useSubscription();
+  const { subscription, upgradeTo, loading, isNative } = useSubscription();
 
   const tiers = Object.entries(TIER_PRICING) as [SubscriptionTier, TierPricing][];
 
@@ -42,9 +43,13 @@ export function PricingPlans({ onSelect, showCurrentPlan = true }: PricingPlansP
           const isCurrentPlan = subscription?.tier === tierKey;
           const isUpgrade = subscription?.tier === 'free' ||
             (subscription?.tier === 'seed' && tierKey === 'series_z');
+          // Native app contexts never show a fixed USD amount — the App Store
+          // checkout (RevenueCat paywall) presents the exact localized price.
           const { price, suffix } = tierKey === 'free'
             ? { price: 'Free', suffix: '' }
-            : { price: `$${tier.price}`, suffix: '/month' };
+            : isNative
+              ? { price: 'Monthly', suffix: ' · price shown at checkout' }
+              : { price: `$${tier.price}`, suffix: '/month' };
 
           return (
             <Card
@@ -120,6 +125,8 @@ export function PricingPlans({ onSelect, showCurrentPlan = true }: PricingPlansP
           );
         })}
       </div>
+
+      <SubscriptionDisclosure />
     </div>
   );
 }
