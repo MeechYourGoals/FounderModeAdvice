@@ -26,7 +26,10 @@
     "test:subscription-mapping": "node scripts/verify-subscription-mapping.mjs",
     "verify:deploy": "node scripts/verify-deploy.mjs",
     "build:verify": "vite build && node scripts/verify-deploy.mjs",
-    "screenshots": "npx --yes @playwright/test@1.56.1 test scripts/generate-screenshots.spec.ts"
+    "screenshots": "npx --yes @playwright/test@1.56.1 test scripts/generate-screenshots.spec.ts",
+    "screenshots:capture": "node scripts/capture-app-store-frames.mjs",
+    "screenshots:compose": "python3 scripts/compose-app-store-screenshots.py",
+    "screenshots:app-store": "node scripts/capture-app-store-frames.mjs && python3 scripts/compose-app-store-screenshots.py"
   },
   "dependencies": {
     "@capacitor/app": "^6.0.0",
@@ -111,6 +114,7 @@
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^15.15.0",
     "lovable-tagger": "^1.1.10",
+    "playwright": "^1.56.1",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",

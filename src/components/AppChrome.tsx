@@ -41,7 +41,11 @@ export const AppChrome = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, loading]);
 
-  const hideNav = loading || !user || NAV_HIDDEN_ROUTES.includes(pathname);
+  const hideNav =
+    loading ||
+    !user ||
+    NAV_HIDDEN_ROUTES.includes(pathname) ||
+    pathname.startsWith("/__screenshots");
   if (hideNav) return null;
 
   const isHome = pathname === "/";
