@@ -86,6 +86,35 @@ type ViewMode = "chronological" | "tag" | "folder";
 
 const PAGE_SIZE = 15;
 
+const parseIndustries = (industryString: string | null | undefined): string[] => {
+  if (!industryString) return [];
+  return [...new Set(industryString.split(/[,\/]/).map(i => i.trim()).filter(Boolean))];
+};
+
+const getEpisodeTags = (ep: Episode): string[] => {
+  const names = new Set<string>();
+  ep.lessons?.forEach(l => l.lesson_tags?.forEach(lt => {
+    const n = lt.tags?.name?.trim();
+    if (n) names.add(n);
+  }));
+  return Array.from(names);
+};
+
+const SortIcon = ({
+  col,
+  sortColumn,
+  sortDirection
+}: {
+  col: SortColumn,
+  sortColumn: SortColumn,
+  sortDirection: SortDirection
+}) => {
+  if (sortColumn !== col) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-40" />;
+  return sortDirection === "asc"
+    ? <ArrowUp className="w-3 h-3 ml-1" />
+    : <ArrowDown className="w-3 h-3 ml-1" />;
+};
+
 export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [allEpisodes, setAllEpisodes] = useState<Episode[]>([]);
@@ -142,20 +171,6 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const parseIndustries = (industryString: string | null | undefined): string[] => {
-    if (!industryString) return [];
-    return [...new Set(industryString.split(/[,\/]/).map(i => i.trim()).filter(Boolean))];
-  };
-
-  const getEpisodeTags = (ep: Episode): string[] => {
-    const names = new Set<string>();
-    ep.lessons?.forEach(l => l.lesson_tags?.forEach(lt => {
-      const n = lt.tags?.name?.trim();
-      if (n) names.add(n);
-    }));
-    return Array.from(names);
-  };
-
   const toggleIndustryFilter = (industry: string) => {
     triggerHapticFeedback('light');
     setSelectedIndustries(prev => {
@@ -192,32 +207,39 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     });
   };
 
-  // Derive unique options
-  const uniqueFounders = useMemo(() => {
-    const s = new Set<string>();
-    allEpisodes.forEach(ep => ep.founder_names?.split(',').forEach(n => s.add(n.trim())));
-    return Array.from(s).sort();
-  }, [allEpisodes]);
+  // Derive unique options (facets) in a single pass for better performance
+  const { uniqueFounders, uniqueCompanies, uniqueYears, uniqueTags } = useMemo(() => {
+    const foundersSet = new Set<string>();
+    const companiesSet = new Set<string>();
+    const yearsSet = new Set<string>();
+    const tagCounts = new Map<string, number>();
 
-  const uniqueCompanies = useMemo(() => {
-    const s = new Set<string>();
-    allEpisodes.forEach(ep => ep.companies?.name && s.add(ep.companies.name));
-    return Array.from(s).sort();
-  }, [allEpisodes]);
-
-  const uniqueYears = useMemo(() => {
-    const s = new Set<string>();
-    allEpisodes.forEach(ep => ep.release_date && s.add(ep.release_date.slice(0, 4)));
-    return Array.from(s).sort().reverse();
-  }, [allEpisodes]);
-
-  // Unique tags with counts, sorted by frequency desc
-  const uniqueTags = useMemo(() => {
-    const counts = new Map<string, number>();
     allEpisodes.forEach(ep => {
-      getEpisodeTags(ep).forEach(t => counts.set(t, (counts.get(t) || 0) + 1));
+      // Founders
+      ep.founder_names?.split(',').forEach(n => foundersSet.add(n.trim()));
+
+      // Companies
+      if (ep.companies?.name) {
+        companiesSet.add(ep.companies.name);
+      }
+
+      // Years
+      if (ep.release_date) {
+        yearsSet.add(ep.release_date.slice(0, 4));
+      }
+
+      // Tags
+      getEpisodeTags(ep).forEach(t => {
+        tagCounts.set(t, (tagCounts.get(t) || 0) + 1);
+      });
     });
-    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+
+    return {
+      uniqueFounders: Array.from(foundersSet).sort(),
+      uniqueCompanies: Array.from(companiesSet).sort(),
+      uniqueYears: Array.from(yearsSet).sort().reverse(),
+      uniqueTags: Array.from(tagCounts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])),
+    };
   }, [allEpisodes]);
 
   // Filter → Sort → Paginate
@@ -312,12 +334,6 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     setCurrentPage(1);
   };
 
-  const SortIcon = ({ col }: { col: SortColumn }) => {
-    if (sortColumn !== col) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-40" />;
-    return sortDirection === "asc"
-      ? <ArrowUp className="w-3 h-3 ml-1" />
-      : <ArrowDown className="w-3 h-3 ml-1" />;
-  };
 
   const fetchEpisodes = async () => {
     try {
@@ -1033,22 +1049,22 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
               <TableHeader>
                 <TableRow>
                   <TableHead className="cursor-pointer select-none" onClick={() => handleSort("title")}>
-                    <span className="flex items-center">Episode<SortIcon col="title" /></span>
+                    <span className="flex items-center">Episode<SortIcon col="title" sortColumn={sortColumn} sortDirection={sortDirection} /></span>
                   </TableHead>
                   <TableHead className="cursor-pointer select-none" onClick={() => handleSort("company")}>
-                    <span className="flex items-center">Company<SortIcon col="company" /></span>
+                    <span className="flex items-center">Company<SortIcon col="company" sortColumn={sortColumn} sortDirection={sortDirection} /></span>
                   </TableHead>
                   <TableHead className="cursor-pointer select-none" onClick={() => handleSort("founder")}>
-                    <span className="flex items-center">Speaker(s)<SortIcon col="founder" /></span>
+                    <span className="flex items-center">Speaker(s)<SortIcon col="founder" sortColumn={sortColumn} sortDirection={sortDirection} /></span>
                   </TableHead>
                   <TableHead className="cursor-pointer select-none" onClick={() => handleSort("stage")}>
-                    <span className="flex items-center">Stage<SortIcon col="stage" /></span>
+                    <span className="flex items-center">Stage<SortIcon col="stage" sortColumn={sortColumn} sortDirection={sortDirection} /></span>
                   </TableHead>
                   <TableHead className="cursor-pointer select-none" onClick={() => handleSort("industry")}>
-                    <span className="flex items-center">Industry<SortIcon col="industry" /></span>
+                    <span className="flex items-center">Industry<SortIcon col="industry" sortColumn={sortColumn} sortDirection={sortDirection} /></span>
                   </TableHead>
                   <TableHead className="cursor-pointer select-none" onClick={() => handleSort("created_at")}>
-                    <span className="flex items-center">Date Added<SortIcon col="created_at" /></span>
+                    <span className="flex items-center">Date Added<SortIcon col="created_at" sortColumn={sortColumn} sortDirection={sortDirection} /></span>
                   </TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
