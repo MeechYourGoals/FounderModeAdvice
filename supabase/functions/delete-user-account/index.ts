@@ -19,11 +19,16 @@ const USER_OWNED_TABLES = [
   "bookmark_folders",
   "episode_folders",
   "personalized_insights",
+  "user_favorites",
+  "favorite_collections",
   "user_notification_prefs",
   "user_onboarding",
   "user_monthly_usage",
   "user_startup_profiles",
   "user_roles",
+  // Paddle audit rows for this user (Paddle retains its own MoR records
+  // outside Supabase — see retainedForCompliance below).
+  "subscriptions",
   "user_subscriptions",
 ] as const;
 
@@ -32,12 +37,22 @@ const USER_ANALYSIS_TABLES = [
   // user's own comments cascade when insight_comments rows are removed).
   { table: "insight_comment_mentions", column: "mentioned_user_id" },
   { table: "insight_comments", column: "author_user_id" },
+  { table: "analysis_discussion_messages", column: "author_user_id" },
+  // Analysis-level sharing: access this user granted or received, and
+  // invites they sent or accepted.
+  { table: "analysis_access_grants", column: "grantee_user_id" },
+  { table: "analysis_access_grants", column: "granted_by_user_id" },
+  { table: "analysis_invites", column: "invited_by_user_id" },
+  { table: "analysis_invites", column: "accepted_by_user_id" },
   { table: "episodes", column: "analyzed_by" },
   // Invites the user sent (invites on their own folders also cascade above).
   { table: "folder_invites", column: "invited_by_user_id" },
 ] as const;
 
-const USER_STORAGE_BUCKETS = ["startup-decks", "exports"] as const;
+// All buckets that store objects under a `<userId>/` prefix. `source-uploads`
+// holds private documents awaiting analysis (normally deleted right after
+// processing, but failed/abandoned runs can leave files behind).
+const USER_STORAGE_BUCKETS = ["startup-decks", "exports", "source-uploads"] as const;
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {

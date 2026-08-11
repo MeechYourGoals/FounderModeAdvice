@@ -19,7 +19,7 @@ const CookiePolicy = () => {
         <h1 className="text-4xl font-bold tracking-tight mb-8">Cookie Policy</h1>
 
         <div className="prose prose-slate dark:prose-invert max-w-none space-y-6">
-          <p className="text-muted-foreground italic">Last Updated: {new Date().toLocaleDateString()}</p>
+          <p className="text-muted-foreground italic">Last Updated: August 9, 2026</p>
 
           <section>
             <h2 className="text-2xl font-semibold mb-4">1. What We Use</h2>

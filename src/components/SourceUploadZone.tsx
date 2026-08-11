@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { Upload, FileText, Loader2, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAIConsent } from "@/hooks/useAIConsent";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { Progress } from "@/components/ui/progress";
 import { UpgradePrompt } from "./subscription";
@@ -42,6 +43,7 @@ export const SourceUploadZone = ({
   const [fileName, setFileName] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const { toast } = useToast();
+  const { ensureAIConsent, aiConsentDialog } = useAIConsent();
   const { refreshSubscription } = useSubscription();
 
   const handleFile = useCallback(
@@ -63,6 +65,10 @@ export const SourceUploadZone = ({
         });
         return;
       }
+
+      // Private documents leave the device for AI processing — get the
+      // one-time disclosure/permission before uploading anything.
+      if (!(await ensureAIConsent())) return;
 
       setDone(false);
       setFileName(file.name);
@@ -154,7 +160,7 @@ export const SourceUploadZone = ({
         }, 2500);
       }
     },
-    [activeProfile, activeProfileId, customPrompt, onProcessingChange, onAnalyzed, refreshSubscription, toast],
+    [activeProfile, activeProfileId, customPrompt, onProcessingChange, onAnalyzed, refreshSubscription, toast, ensureAIConsent],
   );
 
   const handleDrop = useCallback(
@@ -260,6 +266,7 @@ export const SourceUploadZone = ({
       <p className="text-xs text-muted-foreground text-center">
         Private uploads are never shared. We analyze the text and delete the file afterward.
       </p>
+      {aiConsentDialog}
     </div>
   );
 };

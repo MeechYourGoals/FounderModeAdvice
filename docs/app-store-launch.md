@@ -1,5 +1,7 @@
 # App Store Launch Runbook
 
+> **SUPERSEDED (2026-08-09):** build/submit now goes through EAS (see [`docs/app-store/RELEASE_CHECKLIST.md`](app-store/RELEASE_CHECKLIST.md)); asset specs live in [`docs/app-store/SCREENSHOT_BRIEF.md`](app-store/SCREENSHOT_BRIEF.md). Capacitor commands below are historical.
+
 ## Assets needed
 
 ### iOS (App Store Connect)

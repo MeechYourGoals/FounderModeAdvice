@@ -150,6 +150,12 @@ async function configureRevenueCat(userId: string): Promise<PurchasesModule | nu
     console.warn("RevenueCat: no API key configured for", Platform.OS);
     return null;
   }
+  // Belt-and-suspenders with the app.config.ts production build guard: a
+  // RevenueCat Test Store key must never drive purchases in a release build.
+  if (!__DEV__ && apiKey.startsWith("test_")) {
+    console.warn("RevenueCat: refusing Test Store key in a release build");
+    return null;
+  }
 
   try {
     if (!revenueCatConfigured) {
@@ -177,6 +183,7 @@ type BridgeMessage =
   | { type: "customerCenter" }
   | { type: "restorePurchases"; userId?: string }
   | { type: "pushRegister"; userId: string }
+  | { type: "pushPrompt" }
   | { type: "share"; title?: string; text?: string; url?: string }
   | { type: "openExternal"; url: string }
   | { type: "theme"; dark: boolean; backgroundColor: string };
@@ -282,6 +289,10 @@ function Shell() {
     );
   }, []);
 
+  // Drop repeat paywall/customer-center requests while native purchase UI is
+  // up — a double-tap in the web layer must never stack two StoreKit flows.
+  const purchaseUIActiveRef = useRef(false);
+
   const handleMessage = useCallback(
     async (event: WebViewMessageEvent) => {
       // The bridge is app-origin-only: pages from allow-listed third-party
@@ -332,12 +343,14 @@ function Shell() {
         }
 
         case "paywall": {
+          if (purchaseUIActiveRef.current) break;
           const Purchases = await configureRevenueCat(message.userId);
           const RevenueCatUI = loadPurchasesUI();
           if (!Purchases || !RevenueCatUI) {
             console.warn("Paywall unavailable (Expo Go or missing RevenueCat key)");
             break;
           }
+          purchaseUIActiveRef.current = true;
           try {
             const result =
               !message.always && message.requiredEntitlement
@@ -351,18 +364,24 @@ function Shell() {
             }
           } catch (err) {
             console.warn("Paywall failed", err);
+          } finally {
+            purchaseUIActiveRef.current = false;
           }
           break;
         }
 
         case "customerCenter": {
+          if (purchaseUIActiveRef.current) break;
           const RevenueCatUI = loadPurchasesUI();
           if (!RevenueCatUI) break;
+          purchaseUIActiveRef.current = true;
           try {
             await RevenueCatUI.presentCustomerCenter();
             notifyPurchaseSuccess(); // re-sync entitlements after any change
           } catch (err) {
             console.warn("Customer center failed", err);
+          } finally {
+            purchaseUIActiveRef.current = false;
           }
           break;
         }
@@ -395,13 +414,27 @@ function Shell() {
         }
 
         case "pushRegister": {
+          // Silent mapping only — links this device to the signed-in user so
+          // sends can reach devices that already granted permission. The OS
+          // permission prompt is a separate, user-initiated "pushPrompt"
+          // (fired when the user enables a notification preference).
           const OneSignal = loadOneSignal();
           if (!OneSignal || !extra.oneSignalAppId) break;
           try {
             OneSignal.login(message.userId);
-            void OneSignal.Notifications.requestPermission(true);
           } catch (err) {
             console.warn("Push registration failed", err);
+          }
+          break;
+        }
+
+        case "pushPrompt": {
+          const OneSignal = loadOneSignal();
+          if (!OneSignal || !extra.oneSignalAppId) break;
+          try {
+            void OneSignal.Notifications.requestPermission(true);
+          } catch (err) {
+            console.warn("Push permission prompt failed", err);
           }
           break;
         }

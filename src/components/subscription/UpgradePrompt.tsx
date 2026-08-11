@@ -2,7 +2,7 @@ import { useSubscription } from '@/contexts/SubscriptionContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Crown, ArrowRight } from 'lucide-react';
-import { TIER_PRICING } from '@/types/subscription';
+import { TIER_PRICING, tierPriceLabel } from '@/types/subscription';
 
 interface UpgradePromptProps {
   message: string;
@@ -12,7 +12,7 @@ interface UpgradePromptProps {
 }
 
 export function UpgradePrompt({ message, feature, onUpgrade, compact = false }: UpgradePromptProps) {
-  const { upgradeTo } = useSubscription();
+  const { upgradeTo, isNative } = useSubscription();
 
   // Ask-the-video chat, export, and sharing/collaboration are Boardroom-only
   // (sharing is enforced server-side via user_has_boardroom_plan); everything
@@ -61,7 +61,9 @@ export function UpgradePrompt({ message, feature, onUpgrade, compact = false }: 
         <div className="p-4 bg-background/50 rounded-lg border">
           <div className="flex justify-between items-center mb-2">
             <span className="font-semibold">{planTier.displayName}</span>
-            <span className="text-lg font-bold">{planTier.priceDisplay}</span>
+            <span className={isNative ? 'text-sm font-medium text-muted-foreground' : 'text-lg font-bold'}>
+              {tierPriceLabel(targetTier, { native: isNative })}
+            </span>
           </div>
           <ul className="space-y-1">
             {planTier.features.slice(0, 3).map((feature, i) => (

@@ -23,6 +23,7 @@ type ShellMessage =
   | { type: "customerCenter" }
   | { type: "restorePurchases"; userId: string }
   | { type: "pushRegister"; userId: string }
+  | { type: "pushPrompt" }
   | { type: "share"; title: string; text: string; url: string }
   | { type: "openExternal"; url: string }
   | { type: "theme"; dark: boolean; backgroundColor: string };
@@ -101,8 +102,17 @@ export const restoreShellPurchasesAndWait = (
   });
 };
 
+/** Silent device↔user mapping (no OS dialog). Safe to call on every login. */
 export const registerShellPush = (userId: string): void => {
   postToShell({ type: "pushRegister", userId });
+};
+
+/**
+ * Ask the OS for push permission. Only call from a user-initiated, contextual
+ * action (e.g. enabling a notification preference) — never on launch/login.
+ */
+export const promptShellPush = (): void => {
+  postToShell({ type: "pushPrompt" });
 };
 
 export const shareViaShell = (payload: { title: string; text: string; url: string }): boolean =>

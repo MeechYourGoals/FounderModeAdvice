@@ -6,6 +6,7 @@ import { Loader2, ArrowLeft, FastForward, Building2, Check, ChevronDown, Globe, 
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAIConsent } from "@/hooks/useAIConsent";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useActiveProfile } from "@/contexts/ActiveProfileContext";
 import { canBatchAnalyzeProfiles, isUnlimited } from "@/types/subscription";
@@ -65,6 +66,7 @@ export const AnalysisForm = () => {
   const [startupContext, setStartupContext] = useState<any>(null);
   const [selectedProfileIds, setSelectedProfileIds] = useState<string[]>([]);
   const { toast } = useToast();
+  const { ensureAIConsent, aiConsentDialog } = useAIConsent();
   const { subscription, canAnalyzeVideo, refreshSubscription } = useSubscription();
   const { activeProfile, activeProfileId, setActiveProfileId, profiles, refreshProfiles } = useActiveProfile();
   const profileLimit = subscription?.limits.profiles.max || 1;
@@ -223,6 +225,10 @@ export const AnalysisForm = () => {
   ) => {
     const url = (urlArg ?? episodeUrl).trim();
     if (!url) return;
+    // One-time disclosure/permission before content is sent to AI providers.
+    // Batch runs pass `manageState:false` per profile; consent is resolved once
+    // by the first call and instantly for the rest.
+    if (!(await ensureAIConsent())) return { success: false, reason: "consent" as const };
     const manageState = options?.manageState ?? true;
     if (manageState) {
       setIsAnalyzing(true);
@@ -355,6 +361,10 @@ export const AnalysisForm = () => {
         return;
       }
 
+      // Resolve AI-processing consent once up front so a decline doesn't
+      // re-prompt for every profile in the batch.
+      if (!(await ensureAIConsent())) return;
+
       setIsAnalyzing(true);
       const successes: { name: string; episodeId?: string }[] = [];
       const failures: { name: string; message: string }[] = [];
@@ -440,6 +450,7 @@ export const AnalysisForm = () => {
           savedProfiles={savedProfiles}
           isAnalyzing={isAnalyzing}
         />
+        {aiConsentDialog}
       </div>
     );
   }
@@ -755,6 +766,7 @@ export const AnalysisForm = () => {
         )}
       </form>
       )}
+      {aiConsentDialog}
     </Card>
   );
 };

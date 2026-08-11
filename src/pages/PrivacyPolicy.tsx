@@ -22,9 +22,7 @@ const PrivacyPolicy = () => {
         <h1 className="text-4xl font-bold tracking-tight mb-8">Privacy Policy</h1>
 
         <div className="prose prose-slate dark:prose-invert max-w-none space-y-6">
-          <p className="text-muted-foreground italic">
-            Last Updated: {new Date().toLocaleDateString()}
-          </p>
+          <p className="text-muted-foreground italic">Last Updated: August 9, 2026</p>
 
           <section>
             <h2 className="text-2xl font-semibold mb-4">1. Who We Are</h2>
@@ -102,7 +100,7 @@ const PrivacyPolicy = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">4. Sign-In Providers</h2>
             <p>
-              We offer sign-in through third-party OAuth providers (such as Google). The provider
+              We offer sign-in through third-party providers (Google and Apple). The provider
               authenticates you and shares a limited set of profile information with us. We do
               not receive your password. Your use of the provider is also governed by that
               provider's privacy policy.
@@ -150,13 +148,29 @@ const PrivacyPolicy = () => {
                 uploaded decks).
               </li>
               <li>
-                <strong>RevenueCat</strong> — manages mobile in-app subscription entitlements
-                (Apple / Google) where applicable.
+                <strong>Apple / Google Play</strong> — if you subscribe inside our iOS or
+                Android app, the purchase is processed by Apple or Google under their own
+                terms; we never see your payment details.
               </li>
               <li>
-                <strong>AI processing providers</strong> — links, uploaded files, transcripts where
-                available, startup profile context, deck summaries, and chat prompts are sent to
-                our AI gateway to generate the advice you request.
+                <strong>RevenueCat</strong> — manages mobile in-app subscription entitlements
+                (Apple / Google) where applicable. RevenueCat receives your app user ID (a
+                random account identifier) and purchase state, not your payment details.
+              </li>
+              <li>
+                <strong>AI processing providers</strong> — to generate the advice you request,
+                the links, uploaded files, transcripts where available, startup profile
+                context, deck summaries, and chat prompts you submit are sent to{" "}
+                <strong>Google (Gemini models)</strong> via our AI gateway (Lovable AI), and
+                public links you submit are sent to <strong>Supadata</strong> to retrieve
+                transcripts. We do not use your content to train AI models, and we only send
+                what is needed to produce your results.
+              </li>
+              <li>
+                <strong>PostHog</strong> — product analytics in our installed apps. We send
+                explicit usage events (screens viewed, features used) tied to your account
+                identifier; session recording and autocapture are disabled. Used to improve
+                the product, never sold or used for cross-app advertising.
               </li>
               <li>
                 <strong>OneSignal</strong> — if you opt in to push notifications, processes
@@ -213,7 +227,11 @@ const PrivacyPolicy = () => {
             <h2 className="text-2xl font-semibold mb-4">10. AI &amp; Advisory Interactions</h2>
             <p>
               Founder Mode Advice uses AI to analyze the content and context you provide and
-              generate advice tailored to your situation. AI-generated advice is informational
+              generate advice tailored to your situation. Before your first analysis, the app
+              asks for your permission to send the content you submit to the AI providers
+              named in Section 6; you can stop sharing new content at any time simply by not
+              submitting sources, and you can delete previously processed content from your
+              library or by deleting your account. AI-generated advice is informational
               only and is not professional, legal, financial, or investment advice.
             </p>
           </section>

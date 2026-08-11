@@ -13,7 +13,15 @@
       "supportsTablet": true,
       "associatedDomains": ["applinks:foundermodeadvice.com"],
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "Founder Mode Advice uses the camera when you choose “Take Photo” to capture a document, whiteboard, or notes you want analyzed into an operating memo.",
+        "NSPhotoLibraryUsageDescription": "Founder Mode Advice accesses photos you select (for example screenshots of notes or documents) so they can be analyzed into an operating memo.",
+        "UISupportedInterfaceOrientations~ipad": [
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationPortraitUpsideDown",
+          "UIInterfaceOrientationLandscapeLeft",
+          "UIInterfaceOrientationLandscapeRight"
+        ]
       }
     },
     "android": {

@@ -1,0 +1,35 @@
+{
+  "configVersion": 0,
+  "apple": {
+    "copyright": "© 2026 Saint Marlo Labs LLC",
+    "categories": ["BUSINESS", "PRODUCTIVITY"],
+    "info": {
+      "en-US": {
+        "title": "Founder Mode Advice",
+        "subtitle": "Advice memos from any source",
+        "promoText": "Turn any founder interview, investor podcast, article, or private deck into an operating memo for YOUR company — lessons, risks, and next moves, grounded in the source.",
+        "description": "Founder Mode Advice turns the endless stream of founder, investor, and operator content into decisions you can actually execute.\n\nPaste almost any public link — a YouTube interview, podcast episode, article, newsletter, or post — or upload private documents like PDFs, notes, and screenshots on paid plans. In minutes you get a transcript-grounded operating memo: the core lessons, the risks that apply to you, concrete action items, and advice mapped to your company's stage and industry.\n\nBUILT FOR OPERATORS\n• Operating memos, not summaries — every insight is grounded in what was actually said, with impact and action scores\n• Company-aware analysis — create business profiles (stage, industry, model) and get advice tailored to each venture you run or advise\n• Ask follow-up questions — go deeper on any analyzed source with transcript-grounded Q&A (The Boardroom plan)\n• Build a founder intelligence library — organize analyses into folders, bookmark the insights that matter, find them again instantly\n• Share with your team — invite teammates and advisors to shared folders and discuss individual insights (The Boardroom plan)\n• Native app experience — Sign in with Apple, haptics, share sheet, optional daily founder prompt notifications\n\nPLANS\nFree: 1 business profile, 3 source analyses per month, organized library.\nThe C-Suite: 20 analyses/month, private document upload, up to 5 profiles.\nThe Boardroom: unlimited analyses and profiles, Ask-the-video AI chat, exports, multi-profile batch analysis, and team sharing.\n\nPaid plans are auto-renewing monthly subscriptions billed to your Apple Account. The exact price is shown at checkout before you pay, renewal can be cancelled anytime in Settings → Apple Account → Subscriptions, and access continues to the end of the paid period.\n\nFounder Mode Advice analyzes public content and the documents you choose to upload. It is independent and does not provide private access to, or endorsement from, any person referenced in a source, and its output is informational — not professional, legal, financial, or investment advice.\n\nPrivacy Policy: https://foundermodeadvice.com/privacy-policy\nTerms of Use: https://foundermodeadvice.com/terms-of-service",
+        "keywords": [
+          "founder",
+          "startup",
+          "advice",
+          "ai memo",
+          "podcast summary",
+          "transcript",
+          "investor",
+          "vc",
+          "pitch deck",
+          "operator"
+        ],
+        "releaseNotes": "Welcome to Founder Mode Advice 1.0:\n• Turn links, videos, podcasts, and private documents into operating memos\n• Company-aware insights via business profiles\n• Ask-the-video Q&A, exports, and team sharing on The Boardroom\n• Organized library with folders, bookmarks, and search",
+        "marketingUrl": "https://foundermodeadvice.com",
+        "supportUrl": "https://foundermodeadvice.com/contact",
+        "privacyPolicyUrl": "https://foundermodeadvice.com/privacy-policy",
+        "privacyChoicesUrl": "https://foundermodeadvice.com/account-deletion"
+      }
+    },
+    "release": {
+      "automaticRelease": false
+    }
+  }
+}

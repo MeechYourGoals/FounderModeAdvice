@@ -1,44 +1,17 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+# Local env files — EAS environment variables are the source of truth for builds
+.env
+.env.*
+!.env.example
 
-# dependencies
-node_modules/
-
-# Expo
-.expo/
-dist/
-web-build/
-expo-env.d.ts
-
-# Native
-.kotlin/
-*.orig.*
-*.jks
+# Store credentials — never commit
+play-service-account.json
 *.p8
 *.p12
-*.key
 *.mobileprovision
 
-# Metro
-.metro-health-check*
-
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-
-# macOS
-.DS_Store
-*.pem
-
-# local env files
-.env*.local
-
-# typescript
-*.tsbuildinfo
-
-# generated native folders
-/ios
-/android
-
-# EAS submit credentials — never commit
-play-service-account.json
+# Generated native projects (CNG/prebuild) and build output
+ios/
+android/
+dist/
+node_modules/
+.expo/
