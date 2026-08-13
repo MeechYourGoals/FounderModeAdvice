@@ -16,7 +16,8 @@ import { AnalysisShareDialog } from "@/components/AnalysisShareDialog";
 import { InsightComments } from "@/components/InsightComments";
 import { useInsightComments } from "@/hooks/useInsightComments";
 import { hasSharing } from "@/types/subscription";
-import { getAnalysisProfileLabel, isUniversalAnalysis } from "@/lib/analysisProfile";
+import { getAnalysisProfileLabel, getBoardMeetingMemoTitle, getViewerCompanyName, isUniversalAnalysis } from "@/lib/analysisProfile";
+import { toGenericInsightText } from "@/lib/genericLessons";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -236,6 +237,8 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
         .from('episodes')
         .select(`
           id, title, release_date, url, founder_names, analyzed_by, custom_prompt,
+          analyzed_profile_id, analyzed_profile_name_snapshot,
+          user_startup_profiles!episodes_analyzed_profile_id_fkey (company_name),
           companies (name, founding_year, current_stage, funding_raised, valuation, employee_count, industry, status)
         `)
         .eq('id', episodeId)
@@ -655,7 +658,7 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
               <span className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                 <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
               </span>
-              Top Lessons <span className="text-muted-foreground font-normal">({lessons.length})</span>
+              Intriguing Insights <span className="text-muted-foreground font-normal">({lessons.length})</span>
             </h2>
             <p className="text-sm text-muted-foreground mb-4 sm:mb-6 ml-10 sm:ml-11">
               Generic takeaways from the source — not tailored to your business
@@ -680,7 +683,9 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
                       <ScorePill label="Action" score={lesson.actionability_score} />
                     </div>
                   </div>
-                  <p className="text-body-lg text-foreground leading-relaxed max-w-[65ch] mb-2">{lesson.lesson_text}</p>
+                  <p className="text-body-lg text-foreground leading-relaxed max-w-[65ch] mb-2">
+                    {toGenericInsightText(lesson.lesson_text, getViewerCompanyName(episode))}
+                  </p>
                   {lesson.founder_attribution && (
                     <p className="font-display text-sm sm:text-base text-muted-foreground italic">
                       — {lesson.founder_attribution}
@@ -712,12 +717,13 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
               <span className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                 <Target className="w-4 h-4 sm:w-5 sm:h-5" />
               </span>
-              Lessons for Your Profile <span className="text-muted-foreground font-normal">({personalizedInsights.length})</span>
+              {getBoardMeetingMemoTitle(episode)}{" "}
+              <span className="text-muted-foreground font-normal">({personalizedInsights.length})</span>
             </h2>
             <p className="text-sm text-muted-foreground mb-4 sm:mb-6 ml-10 sm:ml-11">
               {isUniversalAnalysis(episode)
-                ? "How each lesson applies in a general business context"
-                : `How each lesson applies specifically to ${getAnalysisProfileLabel(episode)}`}
+                ? "How each insight applies in a general business context"
+                : `How each insight applies specifically to ${getAnalysisProfileLabel(episode)}`}
             </p>
             <div className="space-y-4 sm:space-y-6">
               {lessons.map((lesson) => {
@@ -728,10 +734,10 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
                   <div key={lesson.id} className="space-y-3 sm:space-y-4">
                     <div className="p-3 sm:p-5 bg-card rounded-2xl border border-primary/15 shadow-sm">
                       <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
-                        From Top Lessons
+                        Intriguing Insights
                       </p>
                       <p className="text-sm text-muted-foreground leading-relaxed max-w-[65ch] mb-3 line-clamp-2">
-                        {lesson.lesson_text}
+                        {toGenericInsightText(lesson.lesson_text, getViewerCompanyName(episode))}
                       </p>
 
                       <div className="bg-primary/8 border border-primary/15 p-3 sm:p-4 rounded-xl">

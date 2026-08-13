@@ -130,7 +130,7 @@ export const ExportModal = ({ episodeId, episodeIds, scopeLabel, open, onOpenCha
       const data = await getExportArray();
 
       const csvRows = [];
-      csvRows.push(['Episode Title', 'Analyzed For', 'Company', 'Founders', 'Release Date', 'Top Lesson', 'Category', 'Impact', 'Actionability', 'Lesson for Your Profile', 'Action Items', 'Insight Relevance', 'URL']);
+      csvRows.push(['Episode Title', 'Analyzed For', 'Company', 'Founders', 'Release Date', 'Intriguing Insight', 'Category', 'Impact', 'Actionability', 'Board Meeting Memo', 'Action Items', 'Insight Relevance', 'URL']);
       
       data?.forEach((episode: any) => {
         episode.lessons?.forEach((lesson: any) => {
@@ -184,7 +184,7 @@ export const ExportModal = ({ episodeId, episodeIds, scopeLabel, open, onOpenCha
         markdown += `**URL:** ${episode.url}\n\n`;
         
         if (episode.lessons?.length > 0) {
-          markdown += `### Lessons\n\n`;
+          markdown += `### Intriguing Insights\n\n`;
           episode.lessons.forEach((lesson: any, idx: number) => {
             markdown += `${idx + 1}. **${lesson.lesson_text}**\n`;
             markdown += `   - Category: ${lesson.category || 'N/A'}\n`;
@@ -193,7 +193,7 @@ export const ExportModal = ({ episodeId, episodeIds, scopeLabel, open, onOpenCha
             
             const insight = lesson.personalized_insights?.[0];
             if (insight) {
-              markdown += `\n   **💡 Lesson for your profile (${getAnalysisProfileLabel(episode)}):**\n`;
+              markdown += `\n   **💡 Board Meeting Memo for: ${getAnalysisProfileLabel(episode)}:**\n`;
               markdown += `   ${insight.personalized_text}\n`;
               
               if (insight.action_items && Array.isArray(insight.action_items)) {
@@ -288,7 +288,7 @@ export const ExportModal = ({ episodeId, episodeIds, scopeLabel, open, onOpenCha
 
           autoTable(doc, {
             startY: y,
-            head: [["Lesson", "Imp", "Act", "Insight", "Action Items"]],
+            head: [["Intriguing Insight", "Imp", "Act", "Board Meeting Memo", "Action Items"]],
             body: tableData,
             styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak' },
             headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: 'bold' },

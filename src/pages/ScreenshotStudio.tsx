@@ -322,7 +322,7 @@ function LessonsFrame({ wide }: { wide?: boolean }) {
             <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <TrendingUp className="h-4 w-4" />
             </span>
-            Top Lessons
+            Intriguing Insights
           </h2>
           <p className="text-sm text-muted-foreground mb-4 ml-10">Generic takeaways from the source</p>
           <div className="space-y-3">
