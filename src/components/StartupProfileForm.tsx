@@ -129,7 +129,7 @@ export const StartupProfileForm = ({ onSubmit, savedProfiles = [], isAnalyzing =
       <CardHeader>
         <CardTitle>Startup Context (Optional)</CardTitle>
         <CardDescription>
-          Skip this step for Top Lessons only, or fill in your startup details to also get Lessons for Your Profile
+          Skip this step for Intriguing Insights only, or fill in your startup details to also get a Board Meeting Memo for that company
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -187,7 +187,7 @@ export const StartupProfileForm = ({ onSubmit, savedProfiles = [], isAnalyzing =
                 </div>
               </div>
               <p className="text-xs text-muted-foreground px-4">
-                Toggle on to save your startup details and get Lessons for Your Profile. Leave off to skip personalization and get Top Lessons only.
+                Toggle on to save your startup details and get a Board Meeting Memo for that company. Leave off to skip personalization and get Intriguing Insights only.
               </p>
             </div>
           )}

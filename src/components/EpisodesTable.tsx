@@ -337,6 +337,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
         .from("episodes")
         .select(`
             id, title, release_date, url, founder_names, analysis_status, company_id, created_at,
+            analyzed_profile_id, analyzed_profile_name_snapshot,
             companies (name, founding_year, current_stage, valuation, industry),
             lessons (
                 lesson_tags (

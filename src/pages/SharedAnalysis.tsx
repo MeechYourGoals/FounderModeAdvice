@@ -7,7 +7,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, ExternalLink, Lightbulb, Loader2 } from "lucide-react";
 import { SecondaryPageHeader } from "@/components/SecondaryPageHeader";
-import { getAnalysisProfileLabel } from "@/lib/analysisProfile";
+import { getAnalysisProfileLabel, getBoardMeetingMemoTitle, getViewerCompanyName } from "@/lib/analysisProfile";
+import { toGenericInsightText } from "@/lib/genericLessons";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { InsightComments } from "@/components/InsightComments";
 import { useInsightComments } from "@/hooks/useInsightComments";
@@ -34,7 +35,7 @@ const SharedAnalysis = () => {
     Promise.all([
       supabase
         .from("episodes")
-        .select("id, title, url, founder_names")
+        .select("id, title, url, founder_names, analyzed_profile_id, analyzed_profile_name_snapshot")
         .eq("id", episodeId)
         .single(),
       supabase
@@ -108,16 +109,21 @@ const SharedAnalysis = () => {
             </Card>
 
             <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Top lessons</h2>
+              <h2 className="text-xl font-semibold mb-4">Intriguing Insights</h2>
               <div className="space-y-3">
                 {lessons.map((lesson) => (
                   <div key={lesson.id} className="rounded-xl border border-border/60 bg-muted/20 p-4">
                     <div className="flex items-start gap-2">
                       <Lightbulb className="h-4 w-4 mt-0.5 text-primary shrink-0" />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm leading-relaxed">{lesson.lesson_text}</p>
+                        <p className="text-sm leading-relaxed">
+                          {toGenericInsightText(lesson.lesson_text, getViewerCompanyName(episode))}
+                        </p>
                         {lesson.personalized_insights?.[0]?.personalized_text && (
                           <p className="mt-2 text-xs text-muted-foreground">
+                            <span className="font-medium text-primary">
+                              {getBoardMeetingMemoTitle(episode)}:{" "}
+                            </span>
                             {lesson.personalized_insights[0].personalized_text}
                           </p>
                         )}

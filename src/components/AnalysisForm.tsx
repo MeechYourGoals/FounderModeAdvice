@@ -634,7 +634,7 @@ export const AnalysisForm = () => {
                 className="resize-y text-sm min-h-[92px]"
               />
               <p className="text-xs text-muted-foreground">
-                We’ll tailor every lesson and callout to this. Leave blank for a general analysis.
+                We’ll use this to write the Board Meeting Memo. Leave blank for Intriguing Insights only.
               </p>
             </div>
           )}

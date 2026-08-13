@@ -147,7 +147,7 @@ export const SampleDemo = () => {
                 <div className="grid gap-4 sm:grid-cols-2 sm:items-stretch">
                   <div className="rounded-lg border border-border/60 bg-background/50 p-4 space-y-2 h-full">
                     <p className="text-sm font-medium uppercase tracking-wide text-foreground/70">
-                      Top lesson
+                      Intriguing insight
                     </p>
                     <p className="text-base leading-relaxed text-foreground">
                       {group.general}

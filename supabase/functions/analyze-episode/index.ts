@@ -4,6 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import JSZip from "https://esm.sh/jszip@3.10.1";
 import * as XLSX from "https://esm.sh/xlsx@0.18.5";
 import { getVideoContext, deriveChannelHandle } from "../_shared/transcript.ts";
+import { mentionsViewerCompany, sanitizeLessonText } from "../_shared/genericLessons.ts";
 
 // Canonical topic vocabulary (keep in sync with src/lib/topics.ts).
 const CANONICAL_TOPICS = [
@@ -28,6 +29,65 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+/** Rewrite insights that leaked the viewer's company name; fall back to string sanitization. */
+async function ensureGenericLessons(
+  lessons: { text?: string }[] | undefined,
+  companyName: string | null | undefined,
+  lovableApiKey: string,
+): Promise<void> {
+  if (!lessons?.length || !companyName?.trim()) return;
+
+  const taintedIndexes = lessons
+    .map((lesson, index) => (mentionsViewerCompany(lesson.text || '', companyName) ? index : -1))
+    .filter((index) => index >= 0);
+
+  if (taintedIndexes.length > 0) {
+    try {
+      const payload = taintedIndexes.map((index) => ({ index, text: lessons[index].text }));
+      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${lovableApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            {
+              role: 'user',
+              content: `Rewrite these business insights so they are UNIVERSAL takeaways any operator could use. Do not name, address, or tailor them to "${companyName}" or any specific viewer's company. Keep the same tactical point and source-grounded detail. Do not start with "For [company]". Return ONLY a JSON array of {"index": number, "text": string}.
+
+${JSON.stringify(payload)}`,
+            },
+          ],
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content || '';
+        const match = content.match(/\[[\s\S]*\]/);
+        if (match) {
+          const rewritten = JSON.parse(match[0]) as { index: number; text: string }[];
+          for (const item of rewritten) {
+            if (typeof item?.index === 'number' && typeof item?.text === 'string' && lessons[item.index]) {
+              lessons[item.index].text = item.text;
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Could not rewrite viewer-specific insights:', error);
+    }
+  }
+
+  for (const lesson of lessons) {
+    if (lesson?.text) {
+      lesson.text = sanitizeLessonText(lesson.text, companyName);
+    }
+  }
+}
 
 // YouTube caption extraction and other-platform transcript fetching now live in
 // supabase/functions/_shared/transcript.ts via getVideoContext().
@@ -509,32 +569,32 @@ serve(async (req) => {
     });
 
 
-    // Optional context about the viewer's business — used ONLY for callouts in this pass.
-    // Lessons must stay universal; profile-specific application happens in a later personalization pass.
-    const viewerBusiness = resolvedStartupProfile && (resolvedStartupProfile.company_name || resolvedStartupProfile.industry || resolvedStartupProfile.stage)
-      ? `\n\nViewer's business context (use ONLY when writing the 5 callouts — do NOT name, reference, or tailor the 10 lessons to this business; lessons must stay generic and source-grounded):
-- Business: ${resolvedStartupProfile.company_name || 'Not specified'}
+    // Optional industry/stage for callouts only. Do NOT pass the viewer's company
+    // name here — the model otherwise writes "For {Company}…" into the 10 generic insights.
+    // Profile-specific application happens in a later personalization pass.
+    const viewerBusiness = resolvedStartupProfile && (resolvedStartupProfile.industry || resolvedStartupProfile.stage)
+      ? `\n\nViewer's industry/stage (use ONLY when writing the 5 callouts — do NOT write the 10 insights for a specific company, product, or brand; insights must stay generic and source-grounded):
 - Industry: ${resolvedStartupProfile.industry || 'Not specified'}
-- Stage/type: ${resolvedStartupProfile.stage || 'Not specified'}
-${resolvedStartupProfile.description ? `- About: ${resolvedStartupProfile.description}` : ''}`
+- Stage/type: ${resolvedStartupProfile.stage || 'Not specified'}`
       : '';
 
     // Step 2: Use AI to analyze the episode with tool calling
     const systemPrompt = `You are an expert at extracting practical business lessons from ANY piece of content — articles, blog posts, newsletters, social posts, PDFs, notes, podcasts, and videos — for founders, operators, and business owners across every industry, including local shops, restaurants, agencies, creators, service businesses, ecommerce brands, bootstrapped companies, and venture-backed startups.
 
 CRITICAL REQUIREMENTS:
-- Extract EXACTLY 10 UNIVERSAL tactical lessons ranked by actionability and impact (each 3-4 sentences with specific context from the source)
-- Lessons must be generic takeaways any business builder could use — grounded only in the source content and its examples
-- NEVER name, reference, or tailor a lesson to the viewer's company, product, brand, or business profile (even if that context is provided). Profile-specific advice is generated separately.
+- Extract EXACTLY 10 UNIVERSAL tactical insights ("Intriguing Insights") ranked by actionability and impact (each 3-4 sentences with specific context from the source)
+- Insights must be generic takeaways any business builder could use — grounded only in the source content and its examples
+- Write each insight in third person or as a general operating principle. NEVER open with "For [company]", "At [company]", or address a specific viewer's business
+- NEVER name, reference, or tailor an insight to the viewer's company, product, brand, or business profile (even if that context is provided or implied by custom instructions). Profile-specific advice is generated separately as a Board Meeting Memo
 - You MAY cite companies/products discussed IN THE SOURCE (e.g. Uber, the speaker's company) — but not the viewer's own business
-- Extract EXACTLY 5 business-relevant callouts (key takeaways). If viewer business context is provided, frame callouts for that industry/stage — but still ground them in the source
+- Extract EXACTLY 5 business-relevant callouts (key takeaways). If viewer industry/stage is provided, frame callouts for that industry/stage — but still ground them in the source and do not name a viewer company
 - Research and include actual company data (funding, valuation, stage, employee count) when the subject is a company; mark "Unknown" or "Not disclosed" otherwise
 - Cite specific examples and stories from the source's author or creator
 - DO NOT provide mock or placeholder data
 - Extract the source or publication name from context if not provided
-- Do NOT assume the audience is raising venture capital; keep lessons applicable to many business types
-- Assign relevant TAGS to each lesson (e.g., #marketing, #hiring, #operations, #pricing, #growth)
-- If the user provides their own instructions or question, treat it as the TOP priority: select, frame, and prioritize the lessons and callouts so they directly serve that instruction — while still returning the exact required structure (10 lessons, 5 callouts) and keeping lessons universal (not naming the viewer's company)`;
+- Do NOT assume the audience is raising venture capital; keep insights applicable to many business types
+- Assign relevant TAGS to each insight (e.g., #marketing, #hiring, #operations, #pricing, #growth)
+- If the user provides their own instructions or question, treat it as the TOP priority: select, frame, and prioritize the insights and callouts so they directly serve that instruction — while still returning the exact required structure (10 insights, 5 callouts) and keeping insights universal (not naming or addressing the viewer's company)`;
 
     const userPrompt = `Analyze this content:
 ${isUpload ? `Source: Uploaded document — ${displayFileName}` : `URL: ${sourceUrl}`}
@@ -547,7 +607,7 @@ ${groundingText ? `${groundingLabel}:
 ${groundingText.slice(0, 30000)}` : 'Full text: Not available. Use the title, author, description, and any public knowledge of this source to extract the most useful business lessons you can. If there truly is nothing to work with, return an error rather than mock data.'}${viewerBusiness}${customInstructions ? `
 
 
-THE USER'S OWN INSTRUCTIONS FOR THIS ANALYSIS (highest priority — tailor every lesson and callout to directly serve this, while keeping the required structure):
+THE USER'S OWN INSTRUCTIONS FOR THIS ANALYSIS (highest priority — select and frame the 10 UNIVERSAL insights and 5 callouts to serve this question. Insights must still be generic takeaways that do not name or address the viewer's company):
 """
 ${customInstructions}
 """` : ''}
@@ -557,11 +617,11 @@ INSTRUCTIONS:
 1. Read the actual content and extract real insights from it
 2. Identify the author or creator(s) and the company or topic discussed
 3. Research relevant metrics (funding, valuation, stage, employees, industry) when applicable
-4. Extract EXACTLY 10 UNIVERSAL tactical, actionable lessons with specific context from the author's stories and points — do NOT mention the viewer's company/product/brand in lesson text
-5. Extract EXACTLY 5 business-relevant callouts; if viewer business context is provided, make callouts feel relevant to that business type without rewriting the lessons
-6. Rank lessons by actionability (1-10) and impact (1-10)
-7. Include author attribution for each lesson
-8. Assign 1-3 relevant tags to each lesson (e.g. #growth, #culture, #pricing)
+4. Extract EXACTLY 10 UNIVERSAL tactical, actionable insights with specific context from the author's stories and points — do NOT mention or address the viewer's company/product/brand in insight text
+5. Extract EXACTLY 5 business-relevant callouts; if viewer industry/stage is provided, make callouts feel relevant to that business type without rewriting the insights
+6. Rank insights by actionability (1-10) and impact (1-10)
+7. Include author attribution for each insight
+8. Assign 1-3 relevant tags to each insight (e.g. #growth, #culture, #pricing)
 9. Assign 1-3 TOPICS to the whole source, chosen ONLY from this fixed list: ${CANONICAL_TOPICS.join(", ")}
 10. If you cannot access the content, return an error - do NOT provide mock data`;
 
@@ -612,7 +672,7 @@ INSTRUCTIONS:
                     items: {
                       type: "object",
                       properties: {
-                        text: { type: "string", description: "3-4 sentence UNIVERSAL lesson with specific context from the source. Do not name or reference the viewer's company, product, or brand." },
+                        text: { type: "string", description: "3-4 sentence UNIVERSAL insight with specific context from the source. Do not name, address, or tailor this to the viewer's company, product, or brand. Do not start with 'For [company]'." },
                         impactScore: { type: "integer", minimum: 1, maximum: 10 },
                         actionabilityScore: { type: "integer", minimum: 1, maximum: 10 },
                         category: { type: "string", description: "Primary category e.g., Product, Growth" },
@@ -682,6 +742,11 @@ INSTRUCTIONS:
     }
     
     const analysis = JSON.parse(toolCall.function.arguments);
+    await ensureGenericLessons(
+      analysis.lessons,
+      resolvedStartupProfile?.company_name,
+      lovableApiKey,
+    );
     console.log('Parsed analysis:', JSON.stringify(analysis, null, 2));
 
     // Step 3: Find or create podcast

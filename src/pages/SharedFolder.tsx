@@ -14,7 +14,8 @@ import {
   type SharedFolderDetail,
   type SharedLesson,
 } from "@/services/folderSharing";
-import { getAnalysisProfileLabel } from "@/lib/analysisProfile";
+import { getAnalysisProfileLabel, getBoardMeetingMemoTitle, getViewerCompanyName } from "@/lib/analysisProfile";
+import { toGenericInsightText } from "@/lib/genericLessons";
 
 const SharedFolder = () => {
   const { folderId } = useParams<{ folderId: string }>();
@@ -157,7 +158,9 @@ const SharedFolder = () => {
                               <div className="flex items-start gap-2">
                                 <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                                 <div className="min-w-0">
-                                  <p className="text-sm leading-relaxed">{lesson.lesson_text}</p>
+                                  <p className="text-sm leading-relaxed">
+                                    {toGenericInsightText(lesson.lesson_text, getViewerCompanyName(ep))}
+                                  </p>
                                   {lesson.category && (
                                     <Badge variant="outline" className="mt-2 text-[10px]">
                                       {lesson.category}
@@ -165,7 +168,7 @@ const SharedFolder = () => {
                                   )}
                                   {insight?.personalized_text && (
                                     <p className="mt-2 rounded-lg bg-primary/5 p-2 text-xs text-foreground/80">
-                                      <span className="font-medium text-primary">For your business: </span>
+                                      <span className="font-medium text-primary">{getBoardMeetingMemoTitle(ep)}: </span>
                                       {insight.personalized_text}
                                     </p>
                                   )}
