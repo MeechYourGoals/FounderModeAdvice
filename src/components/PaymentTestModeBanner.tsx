@@ -1,6 +1,9 @@
 import { getPaddleEnvironment } from '@/lib/paddle';
 
 export function PaymentTestModeBanner() {
+  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/__screenshots')) {
+    return null;
+  }
   if (getPaddleEnvironment() !== 'sandbox') return null;
   return (
     <div className="w-full bg-orange-100 border-b border-orange-300 px-4 py-2 text-center text-sm text-orange-800">

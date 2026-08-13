@@ -33,6 +33,7 @@ const ScenariosHub = lazy(() => import("./pages/ScenariosHub"));
 const ScenarioPage = lazy(() => import("./pages/ScenarioPage"));
 const BlogIndex = lazy(() => import("./pages/BlogIndex"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
+const ScreenshotStudio = lazy(() => import("./pages/ScreenshotStudio"));
 import { OfflineBadge } from "@/components/OfflineBadge";
 import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import { AppChrome } from "@/components/AppChrome";
@@ -144,6 +145,10 @@ const App = () => (
               <Route
                 path="/blog/:slug"
                 element={<Suspense fallback={<RouteFallback />}><BlogPost /></Suspense>}
+              />
+              <Route
+                path="/__screenshots/:frame"
+                element={<Suspense fallback={<RouteFallback />}><ScreenshotStudio /></Suspense>}
               />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

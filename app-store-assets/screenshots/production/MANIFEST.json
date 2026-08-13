@@ -1,0 +1,130 @@
+[
+  {
+    "filename": "01-action-iphone-6.9.png",
+    "device": "iphone-6.9",
+    "dimensions": "1320x2868",
+    "source_capture": "app-store-assets/screenshots/raw/action-iphone.png",
+    "headline": "Turn great advice into action",
+    "qa_status": "pass"
+  },
+  {
+    "filename": "02-operating-memo-iphone-6.9.png",
+    "device": "iphone-6.9",
+    "dimensions": "1320x2868",
+    "source_capture": "app-store-assets/screenshots/raw/operating-memo-iphone.png",
+    "headline": "Any source becomes an operating memo",
+    "qa_status": "pass"
+  },
+  {
+    "filename": "03-source-grounded-iphone-6.9.png",
+    "device": "iphone-6.9",
+    "dimensions": "1320x2868",
+    "source_capture": "app-store-assets/screenshots/raw/source-grounded-iphone.png",
+    "headline": "Ground every insight in the source",
+    "qa_status": "pass"
+  },
+  {
+    "filename": "04-lessons-risks-actions-iphone-6.9.png",
+    "device": "iphone-6.9",
+    "dimensions": "1320x2868",
+    "source_capture": "app-store-assets/screenshots/raw/lessons-risks-actions-iphone.png",
+    "headline": "See lessons, risks, and next moves",
+    "qa_status": "pass"
+  },
+  {
+    "filename": "05-follow-up-qa-iphone-6.9.png",
+    "device": "iphone-6.9",
+    "dimensions": "1320x2868",
+    "source_capture": "app-store-assets/screenshots/raw/follow-up-qa-iphone.png",
+    "headline": "Ask follow-ups for your company",
+    "qa_status": "pass"
+  },
+  {
+    "filename": "06-library-iphone-6.9.png",
+    "device": "iphone-6.9",
+    "dimensions": "1320x2868",
+    "source_capture": "app-store-assets/screenshots/raw/library-iphone.png",
+    "headline": "Build your founder intelligence library",
+    "qa_status": "pass"
+  },
+  {
+    "filename": "07-search-iphone-6.9.png",
+    "device": "iphone-6.9",
+    "dimensions": "1320x2868",
+    "source_capture": "app-store-assets/screenshots/raw/search-iphone.png",
+    "headline": "Find the right insight instantly",
+    "qa_status": "pass"
+  },
+  {
+    "filename": "08-save-share-iphone-6.9.png",
+    "device": "iphone-6.9",
+    "dimensions": "1320x2868",
+    "source_capture": "app-store-assets/screenshots/raw/save-share-iphone.png",
+    "headline": "Save and share what matters",
+    "qa_status": "pass"
+  },
+  {
+    "filename": "01-action-ipad-13.png",
+    "device": "ipad-13",
+    "dimensions": "2064x2752",
+    "source_capture": "app-store-assets/screenshots/raw/action-ipad.png",
+    "headline": "Turn great advice into action",
+    "qa_status": "pass"
+  },
+  {
+    "filename": "02-operating-memo-ipad-13.png",
+    "device": "ipad-13",
+    "dimensions": "2064x2752",
+    "source_capture": "app-store-assets/screenshots/raw/operating-memo-ipad.png",
+    "headline": "Any source becomes an operating memo",
+    "qa_status": "pass"
+  },
+  {
+    "filename": "03-source-grounded-ipad-13.png",
+    "device": "ipad-13",
+    "dimensions": "2064x2752",
+    "source_capture": "app-store-assets/screenshots/raw/source-grounded-ipad.png",
+    "headline": "Ground every insight in the source",
+    "qa_status": "pass"
+  },
+  {
+    "filename": "04-lessons-risks-actions-ipad-13.png",
+    "device": "ipad-13",
+    "dimensions": "2064x2752",
+    "source_capture": "app-store-assets/screenshots/raw/lessons-risks-actions-ipad.png",
+    "headline": "See lessons, risks, and next moves",
+    "qa_status": "pass"
+  },
+  {
+    "filename": "05-follow-up-qa-ipad-13.png",
+    "device": "ipad-13",
+    "dimensions": "2064x2752",
+    "source_capture": "app-store-assets/screenshots/raw/follow-up-qa-ipad.png",
+    "headline": "Ask follow-ups for your company",
+    "qa_status": "pass"
+  },
+  {
+    "filename": "06-library-ipad-13.png",
+    "device": "ipad-13",
+    "dimensions": "2064x2752",
+    "source_capture": "app-store-assets/screenshots/raw/library-ipad.png",
+    "headline": "Build your founder intelligence library",
+    "qa_status": "pass"
+  },
+  {
+    "filename": "07-search-ipad-13.png",
+    "device": "ipad-13",
+    "dimensions": "2064x2752",
+    "source_capture": "app-store-assets/screenshots/raw/search-ipad.png",
+    "headline": "Find the right insight instantly",
+    "qa_status": "pass"
+  },
+  {
+    "filename": "08-save-share-ipad-13.png",
+    "device": "ipad-13",
+    "dimensions": "2064x2752",
+    "source_capture": "app-store-assets/screenshots/raw/save-share-ipad.png",
+    "headline": "Save and share what matters",
+    "qa_status": "pass"
+  }
+]
