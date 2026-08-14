@@ -173,6 +173,12 @@ const Account = () => {
                   <LogOut className="h-4 w-4 mr-2" />
                   Sign Out
                 </Button>
+                {isNative && (
+                  <Button variant="outline" disabled={isBillingBusy} onClick={handleRestore}>
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Restore Purchases
+                  </Button>
+                )}
                 <Button variant="ghost" onClick={handleReplayTour}>
                   <RotateCcw className="h-4 w-4 mr-2" />
                   Replay App Walkthrough

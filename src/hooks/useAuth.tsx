@@ -86,6 +86,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase.functions.invoke("delete-user-account");
 
       if (error) throw error;
+      if (data && typeof data === "object" && "error" in data && (data as { error?: string }).error) {
+        throw new Error(String((data as { error: string }).error));
+      }
 
       await signOut();
       return { data };

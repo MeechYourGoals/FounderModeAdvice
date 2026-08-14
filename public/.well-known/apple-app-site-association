@@ -1,0 +1,15 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["TEAMID.com.foundermodeadvice.app"],
+        "components": [
+          { "/": "*" }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["TEAMID.com.foundermodeadvice.app"]
+  }
+}

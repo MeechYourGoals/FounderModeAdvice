@@ -21,6 +21,8 @@ const AccountDeletion = () => {
         <div className="prose prose-slate dark:prose-invert max-w-none space-y-6">
           <p>
             You can permanently delete your Founder Mode Advice account and the data associated with it at any time.
+            Deleting your account does <strong>not</strong> cancel an Apple or Google subscription — cancel that
+            first via Account → Manage Subscription (or Settings → Apple Account → Subscriptions).
           </p>
 
           <section>
@@ -35,9 +37,10 @@ const AccountDeletion = () => {
             <h2 className="text-2xl font-semibold mb-4">What Gets Deleted</h2>
             <p>When your account is deleted, we remove:</p>
             <ul className="list-disc pl-6 space-y-2">
-              <li>Your account and profile information (such as your email and startup profiles).</li>
-              <li>Your saved videos, bookmarks, AI-generated advice, chat history, and uploaded deck/export files stored under your user ID.</li>
+              <li>Your account and profile information (email, Sign in with Apple / Google identifiers, startup profiles).</li>
+              <li>Your saved analyses, bookmarks, AI-generated advice, chat history, comments, and uploaded files stored under your user ID.</li>
               <li>App preferences, notification preferences, onboarding state, and subscription records stored in Supabase.</li>
+              <li>Push-notification device records (OneSignal) and identified product-analytics records (PostHog), when those services are configured.</li>
             </ul>
           </section>
 
@@ -45,7 +48,8 @@ const AccountDeletion = () => {
             <h2 className="text-2xl font-semibold mb-4">What May Be Retained</h2>
             <p>
               We may retain a limited amount of information where required for legitimate legal, security, fraud-prevention,
-              or accounting reasons — for example, payment processor records held by Stripe, Apple, Google, or RevenueCat that are needed to comply with tax or financial
+              or accounting reasons — for example, payment processor records held by Paddle (web purchases), Apple, Google,
+              or RevenueCat that are needed to comply with tax or financial
               obligations. Retained data is kept only as long as necessary and then deleted according to those processors' policies.
             </p>
           </section>

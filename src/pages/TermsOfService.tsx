@@ -23,7 +23,7 @@ const TermsOfService = () => {
 
         <div className="prose prose-slate dark:prose-invert max-w-none space-y-6">
           <p className="text-muted-foreground italic">
-            Last Updated: August 9, 2026
+            Last Updated: August 14, 2026
           </p>
 
           <section>
@@ -41,8 +41,9 @@ const TermsOfService = () => {
             <p>
               When you create an account, you must provide accurate, complete, and current
               information and keep your credentials confidential. You are responsible for all
-              activity under your account. You must be of legal age in your jurisdiction to use
-              the service.
+              activity under your account. You must be at least 13 years old (or the age of
+              digital consent in your country, if higher) to use the service. The service is
+              not directed at children.
             </p>
           </section>
 
@@ -133,6 +134,20 @@ const TermsOfService = () => {
               remain the exclusive property of Saint Marlo Labs LLC and its licensors. You retain
               ownership of the content you submit, but grant us a limited license to host,
               process, and use it solely to operate and improve the service for you.
+            </p>
+            <p>
+              If you believe content in the service infringes your copyright, email
+              a notice to{" "}
+              <a
+                href="mailto:CA@saintmarlolabs.com"
+                className="underline hover:text-primary"
+              >
+                CA@saintmarlolabs.com
+              </a>{" "}
+              with "Copyright" in the subject line, including a description of the work, the
+              URL or location of the material, your contact information, and a statement of
+              good-faith belief that the use is unauthorized. We will review and, where
+              appropriate, remove or restrict the material.
             </p>
           </section>
 

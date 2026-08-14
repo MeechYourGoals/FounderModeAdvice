@@ -22,7 +22,7 @@ const RefundPolicy = () => {
         <h1 className="text-4xl font-bold tracking-tight mb-8">Refund Policy</h1>
 
         <div className="prose prose-slate dark:prose-invert max-w-none space-y-6">
-          <p className="text-muted-foreground italic">Last Updated: August 9, 2026</p>
+          <p className="text-muted-foreground italic">Last Updated: August 14, 2026</p>
 
           <section>
             <h2 className="text-2xl font-semibold mb-4">1. 30-Day Money-Back Guarantee (Web Purchases)</h2>

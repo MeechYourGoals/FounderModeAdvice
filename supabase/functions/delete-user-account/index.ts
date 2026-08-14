@@ -30,6 +30,8 @@ const USER_OWNED_TABLES = [
   // outside Supabase — see retainedForCompliance below).
   "subscriptions",
   "user_subscriptions",
+  "rate_limits",
+  "analysis_discussion_reads",
 ] as const;
 
 const USER_ANALYSIS_TABLES = [
@@ -111,6 +113,82 @@ async function removeStoragePaths(
     const { error } = await adminClient.storage.from(bucket).remove(chunk);
     if (error) throw error;
   }
+}
+
+/**
+ * Delete the user's OneSignal user record and PostHog person. Both are
+ * best-effort: missing secrets (push/analytics not enabled) are skipped, and
+ * HTTP failures are returned rather than failing the whole account deletion
+ * (the auth user is already gone by the time this runs).
+ */
+async function eraseVendorRecords(userId: string): Promise<{
+  oneSignal: "deleted" | "skipped" | "failed";
+  posthog: "deleted" | "skipped" | "failed";
+  errors: string[];
+}> {
+  const errors: string[] = [];
+  let oneSignal: "deleted" | "skipped" | "failed" = "skipped";
+  let posthog: "deleted" | "skipped" | "failed" = "skipped";
+
+  const oneSignalAppId = Deno.env.get("ONESIGNAL_APP_ID");
+  const oneSignalKey = Deno.env.get("ONESIGNAL_REST_API_KEY");
+  if (oneSignalAppId && oneSignalKey) {
+    try {
+      const res = await fetch(
+        `https://api.onesignal.com/apps/${oneSignalAppId}/users/by/external_id/${encodeURIComponent(userId)}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Key ${oneSignalKey}`,
+            Accept: "application/json",
+          },
+        },
+      );
+      // 404 = already gone / never registered — treat as success.
+      if (res.ok || res.status === 404) {
+        oneSignal = "deleted";
+      } else {
+        oneSignal = "failed";
+        errors.push(`OneSignal ${res.status}: ${await res.text()}`);
+      }
+    } catch (err) {
+      oneSignal = "failed";
+      errors.push(`OneSignal: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  const posthogHost = (Deno.env.get("POSTHOG_HOST") || "https://us.i.posthog.com").replace(/\/+$/, "");
+  const posthogProjectId = Deno.env.get("POSTHOG_PROJECT_ID");
+  const posthogPersonalKey = Deno.env.get("POSTHOG_PERSONAL_API_KEY");
+  if (posthogProjectId && posthogPersonalKey) {
+    try {
+      const res = await fetch(
+        `${posthogHost}/api/projects/${posthogProjectId}/delete_persons/?distinct_id=${encodeURIComponent(userId)}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${posthogPersonalKey}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+      if (res.ok || res.status === 404) {
+        posthog = "deleted";
+      } else {
+        posthog = "failed";
+        errors.push(`PostHog ${res.status}: ${await res.text()}`);
+      }
+    } catch (err) {
+      posthog = "failed";
+      errors.push(`PostHog: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  if (errors.length > 0) {
+    console.warn("Vendor erasure incomplete after account deletion", { userId, errors });
+  }
+
+  return { oneSignal, posthog, errors };
 }
 
 serve(async (req) => {
@@ -205,13 +283,21 @@ serve(async (req) => {
       }, 500);
     }
 
+    // Best-effort third-party erasure. Failures here must not revive the
+    // already-deleted auth user — they are logged and reported so the
+    // offboarding runbook can retry.
+    const vendorErasure = await eraseVendorRecords(userId);
+
     return jsonResponse({
       success: true,
       message: "Account deleted successfully",
       deletedTables,
       deletedStorageObjects,
       skippedTables,
-      retainedForCompliance: ["payment processor tax/accounting records may remain outside Supabase"],
+      vendorErasure,
+      retainedForCompliance: [
+        "payment processor tax/accounting records may remain outside Supabase (Paddle, Apple, Google, RevenueCat)",
+      ],
     });
   } catch (error) {
     console.error("Delete account error:", error);
