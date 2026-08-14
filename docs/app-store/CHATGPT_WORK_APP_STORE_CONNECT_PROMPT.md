@@ -1,5 +1,9 @@
 # ChatGPT Work Prompt — Apple Developer / App Store Connect (authenticated browser)
 
+**Prefer the per-site scripts** in `docs/app-store/browser-scripts/`
+(`01-apple-developer.md`, `02-app-store-connect.md`, `02b-asc-server-notifications.md`).
+This combined prompt is kept as a fallback.
+
 Copy everything below the line into ChatGPT Work with browser access, signed
 into developer.apple.com and appstoreconnect.apple.com as the account that
 will publish **Founder Mode Advice** for **Saint Marlo Labs LLC**.

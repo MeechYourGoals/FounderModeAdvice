@@ -1,5 +1,8 @@
 # ChatGPT Work Prompt — RevenueCat Configuration (authenticated browser)
 
+**Prefer the per-site script** `docs/app-store/browser-scripts/03-revenuecat.md`.
+This combined prompt is kept as a fallback.
+
 Copy everything below the line into ChatGPT Work with browser access, signed
 into app.revenuecat.com (and appstoreconnect.apple.com for the key step).
 

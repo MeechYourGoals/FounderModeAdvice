@@ -31,21 +31,18 @@ don't reorder across sections. ☐ = to do, ✅ = done in this branch.
 3. ☐ Deploy the web app (legal-page updates + native price/consent behavior
    ship with the site the shell loads).
 
-## 2. Console configuration ☐ (browser prompts provided)
+## 2. Console configuration ☐ (agentic browser scripts)
 
-4. ☐ Apple: membership/agreements/tax/banking → bundle id → app record →
-   subscription group + products → App Privacy → review info
-   (CHATGPT_WORK_APP_STORE_CONNECT_PROMPT.md).
-5. ☐ RevenueCat: project → Apple app → IAP key (.p8, user-assisted) →
-   import products → entitlements (per D1) → offering `default` + packages →
-   paywall → webhook URL + auth header → Apple Server Notifications URLs
-   copied into ASC (CHATGPT_WORK_REVENUECAT_PROMPT.md).
-6. ☐ `cd native && eas init` (owner account) → commit the projectId change.
-7. ☐ EAS env vars per environment (FMA_REVENUECAT_IOS_API_KEY=appl_…,
-   FMA_ONESIGNAL_APP_ID; leave FMA_WEB_URL unset in production).
-8. ☐ Optional now / required for universal links: deploy
-   `.well-known/apple-app-site-association` with the real Team ID
-   (EXTERNAL_SETUP_VALUES.json §universalLinks).
+Copy-paste prompts live in `docs/app-store/browser-scripts/` (one file per
+website; log in first, then paste everything below `--- COPY FROM HERE ---`).
+
+4. ☐ Apple Developer + App Store Connect (scripts `01`, `02`, then `02b` after RevenueCat)
+5. ☐ RevenueCat (script `03`) → paste Server Notification URLs back into ASC
+6. ☐ OneSignal, PostHog, then Supabase (scripts `05`, `07`, `04`)
+7. ☐ Expo / EAS (script `06`): env vars in the dashboard, then locally
+   `cd native && eas init` (commit the projectId) and the build/submit CLI
+   lines the script prints. Leave `FMA_WEB_URL` unset in production.
+8. ☐ Lovable (script `08`): `VITE_APPLE_TEAM_ID` so AASA stamps the real Team ID.
 
 ## 3. Development-build test pass ☐
 
