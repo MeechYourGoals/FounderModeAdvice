@@ -111,7 +111,7 @@ DEVICES = {
         "suffix": "iphone-6.9",
         "side_margin": 84,
         "top_safe": 150,
-        "bottom_safe": 120,
+        "device_top": 900,
         "radius": 74,
         "mark_size": 62,
         "eyebrow_size": 27,
@@ -124,7 +124,7 @@ DEVICES = {
         "suffix": "ipad-13",
         "side_margin": 140,
         "top_safe": 140,
-        "bottom_safe": 130,
+        "device_top": 880,
         "radius": 54,
         "mark_size": 70,
         "eyebrow_size": 30,
@@ -132,6 +132,7 @@ DEVICES = {
         "support_size": 38,
     },
 }
+
 
 
 def load_font(path: Path, size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
