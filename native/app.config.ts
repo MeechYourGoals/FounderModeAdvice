@@ -58,6 +58,10 @@ function assertProductionConfig(extra: {
 export default ({ config }: ConfigContext): ExpoConfig => {
   const extra = {
     ...config.extra,
+    eas: {
+      ...(config.extra?.eas ?? {}),
+      projectId: "d13fbfdb-5af2-4099-91eb-040fb35acff2",
+    },
     webUrl: process.env.FMA_WEB_URL || config.extra?.webUrl,
     oneSignalAppId: process.env.FMA_ONESIGNAL_APP_ID || config.extra?.oneSignalAppId,
     revenueCatIosApiKey:
