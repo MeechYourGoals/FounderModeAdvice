@@ -21,7 +21,9 @@
   "submit": {
     "production": {
       "ios": {
-        "ascAppId": "6799753048"
+        "ascAppId": "6799753048",
+        "appleTeamId": "H8G3D6S8P4",
+        "bundleIdentifier": "com.foundermodeadvice.app"
       },
       "android": {
         "serviceAccountKeyPath": "./play-service-account.json",
