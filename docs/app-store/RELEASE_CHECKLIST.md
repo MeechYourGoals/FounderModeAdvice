@@ -57,7 +57,7 @@ website; log in first, then paste everything below `--- COPY FROM HERE ---`).
 
 12. ☐ `eas build --profile production --platform ios` (config guard must pass
     green — if it throws, an env var is wrong; fix the env, not the guard).
-13. ✅ `eas submit --platform ios` (ascAppId `6797082499` already recorded in eas.json).
+13. ✅ `eas submit --platform ios` (ascAppId `6799753048` already recorded in eas.json).
 14. ☐ TestFlight: repeat purchase/restore/entitlement/core tests on the
     UPLOADED build (test gate step 22). Renewal/billing-retry observation via
     sandbox accelerated clock; verify webhook downgrades on expiration.

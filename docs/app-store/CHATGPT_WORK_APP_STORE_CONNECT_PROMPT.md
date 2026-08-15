@@ -145,7 +145,7 @@ ready-state and stop; submission is a user decision.
 | --- | --- | --- |
 | 1 Membership/agreements/tax/banking | | |
 | 2 Identifier/capabilities | | |
-| 3 App record + Apple ID captured | ✅ | 6797082499 |
+| 3 App record + Apple ID captured | ✅ | 6799753048 |
 | 4 Metadata/privacy/rating/rights/export | | |
 | 5 Review info + demo account | | |
 | 6 Subscription group/products/notifications | | |

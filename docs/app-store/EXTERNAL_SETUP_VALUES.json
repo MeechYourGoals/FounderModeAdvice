@@ -95,7 +95,7 @@
   "expoEas": {
     "owner": "CAPTURE — run `eas init` in native/ with the owner account; writes extra.eas.projectId to app.json",
     "projectId": "CAPTURE from eas init",
-    "ascAppId": "DONE — 6797082499 (set in native/eas.json submit.production.ios.ascAppId)",
+    "ascAppId": "DONE — 6799753048 (set in native/eas.json submit.production.ios.ascAppId)",
     "environmentVariables": {
       "production": {
         "FMA_REVENUECAT_IOS_API_KEY": "appl_… (public SDK key — plain visibility)",
