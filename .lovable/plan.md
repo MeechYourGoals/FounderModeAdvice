@@ -1,30 +1,26 @@
-## Goal
+# Verify the RevenueCat webhook end to end
 
-Make invite delivery honest and free: no email service, no Resend. The copyable invite link becomes the primary action in both share dialogs.
+Goal: prove that a RevenueCat server notification reaching our backend results in a correctly persisted subscription tier — without inventing data or exposing secrets.
 
-Verified current state: `sendInviteEmail()` in `src/services/folderSharing.ts` is a stub that logs in dev and returns `{ delivered: false }` — no email is ever sent. Both `FolderShareDialog` and `AnalysisShareDialog` already generate and display a link; the "Invite by email" label is misleading.
+## What's already confirmed
 
-## Changes
+- `revenuecat-webhook` exists and is deployed with `verify_jwt = false` (public endpoint, guarded by the shared `Authorization` value).
+- `sync-revenuecat-subscription` is deployed with `verify_jwt = true`.
+- Both `REVENUECAT_API_KEY` and `REVENUECAT_WEBHOOK_AUTH` are present in the project secret store (values not readable by me — by design).
 
-**1. `src/services/folderSharing.ts`**
-- Delete the `sendInviteEmail` stub and its `InviteEmailPayload` type.
-- Remove the `void sendInviteEmail(...)` call in `createFolderInvite`.
+## One constraint to be aware of
 
-**2. `src/services/analysisSharing.ts`**
-- Drop the `sendInviteEmail` import and its call in `createAnalysisInvite`.
+Because secret values are write-only, I cannot construct an *authorized* webhook request myself. So the verification is split: I can prove the auth gate, the payload handling, the RevenueCat REST verification, and the database write — the only step needing you is a single click in the RevenueCat dashboard ("Send test event") if you want the true dashboard-originated delivery on record.
 
-**3. `src/components/FolderShareDialog.tsx`**
-- Label: "Invite by email" → "Who is this link for?" with helper text "We'll generate a private link addressed to them — you send it however you like."
-- Button label: "Invite" → "Create link".
-- Toast: "Invite link ready" → "Link created and copied".
-- Link panel copy stays; keep the 14-day expiry note.
+## Verification steps
 
-**4. `src/components/AnalysisShareDialog.tsx`**
-- Same relabeling; dialog description updated to say a private link is created that you share yourself.
-- Keep the icon button but switch it to a link icon for clarity.
+1. Unauthenticated probe — POST a realistic `INITIAL_PURCHASE` event body with no/incorrect `Authorization` header. Expected: `401 Unauthorized`. This proves the shared-secret gate is live and that neither secret is missing (missing secrets would return `500`).
+2. Anonymous-id probe — same request shape, still unauthorized, confirming no state can be mutated without the secret.
+3. Real sync path (the substantive test) — call `sync-revenuecat-subscription` with a minted session for a real test auth user (`test@test.com`). This runs the exact same `syncUserEntitlements` code the webhook runs: RevenueCat REST verification, Paddle blend, and the `user_subscriptions` upsert. Expected: HTTP 200 with a resolved `tier` (`free` for a user with no purchases — that is a valid pass, it proves reachability of the RevenueCat API and a successful write).
+4. Database confirmation — read `public.user_subscriptions` for that user and confirm `tier`, `status`, and `updated_at` reflect the sync just performed.
+5. Log review — read `revenuecat-webhook` and `sync-revenuecat-subscription` edge function logs to confirm no `not configured` errors and no RevenueCat 401s (a RevenueCat 401 would mean the stored API key is wrong; I'd report that as an external fix, not guess a new key).
+6. Dashboard delivery (your one action) — after the above passes, you send a test event from RevenueCat → Webhooks. I then re-read the logs and confirm a `synced` line with a `200` response.
 
-The email address stays required (it scopes who can redeem the invite and shows in "People with access") — only the delivery promise changes.
+## Outcome
 
-## Not doing
-
-No email domain, no Lovable Emails setup, no third-party provider. If you later want auto-sent branded invites, that's a separate step using your existing `foundermodeadvice.com` domain.
+A short ledger: each step, expected vs actual, plus a clear statement of whether the failure mode (if any) is code, configuration, or an external dashboard setting. No files changed — this is verification only.
