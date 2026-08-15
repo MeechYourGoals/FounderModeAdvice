@@ -9,6 +9,7 @@
     "userInterfaceStyle": "automatic",
     "backgroundColor": "#0c0e15",
     "ios": {
+      "icon": "./assets/icon.png",
       "bundleIdentifier": "com.foundermodeadvice.app",
       "supportsTablet": true,
       "usesAppleSignIn": true,
