@@ -91,6 +91,7 @@ serve(async (req) => {
         headings: { en: "Founder Mode — daily prompt" },
         contents: { en: prompt },
         url: "https://foundermodeadvice.com/?utm_source=push&utm_campaign=daily_prompt",
+        data: { path: "/?utm_source=push&utm_campaign=daily_prompt" },
       }),
     });
 

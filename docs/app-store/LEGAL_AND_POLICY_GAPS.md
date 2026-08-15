@@ -44,16 +44,15 @@ Changes marked ✅ were applied to the live legal pages in this release branch
    (b) reliance on Supadata's compliance with platform terms (YouTube TOS
    §III prohibits unauthorized scraping — risk sits primarily with the
    provider but reflects on the app), (c) the App Store "content rights"
-   declaration wording. DMCA/notice-and-takedown contact should be added to
-   the Terms if counsel advises.
-2. **PostHog data deletion.** Account deletion removes Supabase data but no
-   automated PostHog deletion exists. Either add PostHog person-deletion to
-   the offboarding runbook (manual, documented) or a future API call.
-   Retention statement in policy ("security logs & diagnostics up to 12
-   months") should be checked against the actual PostHog project retention.
-3. **OneSignal device records.** On account deletion the external-id link
-   dies with the auth user, but the OneSignal player record isn't explicitly
-   deleted. Same treatment as PostHog (runbook or API).
+   declaration wording. A copyright contact (CA@saintmarlolabs.com, subject
+   "Copyright") is now in Terms §6; counsel should still bless the posture.
+2. **PostHog data deletion.** ✅ In-app `delete-user-account` now calls PostHog
+   `delete_persons` when `POSTHOG_PROJECT_ID` + `POSTHOG_PERSONAL_API_KEY` are
+   set as edge-function secrets. If those secrets are missing, deletion of the
+   Supabase account still succeeds and PostHog erasure is reported as skipped.
+3. **OneSignal device records.** ✅ Same function now `DELETE`s the OneSignal
+   user by external id (`ONESIGNAL_APP_ID` + `ONESIGNAL_REST_API_KEY`). 404 is
+   treated as already-gone.
 4. **Support email domain.** All legal pages and the app use
    `CA@saintmarlolabs.com`. Confirm that mailbox is monitored and decide
    whether to introduce support@foundermodeadvice.com everywhere instead
@@ -72,8 +71,8 @@ Changes marked ✅ were applied to the live legal pages in this release branch
    officially discourages embedded-WebView OAuth and could tighten
    enforcement. Mitigation path (system-browser auth session) is documented
    in native/README.md as a deliberate follow-up. Verify Google login on
-   real hardware every TestFlight round; Apple sign-in and email/password
-   are unaffected.
+   real hardware every TestFlight round. Sign in with Apple is native in
+   EAS builds and does not go through the WebView; email/password is unaffected.
 8. **Old marketing screenshots.** Legacy files under
    `app-store-assets/screenshots/` (iphone-6.9-01-home etc.) predate the
    current product and pipeline; do not submit them. The raw-web-captures

@@ -13,6 +13,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { lovable } from "@/integrations/lovable/index";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 import { isLovablePreview, getOAuthRedirectUrl, shouldShowAppAuthFirst } from "@/lib/appMode";
+import { isExpoShell, requestShellAppleSignIn } from "@/services/expoShellService";
 import { usePageMeta } from "@/hooks/usePageMeta";
 
 const Auth = () => {
@@ -77,6 +78,40 @@ const Auth = () => {
     triggerHapticFeedback('light');
     setAppleLoading(true);
     try {
+      // Guideline 4.8: in the iOS store binary, Sign in with Apple must use
+      // AuthenticationServices (native sheet), not a WebView OAuth page.
+      // Expo Go cannot mint a token for our bundle id, so the shell tells us
+      // to fall through to the existing web OAuth path there.
+      if (isExpoShell()) {
+        const native = await requestShellAppleSignIn();
+        if ("fallback" in native) {
+          if (native.fallback === "none") {
+            if (native.error && native.error !== "canceled") {
+              toast({
+                title: "Apple sign-in failed",
+                description: native.error,
+                variant: "destructive",
+              });
+            }
+            return;
+          }
+        } else {
+          const { error } = await supabase.auth.signInWithIdToken({
+            provider: "apple",
+            token: native.identityToken,
+            nonce: native.nonce,
+          });
+          if (!error) {
+            if (native.fullName) {
+              await supabase.auth.updateUser({ data: { full_name: native.fullName } });
+            }
+            navigate("/", { replace: true });
+            return;
+          }
+          console.warn("Native Apple id-token sign-in failed, falling back to web OAuth", error);
+        }
+      }
+
       const result = await lovable.auth.signInWithOAuth("apple", {
         redirect_uri: window.location.origin,
       });

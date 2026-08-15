@@ -1,5 +1,8 @@
 # ChatGPT Work Prompt — Full Launch Orchestration (authenticated browser)
 
+**Prefer the per-site scripts** in `docs/app-store/browser-scripts/` (one
+website at a time). Use this file only if you want one mega-prompt.
+
 Use this when running the ENTIRE console sequence in one session (Apple +
 RevenueCat + Expo/EAS + Supabase + OneSignal). It sequences the two focused
 prompts and adds the Expo/Supabase/OneSignal glue. Copy everything below the

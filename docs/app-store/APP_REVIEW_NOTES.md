@@ -27,8 +27,9 @@ the user's own uploaded documents) into "operating memos": lessons, risks,
 action items, and advice tailored to the user's company profile, plus
 follow-up Q&A and an organized library.
 
-SIGN-IN: Use the demo account above (email/password). Sign in with Apple and
-Google are also offered.
+SIGN-IN: Use the demo account above (email/password). Sign in with Apple is a
+native AuthenticationServices sheet in the store binary (not a WebView page).
+Google sign-in is also offered.
 
 CORE FLOW (2–3 minutes): Home → paste a public YouTube/article link into
 "New analysis" → Analyze. A memo is generated in about a minute (the demo

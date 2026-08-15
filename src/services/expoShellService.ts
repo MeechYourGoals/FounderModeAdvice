@@ -24,15 +24,28 @@ type ShellMessage =
   | { type: "restorePurchases"; userId: string }
   | { type: "pushRegister"; userId: string }
   | { type: "pushPrompt" }
+  | { type: "appleSignIn" }
   | { type: "share"; title: string; text: string; url: string }
   | { type: "openExternal"; url: string }
   | { type: "theme"; dark: boolean; backgroundColor: string };
+
+export type ShellAppleSignInResult =
+  | {
+      ok: true;
+      identityToken: string;
+      nonce: string;
+      email?: string | null;
+      fullName?: string | null;
+    }
+  | { ok: false; fallback: "web" | "none"; error?: string };
 
 declare global {
   interface Window {
     ReactNativeWebView?: { postMessage: (data: string) => void };
     /** One-shot ack injected by the shell when a native restore settles. */
     __fmaShellRestoreResult?: (ok: boolean) => void;
+    /** One-shot ack injected by the shell when native Sign in with Apple settles. */
+    __fmaAppleSignInResult?: (result: ShellAppleSignInResult) => void;
   }
 }
 
@@ -113,6 +126,36 @@ export const registerShellPush = (userId: string): void => {
  */
 export const promptShellPush = (): void => {
   postToShell({ type: "pushPrompt" });
+};
+
+/**
+ * Present native Sign in with Apple (AuthenticationServices) in the Expo
+ * shell. Resolves with an identity token + raw nonce for
+ * `supabase.auth.signInWithIdToken`, or a fallback instruction:
+ *   - `web`  — Expo Go / simulator without the entitlement; use web OAuth
+ *   - `none` — user cancelled or a hard native error; do not fall through
+ */
+export const requestShellAppleSignIn = (
+  timeoutMs = 120_000,
+): Promise<ShellAppleSignInResult> => {
+  if (!isExpoShell()) {
+    return Promise.resolve({ ok: false, fallback: "web", error: "not-shell" });
+  }
+  return new Promise((resolve) => {
+    const settle = (result: ShellAppleSignInResult) => {
+      window.clearTimeout(timer);
+      window.__fmaAppleSignInResult = undefined;
+      resolve(result);
+    };
+    const timer = window.setTimeout(
+      () => settle({ ok: false, fallback: "web", error: "timeout" }),
+      timeoutMs,
+    );
+    window.__fmaAppleSignInResult = (result) => settle(result);
+    if (!postToShell({ type: "appleSignIn" })) {
+      settle({ ok: false, fallback: "web", error: "bridge-unavailable" });
+    }
+  });
 };
 
 export const shareViaShell = (payload: { title: string; text: string; url: string }): boolean =>

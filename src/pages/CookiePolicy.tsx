@@ -19,7 +19,7 @@ const CookiePolicy = () => {
         <h1 className="text-4xl font-bold tracking-tight mb-8">Cookie Policy</h1>
 
         <div className="prose prose-slate dark:prose-invert max-w-none space-y-6">
-          <p className="text-muted-foreground italic">Last Updated: August 9, 2026</p>
+          <p className="text-muted-foreground italic">Last Updated: August 14, 2026</p>
 
           <section>
             <h2 className="text-2xl font-semibold mb-4">1. What We Use</h2>
@@ -44,8 +44,10 @@ const CookiePolicy = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">3. Analytics</h2>
             <p>
-              If we use analytics to understand how the app is used and to improve it, any such storage is used
-              only in aggregate to measure usage and performance. We do not sell your personal data.
+              In the installed iOS/Android app we send explicit product-analytics events (screens
+              viewed, features used) to PostHog, tied to your account identifier. Session recording
+              and autocapture are disabled. These records are deleted when you delete your account.
+              We do not sell your personal data or use it for cross-app advertising.
             </p>
           </section>
 

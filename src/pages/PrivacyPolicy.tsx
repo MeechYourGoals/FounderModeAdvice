@@ -22,7 +22,7 @@ const PrivacyPolicy = () => {
         <h1 className="text-4xl font-bold tracking-tight mb-8">Privacy Policy</h1>
 
         <div className="prose prose-slate dark:prose-invert max-w-none space-y-6">
-          <p className="text-muted-foreground italic">Last Updated: August 9, 2026</p>
+          <p className="text-muted-foreground italic">Last Updated: August 14, 2026</p>
 
           <section>
             <h2 className="text-2xl font-semibold mb-4">1. Who We Are</h2>
@@ -64,9 +64,9 @@ const PrivacyPolicy = () => {
               </li>
               <li>
                 <strong>Transaction data</strong> — limited billing metadata (subscription
-                status, plan, country, last 4 of card) returned to us by our payment processor.
+                status, plan, and renewal dates) returned to us by our payment processors.
                 Full payment details (card numbers, bank information) are collected and stored by
-                our payment provider, not by us.
+                Apple, Google, or Paddle — never by us.
               </li>
             </ul>
           </section>
@@ -102,8 +102,10 @@ const PrivacyPolicy = () => {
             <p>
               We offer sign-in through third-party providers (Google and Apple). The provider
               authenticates you and shares a limited set of profile information with us. We do
-              not receive your password. Your use of the provider is also governed by that
-              provider's privacy policy.
+              not receive your password. If you use Sign in with Apple and choose Hide My Email,
+              Apple shares a private relay address (ending in @privaterelay.appleid.com) instead
+              of your personal email; we treat that relay address as your account email. Your use
+              of the provider is also governed by that provider's privacy policy.
             </p>
           </section>
 
@@ -197,12 +199,19 @@ const PrivacyPolicy = () => {
             <ul className="list-disc pl-6 space-y-2">
               <li>
                 <strong>Account &amp; advisory content</strong> — retained for as long as your
-                account is active. If you delete your account, this data is deleted within 30
-                days, except where we are required to retain it for legal reasons.
+                account is active. If you delete your account, this data is deleted immediately
+                (in-app) or within 30 days (email requests), except where we are required to
+                retain it for legal reasons.
               </li>
               <li>
-                <strong>Billing &amp; tax records</strong> — retained by Paddle and by us as
-                required by applicable tax and accounting law (typically 7 years).
+                <strong>Push &amp; analytics records</strong> — OneSignal device records and
+                PostHog person records tied to your account are deleted as part of in-app
+                account deletion when those services are configured.
+              </li>
+              <li>
+                <strong>Billing &amp; tax records</strong> — retained by Paddle (web), Apple or
+                Google (in-app purchases), and by us as required by applicable tax and
+                accounting law (typically 7 years).
               </li>
               <li>
                 <strong>Security logs &amp; diagnostics</strong> — retained for up to 12 months.
@@ -259,7 +268,17 @@ const PrivacyPolicy = () => {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">12. Contact Us</h2>
+            <h2 className="text-2xl font-semibold mb-4">12. Children</h2>
+            <p>
+              Founder Mode Advice is a business tool for founders and operators. It is not
+              directed at children under 13 (or the equivalent minimum age in your country),
+              and we do not knowingly collect personal data from children. If you believe a
+              child has created an account, contact us and we will delete it.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-semibold mb-4">13. Contact Us</h2>
             <p>
               Saint Marlo Labs LLC —{" "}
               <a

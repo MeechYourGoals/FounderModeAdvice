@@ -116,9 +116,11 @@
       "REVENUECAT_API_KEY", "REVENUECAT_WEBHOOK_AUTH",
       "PADDLE_LIVE_API_KEY", "PAYMENTS_LIVE_WEBHOOK_SECRET",
       "PADDLE_SANDBOX_API_KEY", "PAYMENTS_SANDBOX_WEBHOOK_SECRET",
-      "ONESIGNAL_APP_ID", "ONESIGNAL_REST_API_KEY", "CRON_SECRET", "APP_URL"
+      "ONESIGNAL_APP_ID", "ONESIGNAL_REST_API_KEY",
+      "POSTHOG_HOST", "POSTHOG_PROJECT_ID", "POSTHOG_PERSONAL_API_KEY",
+      "CRON_SECRET", "APP_URL"
     ],
-    "deployFunctions": ["revenuecat-webhook (NEW)", "sync-revenuecat-subscription (UPDATED)", "delete-user-account (UPDATED)"],
+    "deployFunctions": ["revenuecat-webhook", "sync-revenuecat-subscription", "delete-user-account (vendor erasure + extra tables)"],
     "note": "send-daily-prompt cron must send header x-cron-secret: $CRON_SECRET — the snippet in the old root APP_REVIEW_NOTES.md omitted it and would 401."
   },
 
@@ -132,13 +134,15 @@
     "aasaPath": "https://foundermodeadvice.com/.well-known/apple-app-site-association",
     "requiredContent": {
       "applinks": {
-        "apps": [],
         "details": [
-          { "appID": "<APPLE_TEAM_ID>.com.foundermodeadvice.app", "paths": ["*"] }
+          { "appIDs": ["<APPLE_TEAM_ID>.com.foundermodeadvice.app"], "components": [{ "/": "*" }] }
         ]
+      },
+      "webcredentials": {
+        "apps": ["<APPLE_TEAM_ID>.com.foundermodeadvice.app"]
       }
     },
-    "status": "NOT DEPLOYED — requires the Apple Team ID; without it, universal links stay dormant (custom scheme still works). Add the file under public/.well-known/ once the Team ID is known, served as application/json without redirect."
+    "status": "FILE COMMITTED at public/.well-known/apple-app-site-association with TEAMID placeholder. Set VITE_APPLE_TEAM_ID at web-app build time to stamp the real Team ID. Without it, universal links stay dormant (custom scheme still works). Must be served as application/json with no redirect."
   },
 
   "screenshots": {

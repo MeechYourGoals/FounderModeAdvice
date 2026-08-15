@@ -36,6 +36,34 @@ function buildIdPlugin(): Plugin {
   };
 }
 
+/** Serve AASA as JSON and stamp the Apple Team ID when VITE_APPLE_TEAM_ID is set. */
+function appleAppSiteAssociationPlugin(): Plugin {
+  const teamId = process.env.VITE_APPLE_TEAM_ID?.trim();
+  const stamp = (filePath: string) => {
+    if (!teamId) return;
+    try {
+      const current = readFileSync(filePath, "utf-8");
+      writeFileSync(filePath, current.replaceAll("TEAMID", teamId), "utf-8");
+    } catch {
+      // file may not exist yet
+    }
+  };
+  return {
+    name: "fma-aasa",
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if (req.url?.split("?")[0] === "/.well-known/apple-app-site-association") {
+          res.setHeader("Content-Type", "application/json");
+        }
+        next();
+      });
+    },
+    closeBundle() {
+      stamp(path.resolve(__dirname, "dist/.well-known/apple-app-site-association"));
+    },
+  };
+}
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   define: {
@@ -49,6 +77,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     buildIdPlugin(),
+    appleAppSiteAssociationPlugin(),
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
@@ -67,7 +96,7 @@ export default defineConfig(({ mode }) => ({
         // make every PWA install download ~0.9 MB it will never render.
         globIgnores: ["**/og-image.png"],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-        navigateFallbackDenylist: [/^\/~oauth/],
+        navigateFallbackDenylist: [/^\/~oauth/, /^\/\.well-known/],
         // Do not runtime-cache Supabase REST/Auth/Functions/Storage responses here.
         // Authenticated offline data is intentionally scoped in src/lib/offlineCache.ts
         // so one user cannot see another user's cached API responses after sign-out.

@@ -98,6 +98,25 @@ review notes) lives in `docs/store-readiness.md`.
   messages; allow-listed third-party hosts (auth, storage) render in the
   WebView but cannot drive native actions.
 - Offline / renderer crash → branded retry screen, auto-recover on retry.
+- Sign in with Apple: the web app asks the shell for `{ type: "appleSignIn" }`;
+  EAS/dev-client/store builds present the system AuthenticationServices sheet
+  and return an identity token + nonce for `supabase.auth.signInWithIdToken`.
+  Expo Go falls back to web OAuth (its token audience is Expo's bundle id).
+- Push: OneSignal click/foreground handlers keep the user inside the WebView
+  (daily-prompt payload includes `data.path`). The OS permission prompt is
+  only shown when the user enables a notification preference — never at launch.
+
+## Sign in with Apple (required before first EAS production build)
+
+1. Apple Developer → Identifiers → `com.foundermodeadvice.app` → enable
+   **Sign in with Apple**.
+2. Create a Services ID (e.g. `com.foundermodeadvice.app.auth`) if you also
+   want web Apple sign-in, and an Apple private key (.p8) for the secret.
+3. Supabase → Authentication → Providers → Apple: add the **iOS bundle ID**
+   `com.foundermodeadvice.app` as a client ID (native tokens use the bundle id
+   as `aud`) plus the Services ID if used for web. Configure the secret JWT.
+4. Confirm `usesAppleSignIn: true` in `app.json` (already set). EAS prebuild
+   writes the `com.apple.developer.applesignin` entitlement.
 
 ## Known limitation — Google OAuth in the WebView
 
@@ -110,4 +129,5 @@ Google sign-in on real hardware in every TestFlight/internal-testing round
 to route OAuth through `expo-web-browser`'s `openAuthSessionAsync` and
 return via the app scheme — that requires moving the PKCE exchange out of
 the WebView's storage, so treat it as a deliberate follow-up, not a quick
-patch. Email/password and Apple sign-in are unaffected.
+patch. Email/password is unaffected. **Sign in with Apple is native** in
+EAS builds (see above) and does not go through the WebView.

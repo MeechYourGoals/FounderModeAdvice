@@ -50,7 +50,7 @@ device/TestFlight) · **EXTERNAL** (authenticated console setup required).
 | Server-side enforcement of paid AI | PASS (pre-existing, verified) | analyze-episode quota/upload gate, video-chat Boardroom gate re-read tier from DB |
 | Secrets hygiene | PASS | only public SDK keys client-side; secret key + webhook auth are server env; nothing committed |
 | **Privacy/account compliance** | | |
-| Sign in with Apple parity | PASS | Apple + Google + email/password |
+| Sign in with Apple parity | PASS | Native AuthenticationServices sheet in EAS/dev-client/store builds (`expo-apple-authentication` + `usesAppleSignIn`); identity token exchanged via `supabase.auth.signInWithIdToken`. Apple button is first and more prominent than Google (4.8). Expo Go falls back to web OAuth (token audience is Expo's bundle id). |
 | In-app account deletion | PASS | immediate, covers 20+ tables + 3 buckets incl. source-uploads (fixed); manage-subscription route in dialog |
 | AI disclosure + consent | PASS | one-time per-user dialog naming Google Gemini + Supadata before first send; policy §6/§10 updated |
 | Push permission timing | PASS | silent registration at login; OS prompt only on enabling a notification pref |

@@ -9,6 +9,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   BackHandler,
+  Keyboard,
   Linking,
   Platform,
   Pressable,
@@ -184,9 +185,93 @@ type BridgeMessage =
   | { type: "restorePurchases"; userId?: string }
   | { type: "pushRegister"; userId: string }
   | { type: "pushPrompt" }
+  | { type: "appleSignIn" }
   | { type: "share"; title?: string; text?: string; url?: string }
   | { type: "openExternal"; url: string }
   | { type: "theme"; dark: boolean; backgroundColor: string };
+
+type AppleSignInAck =
+  | {
+      ok: true;
+      identityToken: string;
+      nonce: string;
+      email?: string | null;
+      fullName?: string | null;
+    }
+  | { ok: false; fallback: "web" | "none"; error?: string };
+
+/**
+ * Native Sign in with Apple (Guideline 4.8). Expo Go cannot issue an identity
+ * token whose audience matches our bundle id, so we tell the web layer to use
+ * the existing web OAuth path there. EAS/dev-client/store builds present the
+ * system sheet and return the raw nonce + identity token for Supabase.
+ */
+async function performNativeAppleSignIn(): Promise<AppleSignInAck> {
+  if (Constants.appOwnership === "expo") {
+    return { ok: false, fallback: "web", error: "expo-go" };
+  }
+  if (Platform.OS !== "ios") {
+    return { ok: false, fallback: "web", error: "not-ios" };
+  }
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const AppleAuthentication = require("expo-apple-authentication");
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const Crypto = require("expo-crypto") as typeof import("expo-crypto");
+
+    const available = await AppleAuthentication.isAvailableAsync();
+    if (!available) {
+      return { ok: false, fallback: "web", error: "unavailable" };
+    }
+
+    const nonceBytes = await Crypto.getRandomBytesAsync(16);
+    const rawNonce = Array.from(nonceBytes, (b) => b.toString(16).padStart(2, "0")).join("");
+    const hashedNonce = await Crypto.digestStringAsync(
+      Crypto.CryptoDigestAlgorithm.SHA256,
+      rawNonce,
+    );
+
+    const credential = await AppleAuthentication.signInAsync({
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
+      nonce: hashedNonce,
+    });
+
+    if (!credential.identityToken) {
+      return { ok: false, fallback: "none", error: "no-identity-token" };
+    }
+
+    const fullName = [credential.fullName?.givenName, credential.fullName?.familyName]
+      .filter(Boolean)
+      .join(" ");
+
+    return {
+      ok: true,
+      identityToken: credential.identityToken,
+      nonce: rawNonce,
+      email: credential.email ?? null,
+      fullName: fullName || null,
+    };
+  } catch (err: unknown) {
+    const code =
+      err && typeof err === "object" && "code" in err ? String((err as { code?: string }).code) : "";
+    const message =
+      err instanceof Error ? err.message : typeof err === "string" ? err : "apple-sign-in-failed";
+    if (
+      code === "ERR_REQUEST_CANCELED" ||
+      code === "ERR_CANCELED" ||
+      code === "1001" ||
+      /cancel/i.test(message)
+    ) {
+      return { ok: false, fallback: "none", error: "canceled" };
+    }
+    console.warn("Native Apple sign-in failed", err);
+    return { ok: false, fallback: "web", error: message };
+  }
+}
 
 async function triggerHaptic(style?: string) {
   try {
@@ -439,6 +524,15 @@ function Shell() {
           break;
         }
 
+        case "appleSignIn": {
+          const result = await performNativeAppleSignIn();
+          webViewRef.current?.injectJavaScript(
+            `window.__fmaAppleSignInResult&&window.__fmaAppleSignInResult(${JSON.stringify(result)});true;`,
+          );
+          if (result.ok) void triggerHaptic("success");
+          break;
+        }
+
         case "share":
           try {
             await Share.share(
@@ -466,15 +560,95 @@ function Shell() {
 
   // OneSignal boots app-wide (before login) so permission prompts and device
   // registration work; user mapping happens on the identify/pushRegister messages.
+  // Click/foreground handlers keep notifications inside the app (native feel)
+  // instead of bouncing out to Safari.
   useEffect(() => {
     const OneSignal = loadOneSignal();
-    if (OneSignal && extra.oneSignalAppId) {
-      try {
-        OneSignal.initialize(extra.oneSignalAppId);
-      } catch (err) {
-        console.warn("OneSignal init failed", err);
-      }
+    if (!OneSignal || !extra.oneSignalAppId) return;
+    try {
+      OneSignal.initialize(extra.oneSignalAppId);
+    } catch (err) {
+      console.warn("OneSignal init failed", err);
+      return;
     }
+
+    const openInWebView = (rawUrl: string | undefined, path: string | undefined) => {
+      let target: string | null = null;
+      if (path && path.startsWith("/")) {
+        target = `${WEB_URL}${path}`;
+      } else if (rawUrl) {
+        try {
+          const parsed = new URL(rawUrl);
+          if (parsed.hostname === WEB_HOST || parsed.protocol === APP_SCHEME + ":") {
+            target =
+              parsed.protocol.startsWith("http")
+                ? `${WEB_URL}${parsed.pathname}${parsed.search}`
+                : `${WEB_URL}/${rawUrl.replace(/^[^:]+:\/\//, "").replace(/^\/+/, "")}`;
+          }
+        } catch {
+          target = null;
+        }
+      }
+      if (!target) target = START_URL;
+      webViewRef.current?.injectJavaScript(
+        `window.location.href=${JSON.stringify(target)};true;`,
+      );
+    };
+
+    const clickListener = (event: {
+      notification?: { additionalData?: { path?: string; url?: string }; launchURL?: string };
+    }) => {
+      const data = event?.notification?.additionalData;
+      openInWebView(data?.url || event?.notification?.launchURL, data?.path);
+    };
+
+    const foregroundListener = (event: { preventDefault?: () => void; getNotification?: () => { display?: () => void } }) => {
+      // Show the system banner while the app is open — default OneSignal
+      // behavior swallows it, which feels like a broken notification.
+      try {
+        event?.preventDefault?.();
+        event?.getNotification?.()?.display?.();
+      } catch {
+        // Older SDK shapes — ignore; the notification is still delivered.
+      }
+    };
+
+    try {
+      OneSignal.Notifications.addEventListener("click", clickListener);
+      OneSignal.Notifications.addEventListener("foregroundWillDisplay", foregroundListener);
+    } catch (err) {
+      console.warn("OneSignal notification listeners failed", err);
+    }
+
+    return () => {
+      try {
+        OneSignal.Notifications.removeEventListener("click", clickListener);
+        OneSignal.Notifications.removeEventListener("foregroundWillDisplay", foregroundListener);
+      } catch {
+        // SDK may not expose removeEventListener in Expo Go.
+      }
+    };
+  }, []);
+
+  // Hide the web tab bar while the keyboard is up (same `keyboard-open` class
+  // Capacitor/visualViewport already toggle on other runtimes).
+  useEffect(() => {
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const show = Keyboard.addListener(showEvent, () => {
+      webViewRef.current?.injectJavaScript(
+        `document.body&&document.body.classList.add('keyboard-open');true;`,
+      );
+    });
+    const hide = Keyboard.addListener(hideEvent, () => {
+      webViewRef.current?.injectJavaScript(
+        `document.body&&document.body.classList.remove('keyboard-open');true;`,
+      );
+    });
+    return () => {
+      show.remove();
+      hide.remove();
+    };
   }, []);
 
   const onShouldStartLoadWithRequest = useCallback((request: WebViewNavigation) => {
