@@ -4,7 +4,8 @@
     "device": "iphone-6.9",
     "dimensions": "1320x2868",
     "source_capture": "app-store-assets/screenshots/raw/action-iphone.png",
-    "headline": "Turn great advice into action",
+    "headline": "Build your boardroom",
+    "support": "Pick the operators whose judgment you want in the room.",
     "qa_status": "pass"
   },
   {
@@ -12,7 +13,8 @@
     "device": "iphone-6.9",
     "dimensions": "1320x2868",
     "source_capture": "app-store-assets/screenshots/raw/operating-memo-iphone.png",
-    "headline": "Any source becomes an operating memo",
+    "headline": "Make anyone your mentor",
+    "support": "Paste any public link and it becomes an operating memo.",
     "qa_status": "pass"
   },
   {
@@ -20,7 +22,8 @@
     "device": "iphone-6.9",
     "dimensions": "1320x2868",
     "source_capture": "app-store-assets/screenshots/raw/source-grounded-iphone.png",
-    "headline": "Ground every insight in the source",
+    "headline": "Distill their best insights",
+    "support": "Every lesson stays anchored to the source you gave it.",
     "qa_status": "pass"
   },
   {
@@ -28,7 +31,8 @@
     "device": "iphone-6.9",
     "dimensions": "1320x2868",
     "source_capture": "app-store-assets/screenshots/raw/lessons-risks-actions-iphone.png",
-    "headline": "See lessons, risks, and next moves",
+    "headline": "See lessons, risks & next moves",
+    "support": "Structured for the decision in front of you today.",
     "qa_status": "pass"
   },
   {
@@ -36,7 +40,8 @@
     "device": "iphone-6.9",
     "dimensions": "1320x2868",
     "source_capture": "app-store-assets/screenshots/raw/follow-up-qa-iphone.png",
-    "headline": "Ask follow-ups for your company",
+    "headline": "Ask your C-suite anything",
+    "support": "Follow-up answers grounded in your own company context.",
     "qa_status": "pass"
   },
   {
@@ -44,7 +49,8 @@
     "device": "iphone-6.9",
     "dimensions": "1320x2868",
     "source_capture": "app-store-assets/screenshots/raw/library-iphone.png",
-    "headline": "Build your founder intelligence library",
+    "headline": "Build your founder playbook",
+    "support": "Profiles, folders, and insight that compounds over time.",
     "qa_status": "pass"
   },
   {
@@ -52,7 +58,8 @@
     "device": "iphone-6.9",
     "dimensions": "1320x2868",
     "source_capture": "app-store-assets/screenshots/raw/search-iphone.png",
-    "headline": "Find the right insight instantly",
+    "headline": "Find the right advice instantly",
+    "support": "Search and filter every insight you have ever saved.",
     "qa_status": "pass"
   },
   {
@@ -60,7 +67,8 @@
     "device": "iphone-6.9",
     "dimensions": "1320x2868",
     "source_capture": "app-store-assets/screenshots/raw/save-share-iphone.png",
-    "headline": "Save and share what matters",
+    "headline": "Keep your team in the room",
+    "support": "Export the memo and share it with the people executing.",
     "qa_status": "pass"
   },
   {
@@ -68,7 +76,8 @@
     "device": "ipad-13",
     "dimensions": "2064x2752",
     "source_capture": "app-store-assets/screenshots/raw/action-ipad.png",
-    "headline": "Turn great advice into action",
+    "headline": "Build your boardroom",
+    "support": "Pick the operators whose judgment you want in the room.",
     "qa_status": "pass"
   },
   {
@@ -76,7 +85,8 @@
     "device": "ipad-13",
     "dimensions": "2064x2752",
     "source_capture": "app-store-assets/screenshots/raw/operating-memo-ipad.png",
-    "headline": "Any source becomes an operating memo",
+    "headline": "Make anyone your mentor",
+    "support": "Paste any public link and it becomes an operating memo.",
     "qa_status": "pass"
   },
   {
@@ -84,7 +94,8 @@
     "device": "ipad-13",
     "dimensions": "2064x2752",
     "source_capture": "app-store-assets/screenshots/raw/source-grounded-ipad.png",
-    "headline": "Ground every insight in the source",
+    "headline": "Distill their best insights",
+    "support": "Every lesson stays anchored to the source you gave it.",
     "qa_status": "pass"
   },
   {
@@ -92,7 +103,8 @@
     "device": "ipad-13",
     "dimensions": "2064x2752",
     "source_capture": "app-store-assets/screenshots/raw/lessons-risks-actions-ipad.png",
-    "headline": "See lessons, risks, and next moves",
+    "headline": "See lessons, risks & next moves",
+    "support": "Structured for the decision in front of you today.",
     "qa_status": "pass"
   },
   {
@@ -100,7 +112,8 @@
     "device": "ipad-13",
     "dimensions": "2064x2752",
     "source_capture": "app-store-assets/screenshots/raw/follow-up-qa-ipad.png",
-    "headline": "Ask follow-ups for your company",
+    "headline": "Ask your C-suite anything",
+    "support": "Follow-up answers grounded in your own company context.",
     "qa_status": "pass"
   },
   {
@@ -108,7 +121,8 @@
     "device": "ipad-13",
     "dimensions": "2064x2752",
     "source_capture": "app-store-assets/screenshots/raw/library-ipad.png",
-    "headline": "Build your founder intelligence library",
+    "headline": "Build your founder playbook",
+    "support": "Profiles, folders, and insight that compounds over time.",
     "qa_status": "pass"
   },
   {
@@ -116,7 +130,8 @@
     "device": "ipad-13",
     "dimensions": "2064x2752",
     "source_capture": "app-store-assets/screenshots/raw/search-ipad.png",
-    "headline": "Find the right insight instantly",
+    "headline": "Find the right advice instantly",
+    "support": "Search and filter every insight you have ever saved.",
     "qa_status": "pass"
   },
   {
@@ -124,7 +139,8 @@
     "device": "ipad-13",
     "dimensions": "2064x2752",
     "source_capture": "app-store-assets/screenshots/raw/save-share-ipad.png",
-    "headline": "Save and share what matters",
+    "headline": "Keep your team in the room",
+    "support": "Export the memo and share it with the people executing.",
     "qa_status": "pass"
   }
 ]
