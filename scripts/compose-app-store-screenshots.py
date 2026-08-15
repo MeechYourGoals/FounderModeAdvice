@@ -1,89 +1,106 @@
 #!/usr/bin/env python3
-"""Compose marketing App Store screenshots around locked UI captures."""
+"""Compose App Store screenshots around locked, rights-cleared UI captures.
+
+Visual direction: premium midnight navy field, luminous cobalt accents,
+restrained champagne-gold detail, large editorial serif headlines, crisp white
+supporting copy, subtle depth/network texture.
+
+The UI inside every frame comes ONLY from app-store-assets/screenshots/raw/,
+captured from /__screenshots/:frame with SAMPLE_* demo data. Nothing here
+invents interface, and no public-figure likenesses are used.
+"""
 
 from __future__ import annotations
 
 import json
 import math
+import random
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont, ImageOps
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW_DIR = ROOT / "app-store-assets" / "screenshots" / "raw"
 OUT_DIR = ROOT / "app-store-assets" / "screenshots" / "production"
-BRAND_DIR = ROOT / "app-store-assets"
 FONTS = ROOT / "scripts" / "fonts"
-LOGO_CANDIDATES = [
-    BRAND_DIR / "brand" / "fma-logo-light.png",
-    Path("/tmp/fma-logo-light.png"),
-    BRAND_DIR / "icon-1024.png",
+MARK_CANDIDATES = [
+    ROOT / "app-store-assets" / "brand" / "master-appicon-1024.png",
+    ROOT / "app-store-assets" / "icon-1024.png",
 ]
 
-# Cream / black / brand-red editorial system
-CREAM = (245, 240, 230)
-CREAM_DEEP = (232, 224, 210)
-INK = (18, 18, 18)
-INK_SOFT = (55, 52, 48)
-RED = (196, 32, 46)  # approx hsl(356 72% 47%)
-RULE = (210, 200, 186)
+# Midnight navy / cobalt / champagne system
+NAVY_TOP = (7, 14, 32)
+NAVY_DEEP = (3, 8, 20)
+COBALT = (37, 99, 235)
+COBALT_SOFT = (59, 130, 246)
+GOLD = (226, 189, 122)
+WHITE = (247, 249, 255)
+WHITE_SOFT = (196, 206, 228)
 
 FRAMES = [
     {
         "id": "action",
         "file": "01-action",
-        "headline": "Turn great advice into action",
-        "support": "Operating memos tailored to your company.",
-        "show_logo": True,
+        "headline": "Build your boardroom",
+        "support": "Pick the operators whose judgment you want in the room.",
+        "eyebrow": "YOUR PERSONAL ADVISORY BOARD",
+        "show_mark": True,
     },
     {
         "id": "operating-memo",
         "file": "02-operating-memo",
-        "headline": "Any source becomes an operating memo",
-        "support": "Paste a link. Get decision-ready structure.",
-        "show_logo": False,
+        "headline": "Make anyone your mentor",
+        "support": "Paste any public link and it becomes an operating memo.",
+        "eyebrow": "LEARN FROM THE PEOPLE YOU ADMIRE",
+        "show_mark": True,
     },
     {
         "id": "source-grounded",
         "file": "03-source-grounded",
-        "headline": "Ground every insight in the source",
-        "support": "Transcript-anchored lessons you can verify.",
-        "show_logo": False,
+        "headline": "Distill their best insights",
+        "support": "Every lesson stays anchored to the source you gave it.",
+        "eyebrow": "LESS NOISE. MORE CLARITY.",
+        "show_mark": True,
     },
     {
         "id": "lessons-risks-actions",
         "file": "04-lessons-risks-actions",
-        "headline": "See lessons, risks, and next moves",
-        "support": "Organized for the decision in front of you.",
-        "show_logo": False,
+        "headline": "See lessons, risks & next moves",
+        "support": "Structured for the decision in front of you today.",
+        "eyebrow": "DECIDE WITH CONVICTION",
+        "show_mark": False,
     },
     {
         "id": "follow-up-qa",
         "file": "05-follow-up-qa",
-        "headline": "Ask follow-ups for your company",
-        "support": "Company-specific Q&A against the memo.",
-        "show_logo": False,
+        "headline": "Ask your C-suite anything",
+        "support": "Follow-up answers grounded in your own company context.",
+        "eyebrow": "A BOARD MEETING, ON DEMAND",
+        "show_mark": False,
     },
     {
         "id": "library",
         "file": "06-library",
-        "headline": "Build your founder intelligence library",
-        "support": "Profiles, folders, and compounding insight.",
-        "show_logo": False,
+        "headline": "Build your founder playbook",
+        "support": "Profiles, folders, and insight that compounds over time.",
+        "eyebrow": "YOUR PRIVATE FOUNDER PLAYBOOK",
+        "show_mark": False,
     },
     {
         "id": "search",
         "file": "07-search",
-        "headline": "Find the right insight instantly",
-        "support": "Search and filter your saved playbook.",
-        "show_logo": False,
+        "headline": "Find the right advice instantly",
+        "support": "Search and filter every insight you have ever saved.",
+        "eyebrow": "RECALL IN ONE MOVE",
+        "show_mark": False,
     },
     {
         "id": "save-share",
         "file": "08-save-share",
-        "headline": "Save and share what matters",
-        "support": "Export the memo. Keep the team aligned.",
-        "show_logo": True,
+        "headline": "Keep your team in the room",
+        "support": "Export the memo and share it with the people executing.",
+        "eyebrow": "ALIGNED ON THE SAME PAGE",
+        "show_mark": True,
     },
 ]
 
@@ -92,21 +109,27 @@ DEVICES = {
         "label": "iphone-6.9",
         "size": (1320, 2868),
         "suffix": "iphone-6.9",
-        "ui_top_ratio": 0.195,
-        "side_margin": 72,
-        "radius": 78,
-        "headline_size": 72,
-        "support_size": 32,
+        "side_margin": 84,
+        "top_safe": 150,
+        "bottom_safe": 120,
+        "radius": 74,
+        "mark_size": 62,
+        "eyebrow_size": 27,
+        "headline_size": 86,
+        "support_size": 34,
     },
     "ipad": {
         "label": "ipad-13",
         "size": (2064, 2752),
         "suffix": "ipad-13",
-        "ui_top_ratio": 0.165,
-        "side_margin": 110,
-        "radius": 52,
-        "headline_size": 78,
-        "support_size": 34,
+        "side_margin": 140,
+        "top_safe": 140,
+        "bottom_safe": 130,
+        "radius": 54,
+        "mark_size": 70,
+        "eyebrow_size": 30,
+        "headline_size": 96,
+        "support_size": 38,
     },
 }
 
@@ -118,29 +141,53 @@ def load_font(path: Path, size: int) -> ImageFont.FreeTypeFont | ImageFont.Image
         return ImageFont.load_default()
 
 
-def paper_background(size: tuple[int, int]) -> Image.Image:
+def midnight_background(size: tuple[int, int], seed: int) -> Image.Image:
+    """Navy gradient + soft cobalt bloom + faint network constellation."""
     w, h = size
-    base = Image.new("RGB", size, CREAM)
+    base = Image.new("RGB", size, NAVY_DEEP)
     draw = ImageDraw.Draw(base)
-    # Soft vertical wash
     for y in range(h):
         t = y / max(h - 1, 1)
-        r = int(CREAM[0] * (1 - t * 0.04) + CREAM_DEEP[0] * (t * 0.04))
-        g = int(CREAM[1] * (1 - t * 0.05) + CREAM_DEEP[1] * (t * 0.05))
-        b = int(CREAM[2] * (1 - t * 0.06) + CREAM_DEEP[2] * (t * 0.06))
+        # deeper toward the bottom, slightly lifted at the top
+        e = t ** 0.85
+        r = int(NAVY_TOP[0] * (1 - e) + NAVY_DEEP[0] * e)
+        g = int(NAVY_TOP[1] * (1 - e) + NAVY_DEEP[1] * e)
+        b = int(NAVY_TOP[2] * (1 - e) + NAVY_DEEP[2] * e)
         draw.line([(0, y), (w, y)], fill=(r, g, b))
-    # Subtle grain
-    noise = Image.effect_noise((w // 2, h // 2), 18).resize(size, Image.Resampling.BILINEAR)
-    noise = ImageOps.grayscale(noise).convert("RGB")
-    base = Image.blend(base, noise, 0.035)
-    # Soft corner vignette
-    vignette = Image.new("L", size, 0)
-    vdraw = ImageDraw.Draw(vignette)
-    vdraw.ellipse((-w * 0.2, -h * 0.1, w * 1.2, h * 0.85), fill=40)
-    vignette = vignette.filter(ImageFilter.GaussianBlur(180))
-    shade = Image.new("RGB", size, CREAM_DEEP)
-    base = Image.composite(base, shade, ImageOps.invert(vignette))
-    return base
+
+    # Cobalt bloom behind the headline block
+    bloom = Image.new("RGB", size, (0, 0, 0))
+    bdraw = ImageDraw.Draw(bloom)
+    bdraw.ellipse(
+        (-w * 0.35, -h * 0.20, w * 1.35, h * 0.46),
+        fill=(COBALT[0] // 2, COBALT[1] // 2, COBALT[2]),
+    )
+    bloom = bloom.filter(ImageFilter.GaussianBlur(int(w * 0.16)))
+    base = Image.blend(base, bloom, 0.30)
+
+    # Faint champagne glow low in the frame (echoes the icon's warm floor)
+    warm = Image.new("RGB", size, (0, 0, 0))
+    wdraw = ImageDraw.Draw(warm)
+    wdraw.ellipse((w * 0.18, h * 0.84, w * 0.82, h * 1.12), fill=GOLD)
+    warm = warm.filter(ImageFilter.GaussianBlur(int(w * 0.13)))
+    base = Image.blend(base, warm, 0.055)
+
+    # Subtle network texture: sparse nodes + short links, very low contrast
+    rng = random.Random(seed)
+    net = Image.new("RGBA", size, (0, 0, 0, 0))
+    ndraw = ImageDraw.Draw(net)
+    nodes = [(rng.uniform(0, w), rng.uniform(0, h)) for _ in range(46)]
+    for i, (x1, y1) in enumerate(nodes):
+        for x2, y2 in nodes[i + 1 :]:
+            if math.hypot(x2 - x1, y2 - y1) < w * 0.20:
+                ndraw.line([(x1, y1), (x2, y2)], fill=(*COBALT_SOFT, 20), width=2)
+    for x, y in nodes:
+        r = rng.uniform(2.5, 5.0)
+        ndraw.ellipse((x - r, y - r, x + r, y + r), fill=(*WHITE_SOFT, 34))
+    net = net.filter(ImageFilter.GaussianBlur(1.4))
+    out = base.convert("RGBA")
+    out.alpha_composite(net)
+    return out.convert("RGB")
 
 
 def rounded_mask(size: tuple[int, int], radius: int) -> Image.Image:
@@ -151,14 +198,13 @@ def rounded_mask(size: tuple[int, int], radius: int) -> Image.Image:
 
 def fit_ui(ui: Image.Image, max_w: int, max_h: int) -> Image.Image:
     ui = ui.convert("RGB")
-    # Never upscale UI captures
     scale = min(max_w / ui.width, max_h / ui.height, 1.0)
     if scale < 1.0:
         ui = ui.resize((max(1, int(ui.width * scale)), max(1, int(ui.height * scale))), Image.Resampling.LANCZOS)
     return ui
 
 
-def wrap_text(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.ImageFont, max_width: int) -> list[str]:
+def wrap_text(draw: ImageDraw.ImageDraw, text: str, font, max_width: int) -> list[str]:
     words = text.split()
     lines: list[str] = []
     current = ""
@@ -175,132 +221,127 @@ def wrap_text(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.ImageFont, m
     return lines
 
 
-def load_logo(max_h: int) -> Image.Image | None:
-    for path in LOGO_CANDIDATES:
+def load_mark(max_h: int) -> Image.Image | None:
+    for path in MARK_CANDIDATES:
         if path.exists():
-            im = Image.open(path).convert("RGBA")
-            ratio = max_h / im.height
-            im = im.resize((max(1, int(im.width * ratio)), max_h), Image.Resampling.LANCZOS)
-            return im
+            im = Image.open(path).convert("RGB")
+            im = im.resize((max_h, max_h), Image.Resampling.LANCZOS)
+            rgba = im.convert("RGBA")
+            rgba.putalpha(rounded_mask((max_h, max_h), int(max_h * 0.24)))
+            return rgba
     return None
 
 
-def compose_one(frame: dict, device_key: str) -> dict:
+def compose_one(frame: dict, device_key: str, index: int) -> dict:
     device = DEVICES[device_key]
     canvas_w, canvas_h = device["size"]
     raw_path = RAW_DIR / f"{frame['id']}-{device_key}.png"
     if not raw_path.exists():
         raise FileNotFoundError(raw_path)
 
-    canvas = paper_background((canvas_w, canvas_h))
+    canvas = midnight_background((canvas_w, canvas_h), seed=1000 + index)
     draw = ImageDraw.Draw(canvas)
 
-    # Prefer static display face; Fraunces variable TTFs are unreliable in Pillow.
     display = FONTS / "DMSerifDisplay-Regular.ttf"
     if not display.exists():
         display = FONTS / "Fraunces.ttf"
     headline_font = load_font(display, device["headline_size"])
     support_font = load_font(FONTS / "Inter.ttf", device["support_size"])
-    brand_font = load_font(FONTS / "Inter.ttf", 28 if device_key == "iphone" else 30)
+    eyebrow_font = load_font(FONTS / "Inter.ttf", device["eyebrow_size"])
+    wordmark_font = load_font(FONTS / "Inter.ttf", device["eyebrow_size"])
 
     side = device["side_margin"]
-    top_safe = int(canvas_h * 0.045)
     text_max_w = canvas_w - side * 2
+    y = device["top_safe"]
 
-    y = top_safe
-    if frame["show_logo"]:
-        logo = load_logo(56 if device_key == "iphone" else 64)
-        if logo is not None:
-            lx = (canvas_w - logo.width) // 2
-            canvas.paste(logo, (lx, y), logo)
-            y += logo.height + 28
-        else:
-            brand = "FOUNDER MODE ADVICE"
-            bw = draw.textlength(brand, font=brand_font)
-            draw.text(((canvas_w - bw) / 2, y), brand, font=brand_font, fill=INK)
-            # red underline accent under ADVICE-ish brand
-            draw.rectangle(
-                ((canvas_w - bw) / 2, y + 34, (canvas_w - bw) / 2 + bw, y + 38),
-                fill=RED,
+    # Lockup: mark + wordmark, left aligned like the reference sheet
+    if frame["show_mark"]:
+        mark = load_mark(device["mark_size"])
+        if mark is not None:
+            canvas.paste(mark, (side, y), mark)
+            label = "FOUNDER MODE ADVICE"
+            _, top, _, bottom = wordmark_font.getbbox(label)
+            label_h = bottom - top
+            draw.text(
+                (side + mark.width + 22, y + (mark.height - label_h) / 2 - top),
+                label,
+                font=wordmark_font,
+                fill=WHITE,
             )
-            y += 58
+            y += mark.height + 46
     else:
-        # Thin red editorial rule for sequence continuity
-        rule_w = 72
-        draw.rectangle(
-            ((canvas_w - rule_w) / 2, y + 8, (canvas_w + rule_w) / 2, y + 12),
-            fill=RED,
-        )
-        y += 36
+        # keep vertical rhythm consistent across the set
+        y += device["mark_size"] + 46
+
+    # Champagne eyebrow
+    draw.text((side, y), frame["eyebrow"], font=eyebrow_font, fill=GOLD)
+    y += int(device["eyebrow_size"] * 2.1)
 
     lines = wrap_text(draw, frame["headline"], headline_font, text_max_w)
-    for i, line in enumerate(lines):
-        lw = draw.textlength(line, font=headline_font)
-        draw.text(((canvas_w - lw) / 2, y), line, font=headline_font, fill=INK)
-        y += int(device["headline_size"] * 1.12)
-    y += 10
+    for line in lines:
+        draw.text((side, y), line, font=headline_font, fill=WHITE)
+        y += int(device["headline_size"] * 1.14)
+    y += int(device["headline_size"] * 0.12)
 
-    if frame.get("support"):
-        support_lines = wrap_text(draw, frame["support"], support_font, int(text_max_w * 0.92))
-        for line in support_lines:
-            lw = draw.textlength(line, font=support_font)
-            draw.text(((canvas_w - lw) / 2, y), line, font=support_font, fill=INK_SOFT)
-            y += int(device["support_size"] * 1.35)
-        y += 18
+    support_lines = wrap_text(draw, frame["support"], support_font, int(text_max_w * 0.94))
+    for line in support_lines:
+        draw.text((side, y), line, font=support_font, fill=WHITE_SOFT)
+        y += int(device["support_size"] * 1.42)
 
-    # UI placement
+    # Cobalt rule tying the text block to the device
+    y += int(device["support_size"] * 0.7)
+    draw.rectangle((side, y, side + int(canvas_w * 0.11), y + 5), fill=COBALT_SOFT)
+    y += int(device["support_size"] * 1.5)
+
+    # UI placement — real capture, never upscaled, never stretched
     ui = Image.open(raw_path).convert("RGB")
-    # Ensure exact source dims before fitting
-    if ui.size != device["size"]:
-        # Studio captures at exact viewport; if mismatch, letterbox-fit without stretch inventing UI.
-        pass
-
-    bottom_margin = int(canvas_h * 0.04)
-    available_top = max(y + 12, int(canvas_h * device["ui_top_ratio"]))
-    max_ui_h = canvas_h - available_top - bottom_margin
+    bottom_margin = device["bottom_safe"]
+    max_ui_h = canvas_h - y - bottom_margin
     max_ui_w = canvas_w - side * 2
     ui_fitted = fit_ui(ui, max_ui_w, max_ui_h)
 
-    # Restrained device frame: thin ink bezel, generous UI
-    pad = 10 if device_key == "iphone" else 12
+    pad = 12 if device_key == "iphone" else 14
     frame_w = ui_fitted.width + pad * 2
     frame_h = ui_fitted.height + pad * 2
     radius = device["radius"]
-    device_frame = Image.new("RGB", (frame_w, frame_h), INK)
+
+    bezel = Image.new("RGB", (frame_w, frame_h), (12, 20, 40))
     mask = rounded_mask((frame_w, frame_h), radius)
-    inner_mask = rounded_mask((ui_fitted.width, ui_fitted.height), max(10, radius - 8))
+    inner_mask = rounded_mask((ui_fitted.width, ui_fitted.height), max(12, radius - 10))
     framed = Image.new("RGBA", (frame_w, frame_h), (0, 0, 0, 0))
-    framed.paste(device_frame, (0, 0), mask)
+    framed.paste(bezel, (0, 0), mask)
     framed.paste(ui_fitted, (pad, pad), inner_mask)
 
-    # Soft drop shadow
-    shadow = Image.new("RGBA", (frame_w + 80, frame_h + 80), (0, 0, 0, 0))
+    # Cobalt edge light + deep shadow for premium depth
+    glow = Image.new("RGBA", (frame_w + 160, frame_h + 160), (0, 0, 0, 0))
+    gdraw = ImageDraw.Draw(glow)
+    gdraw.rounded_rectangle(
+        (60, 60, frame_w + 100, frame_h + 100), radius=radius + 16, fill=(*COBALT, 80)
+    )
+    glow = glow.filter(ImageFilter.GaussianBlur(46))
+
+    shadow = Image.new("RGBA", (frame_w + 160, frame_h + 160), (0, 0, 0, 0))
     sdraw = ImageDraw.Draw(shadow)
-    sdraw.rounded_rectangle((30, 40, frame_w + 50, frame_h + 50), radius=radius + 8, fill=(0, 0, 0, 55))
-    shadow = shadow.filter(ImageFilter.GaussianBlur(28))
+    sdraw.rounded_rectangle(
+        (70, 90, frame_w + 110, frame_h + 130), radius=radius + 12, fill=(0, 0, 0, 150)
+    )
+    shadow = shadow.filter(ImageFilter.GaussianBlur(40))
 
     fx = (canvas_w - frame_w) // 2
-    fy = available_top + max(0, (max_ui_h - frame_h) // 2)
-    # If text ate too much room, pin UI just under text
-    if fy < available_top:
-        fy = available_top
+    fy = y + max(0, (max_ui_h - frame_h) // 2)
 
     canvas_rgba = canvas.convert("RGBA")
-    canvas_rgba.alpha_composite(shadow, (fx - 40, fy - 30))
+    canvas_rgba.alpha_composite(shadow, (fx - 80, fy - 80))
+    canvas_rgba.alpha_composite(glow, (fx - 80, fy - 80))
     canvas_rgba.alpha_composite(framed, (fx, fy))
 
-    # Flatten to opaque RGB
-    out = Image.new("RGB", (canvas_w, canvas_h), CREAM)
+    out = Image.new("RGB", (canvas_w, canvas_h), NAVY_DEEP)
     out.paste(canvas_rgba.convert("RGB"), (0, 0))
-
-    # Final safety crop/pad to exact size
-    if out.size != (canvas_w, canvas_h):
-        out = out.resize((canvas_w, canvas_h), Image.Resampling.LANCZOS)
 
     out_name = f"{frame['file']}-{device['suffix']}.png"
     out_path = OUT_DIR / out_name
     out.save(out_path, format="PNG", optimize=True)
-    # Verify opaque
+
     verify = Image.open(out_path)
     assert verify.size == (canvas_w, canvas_h), (out_name, verify.size)
     assert verify.mode == "RGB", (out_name, verify.mode)
@@ -310,6 +351,7 @@ def compose_one(frame: dict, device_key: str) -> dict:
         "dimensions": f"{canvas_w}x{canvas_h}",
         "source_capture": str(raw_path.relative_to(ROOT)),
         "headline": frame["headline"],
+        "support": frame["support"],
         "qa_status": "pass",
     }
 
@@ -318,20 +360,19 @@ def main() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     manifest = []
     for device_key in ("iphone", "ipad"):
-        for frame in FRAMES:
-            manifest.append(compose_one(frame, device_key))
-    manifest_path = OUT_DIR / "MANIFEST.json"
-    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
-    # Also write a human-readable markdown manifest
+        for index, frame in enumerate(FRAMES):
+            manifest.append(compose_one(frame, device_key, index))
+    (OUT_DIR / "MANIFEST.json").write_text(json.dumps(manifest, indent=2) + "\n")
     lines = [
         "# App Store Screenshot Manifest",
         "",
-        "| File | Device | Dimensions | Source capture | Headline | QA |",
-        "|---|---|---|---|---|---|",
+        "| File | Device | Dimensions | Source capture | Headline | Supporting line | QA |",
+        "|---|---|---|---|---|---|---|",
     ]
     for row in manifest:
         lines.append(
-            f"| `{row['filename']}` | {row['device']} | {row['dimensions']} | `{row['source_capture']}` | {row['headline']} | {row['qa_status']} |"
+            f"| `{row['filename']}` | {row['device']} | {row['dimensions']} | "
+            f"`{row['source_capture']}` | {row['headline']} | {row['support']} | {row['qa_status']} |"
         )
     (OUT_DIR / "MANIFEST.md").write_text("\n".join(lines) + "\n")
     print(f"Wrote {len(manifest)} assets to {OUT_DIR}")
