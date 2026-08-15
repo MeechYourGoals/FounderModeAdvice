@@ -197,12 +197,43 @@ def rounded_mask(size: tuple[int, int], radius: int) -> Image.Image:
     return mask
 
 
-def fit_ui(ui: Image.Image, max_w: int, max_h: int) -> Image.Image:
-    ui = ui.convert("RGB")
-    scale = min(max_w / ui.width, max_h / ui.height, 1.0)
-    if scale < 1.0:
-        ui = ui.resize((max(1, int(ui.width * scale)), max(1, int(ui.height * scale))), Image.Resampling.LANCZOS)
-    return ui
+def trim_to_content(ui: Image.Image) -> Image.Image:
+    """Trim the empty scroll tail off a capture, keeping the real content region.
+
+    Rows are compared against the page background colour sampled just below the
+    app chrome. Everything from the last row that carries content down to the
+    bottom of the capture is dropped, except any sticky bottom bar, which is
+    re-attached so the frame still reads as the real app.
+    """
+    w, h = ui.size
+    px = ui.load()
+    step = max(1, w // 240)
+
+    def row_signature(y: int) -> int:
+        return sum(1 for x in range(0, w, step) if px[x, y] != bg)
+
+    bg = px[w // 2, int(h * 0.45)]
+    content_rows = [y for y in range(0, h, 2) if row_signature(y) > 2]
+    if not content_rows:
+        return ui
+
+    # Detect a sticky bottom bar (content hugging the very bottom of the capture).
+    tail = [y for y in content_rows if y > h * 0.92]
+    body = [y for y in content_rows if y <= h * 0.92]
+    if not body:
+        return ui
+    body_bottom = min(h, max(body) + int(h * 0.02))
+
+    if not tail:
+        return ui.crop((0, 0, w, body_bottom))
+
+    bar_top = min(tail) - int(h * 0.004)
+    bar = ui.crop((0, max(0, bar_top), w, h))
+    out = Image.new("RGB", (w, body_bottom + bar.height), bg)
+    out.paste(ui.crop((0, 0, w, body_bottom)), (0, 0))
+    out.paste(bar, (0, body_bottom))
+    return out
+
 
 
 def wrap_text(draw: ImageDraw.ImageDraw, text: str, font, max_width: int) -> list[str]:
@@ -311,19 +342,25 @@ def compose_one(frame: dict, device_key: str, index: int) -> dict:
     y += int(support_size * 0.7)
     draw.rectangle((side, y, side + int(canvas_w * 0.11), y + 5), fill=COBALT_SOFT)
 
-    # UI placement — real capture, never upscaled, never stretched. The frame
-    # bleeds off the bottom edge, so the visible region is the content-dense top
-    # of the capture instead of the page's empty scroll tail.
+    # UI placement — real capture, never stretched (aspect always preserved). The
+    # capture is trimmed to its content region so the store frame shows dense,
+    # real UI instead of the page's empty scroll tail, then the device frame
+    # bleeds off the bottom canvas edge.
     ui = Image.open(raw_path).convert("RGB")
+    ui = trim_to_content(ui)
     pad = 12 if device_key == "iphone" else 14
     max_ui_w = canvas_w - side * 2 - pad * 2
-    scale = min(max_ui_w / ui.width, 1.0)
     visible_h = canvas_h - device_top - pad  # frame runs off the canvas bottom
+    scale = max_ui_w / ui.width
+    # Cap magnification so the real UI stays crisp at store resolution.
+    scale = min(scale, 1.75)
     crop_h = min(ui.height, int(round(visible_h / scale)))
     ui = ui.crop((0, 0, ui.width, crop_h))
     ui_fitted = ui.resize(
-        (max(1, int(ui.width * scale)), max(1, int(ui.height * scale))), Image.Resampling.LANCZOS
-    ) if scale < 1.0 else ui
+        (max(1, round(ui.width * scale)), max(1, round(ui.height * scale))),
+        Image.Resampling.LANCZOS,
+    )
+
 
     frame_w = ui_fitted.width + pad * 2
     frame_h = ui_fitted.height + pad
@@ -361,7 +398,10 @@ def compose_one(frame: dict, device_key: str, index: int) -> dict:
     shadow = shadow.filter(ImageFilter.GaussianBlur(40))
 
     fx = (canvas_w - frame_w) // 2
-    fy = device_top
+    # If the trimmed capture is shorter than the available band, nudge it down so
+    # the frame sits optically centred instead of leaving a dead bottom third.
+    fy = device_top + max(0, (canvas_h - device_top - frame_h)) // 3
+
 
     canvas_rgba = canvas.convert("RGBA")
     canvas_rgba.alpha_composite(shadow, (fx - 80, fy - 80))
