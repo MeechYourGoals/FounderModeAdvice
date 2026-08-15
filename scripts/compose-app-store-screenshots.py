@@ -253,62 +253,94 @@ def compose_one(frame: dict, device_key: str, index: int) -> dict:
 
     side = device["side_margin"]
     text_max_w = canvas_w - side * 2
+    device_top = device["device_top"]
     y = device["top_safe"]
 
-    # Lockup: mark + wordmark, left aligned like the reference sheet
-    if frame["show_mark"]:
-        mark = load_mark(device["mark_size"])
-        if mark is not None:
-            canvas.paste(mark, (side, y), mark)
-            label = "FOUNDER MODE ADVICE"
-            _, top, _, bottom = wordmark_font.getbbox(label)
-            label_h = bottom - top
-            draw.text(
-                (side + mark.width + 22, y + (mark.height - label_h) / 2 - top),
-                label,
-                font=wordmark_font,
-                fill=WHITE,
-            )
-            y += mark.height + 46
-    else:
-        # keep vertical rhythm consistent across the set
-        y += device["mark_size"] + 46
+    # Lockup: mark + wordmark, left aligned like the reference sheet. Present on
+    # every frame so the set reads as one family in App Store search.
+    mark = load_mark(device["mark_size"])
+    if mark is not None:
+        canvas.paste(mark, (side, y), mark)
+        label = "FOUNDER MODE ADVICE"
+        _, top, _, bottom = wordmark_font.getbbox(label)
+        label_h = bottom - top
+        draw.text(
+            (side + mark.width + 22, y + (mark.height - label_h) / 2 - top),
+            label,
+            font=wordmark_font,
+            fill=WHITE,
+        )
+    y += device["mark_size"] + 46
 
     # Champagne eyebrow
     draw.text((side, y), frame["eyebrow"], font=eyebrow_font, fill=GOLD)
     y += int(device["eyebrow_size"] * 2.1)
 
-    lines = wrap_text(draw, frame["headline"], headline_font, text_max_w)
+    # Headline: shrink until it fits the fixed text band, so the device frame
+    # starts at the same y on every screenshot in the set.
+    headline_size = device["headline_size"]
+    support_size = device["support_size"]
+    text_band = device_top - y
+    while True:
+        headline_font = load_font(display, headline_size)
+        support_font = load_font(FONTS / "Inter.ttf", support_size)
+        lines = wrap_text(draw, frame["headline"], headline_font, text_max_w)
+        support_lines = wrap_text(draw, frame["support"], support_font, int(text_max_w * 0.94))
+        needed = (
+            len(lines) * int(headline_size * 1.14)
+            + int(headline_size * 0.12)
+            + len(support_lines) * int(support_size * 1.42)
+            + int(support_size * 2.2)
+        )
+        if needed <= text_band or headline_size <= 52:
+            break
+        headline_size -= 4
+
+    # Bottom-align the text block against the device so baselines match.
+    y = device_top - needed
     for line in lines:
         draw.text((side, y), line, font=headline_font, fill=WHITE)
-        y += int(device["headline_size"] * 1.14)
-    y += int(device["headline_size"] * 0.12)
+        y += int(headline_size * 1.14)
+    y += int(headline_size * 0.12)
 
-    support_lines = wrap_text(draw, frame["support"], support_font, int(text_max_w * 0.94))
     for line in support_lines:
         draw.text((side, y), line, font=support_font, fill=WHITE_SOFT)
-        y += int(device["support_size"] * 1.42)
+        y += int(support_size * 1.42)
 
     # Cobalt rule tying the text block to the device
-    y += int(device["support_size"] * 0.7)
+    y += int(support_size * 0.7)
     draw.rectangle((side, y, side + int(canvas_w * 0.11), y + 5), fill=COBALT_SOFT)
-    y += int(device["support_size"] * 1.5)
 
-    # UI placement — real capture, never upscaled, never stretched
+    # UI placement — real capture, never upscaled, never stretched. The frame
+    # bleeds off the bottom edge, so the visible region is the content-dense top
+    # of the capture instead of the page's empty scroll tail.
     ui = Image.open(raw_path).convert("RGB")
-    bottom_margin = device["bottom_safe"]
-    max_ui_h = canvas_h - y - bottom_margin
-    max_ui_w = canvas_w - side * 2
-    ui_fitted = fit_ui(ui, max_ui_w, max_ui_h)
-
     pad = 12 if device_key == "iphone" else 14
+    max_ui_w = canvas_w - side * 2 - pad * 2
+    scale = min(max_ui_w / ui.width, 1.0)
+    visible_h = canvas_h - device_top - pad  # frame runs off the canvas bottom
+    crop_h = min(ui.height, int(round(visible_h / scale)))
+    ui = ui.crop((0, 0, ui.width, crop_h))
+    ui_fitted = ui.resize(
+        (max(1, int(ui.width * scale)), max(1, int(ui.height * scale))), Image.Resampling.LANCZOS
+    ) if scale < 1.0 else ui
+
     frame_w = ui_fitted.width + pad * 2
-    frame_h = ui_fitted.height + pad * 2
+    frame_h = ui_fitted.height + pad
     radius = device["radius"]
 
+    # Top corners rounded only — the bottom is cut by the canvas edge.
+    mask = Image.new("L", (frame_w, frame_h), 0)
+    mdraw = ImageDraw.Draw(mask)
+    mdraw.rounded_rectangle((0, 0, frame_w - 1, frame_h + radius), radius=radius, fill=255)
+    inner_r = max(12, radius - 10)
+    inner_mask = Image.new("L", (ui_fitted.width, ui_fitted.height), 0)
+    idraw = ImageDraw.Draw(inner_mask)
+    idraw.rounded_rectangle(
+        (0, 0, ui_fitted.width - 1, ui_fitted.height + inner_r), radius=inner_r, fill=255
+    )
+
     bezel = Image.new("RGB", (frame_w, frame_h), (12, 20, 40))
-    mask = rounded_mask((frame_w, frame_h), radius)
-    inner_mask = rounded_mask((ui_fitted.width, ui_fitted.height), max(12, radius - 10))
     framed = Image.new("RGBA", (frame_w, frame_h), (0, 0, 0, 0))
     framed.paste(bezel, (0, 0), mask)
     framed.paste(ui_fitted, (pad, pad), inner_mask)
@@ -329,12 +361,13 @@ def compose_one(frame: dict, device_key: str, index: int) -> dict:
     shadow = shadow.filter(ImageFilter.GaussianBlur(40))
 
     fx = (canvas_w - frame_w) // 2
-    fy = y + max(0, (max_ui_h - frame_h) // 2)
+    fy = device_top
 
     canvas_rgba = canvas.convert("RGBA")
     canvas_rgba.alpha_composite(shadow, (fx - 80, fy - 80))
     canvas_rgba.alpha_composite(glow, (fx - 80, fy - 80))
     canvas_rgba.alpha_composite(framed, (fx, fy))
+
 
     out = Image.new("RGB", (canvas_w, canvas_h), NAVY_DEEP)
     out.paste(canvas_rgba.convert("RGB"), (0, 0))
