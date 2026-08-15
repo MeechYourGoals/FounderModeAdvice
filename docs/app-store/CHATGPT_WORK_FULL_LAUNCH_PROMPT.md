@@ -97,9 +97,9 @@ consoles; you verify save-state only).
    reaches "finished" on expo.dev. (Do NOT trigger paid builds yourself —
    builds consume the user's EAS plan; get their GO first.)
 4. Submission: USER runs `eas submit --platform ios` (or you guide the ASC
-   upload if they use Transporter). Enter the captured **ascAppId** into
-   `native/eas.json` → submit.production.ios.ascAppId via a repo commit
-   (USER ACTION — repo write, not a browser action).
+   upload if they use Transporter). The **ascAppId** `6797082499` is already
+   recorded in `native/eas.json` → `submit.production.ios.ascAppId` (no further
+   repo change needed).
 
 ## Phase 5 — Metadata, screenshots, TestFlight, review-ready
 1. Screenshots: user produces the authenticated frames + paywall review
