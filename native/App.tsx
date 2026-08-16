@@ -222,7 +222,8 @@ async function performNativeAppleSignIn(): Promise<AppleSignInAck> {
 
     const available = await AppleAuthentication.isAvailableAsync();
     if (!available) {
-      return { ok: false, fallback: "web", error: "unavailable" };
+      // Guideline 4.8: never fall through to WebView OAuth on iOS.
+      return { ok: false, fallback: "none", error: "unavailable" };
     }
 
     const nonceBytes = await Crypto.getRandomBytesAsync(16);
