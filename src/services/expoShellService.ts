@@ -139,6 +139,7 @@ export const requestShellAppleSignIn = (
   timeoutMs = 120_000,
 ): Promise<ShellAppleSignInResult> => {
   if (!isExpoShell()) {
+    // Plain browser: web OAuth is the only Apple path and is expected here.
     return Promise.resolve({ ok: false, fallback: "web", error: "not-shell" });
   }
   return new Promise((resolve) => {
@@ -147,13 +148,15 @@ export const requestShellAppleSignIn = (
       window.__fmaAppleSignInResult = undefined;
       resolve(result);
     };
+    // Inside the shell, a stalled or unavailable native bridge is a hard
+    // failure — Guideline 4.8 forbids a WebView OAuth fallback on iOS.
     const timer = window.setTimeout(
-      () => settle({ ok: false, fallback: "web", error: "timeout" }),
+      () => settle({ ok: false, fallback: "none", error: "timeout" }),
       timeoutMs,
     );
     window.__fmaAppleSignInResult = (result) => settle(result);
     if (!postToShell({ type: "appleSignIn" })) {
-      settle({ ok: false, fallback: "web", error: "bridge-unavailable" });
+      settle({ ok: false, fallback: "none", error: "bridge-unavailable" });
     }
   });
 };
