@@ -1,31 +1,79 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { verifyWebhook, EventName, gatewayFetch, type PaddleEnv } from '../_shared/paddle.ts';
 
-// Guard against customData.userId spoofing: verify the Paddle customer's
-// email actually matches the auth user for the claimed userId. Without this,
-// anyone can open Paddle checkout from devtools with a victim's UUID and
-// grant/strip a paid plan on their account.
+type OwnershipResult = 'ok' | 'mismatch' | 'error';
+
+// Guard against customData.userId spoofing: verify the Paddle customer belongs
+// to the claimed user. Without this, anyone can open Paddle checkout from
+// devtools with a victim's UUID and grant/strip a paid plan on their account.
+//
+// Ownership is accepted when EITHER:
+//  a) a previously verified row already links this Paddle customer (or this
+//     Paddle subscription) to the same user — covers app-side email changes and
+//     checkouts completed with a different email than the account, or
+//  b) the Paddle customer email matches one of the auth user's emails.
+// Transient gateway/API failures return 'error' so the event is retried by
+// Paddle instead of being silently dropped.
 async function verifyUserOwnsCustomer(
   userId: string,
   customerId: string,
+  subscriptionId: string,
   env: PaddleEnv,
-): Promise<boolean> {
-  try {
-    const { data: authUser, error } = await getSupabase().auth.admin.getUserById(userId);
-    if (error || !authUser?.user?.email) return false;
-    const userEmail = authUser.user.email.toLowerCase().trim();
-
-    const res = await gatewayFetch(env, `/customers/${encodeURIComponent(customerId)}`);
-    if (!res.ok) return false;
-    const body = await res.json();
-    const customerEmail = String(body?.data?.email ?? '').toLowerCase().trim();
-    if (!customerEmail) return false;
-    return customerEmail === userEmail;
-  } catch (e) {
-    console.error('verifyUserOwnsCustomer failed', e);
-    return false;
+): Promise<OwnershipResult> {
+  // (a) Trust an existing verified link for this customer/subscription.
+  const { data: linked, error: linkErr } = await getSupabase()
+    .from('subscriptions')
+    .select('user_id')
+    .eq('environment', env)
+    .or(
+      `paddle_customer_id.eq.${customerId},paddle_subscription_id.eq.${subscriptionId}`,
+    )
+    .limit(5);
+  if (linkErr) {
+    console.error('Ownership link lookup failed', linkErr);
+    return 'error';
   }
+  const rows = (linked ?? []) as { user_id: string }[];
+  if (rows.length > 0) {
+    return rows.some((r) => r.user_id === userId) ? 'ok' : 'mismatch';
+  }
+
+  // (b) First-time link: match the Paddle customer email against the auth user.
+  const { data: authUser, error } = await getSupabase().auth.admin.getUserById(userId);
+  if (error) {
+    console.error('getUserById failed', error);
+    return 'error';
+  }
+  const emails = new Set(
+    [
+      authUser?.user?.email,
+      ...((authUser?.user?.identities ?? []) as { identity_data?: { email?: string } }[]).map(
+        (i) => i.identity_data?.email,
+      ),
+    ]
+      .filter(Boolean)
+      .map((e) => String(e).toLowerCase().trim()),
+  );
+  if (emails.size === 0) return 'mismatch';
+
+  let res: Response;
+  try {
+    res = await gatewayFetch(env, `/customers/${encodeURIComponent(customerId)}`);
+  } catch (e) {
+    console.error('Paddle customer fetch threw', e);
+    return 'error';
+  }
+  if (res.status === 404) return 'mismatch';
+  if (!res.ok) {
+    console.error('Paddle customer fetch failed', res.status);
+    return 'error';
+  }
+  const body = await res.json().catch(() => null);
+  const customerEmail = String(body?.data?.email ?? '').toLowerCase().trim();
+  if (!customerEmail) return 'error';
+  return emails.has(customerEmail) ? 'ok' : 'mismatch';
 }
+
 
 let _supabase: ReturnType<typeof createClient> | null = null;
 function getSupabase() {
