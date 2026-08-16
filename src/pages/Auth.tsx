@@ -51,7 +51,7 @@ const Auth = () => {
       // localhost) must go through the lovable.auth bridge. Calling
       // supabase.auth.signInWithOAuth directly returns "missing OAuth secret".
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: getOAuthRedirectUrl(),
       });
       if (result.error) {
         toast({
@@ -119,7 +119,7 @@ const Auth = () => {
       }
 
       const result = await lovable.auth.signInWithOAuth("apple", {
-        redirect_uri: window.location.origin,
+        redirect_uri: getOAuthRedirectUrl(),
       });
       if (result.error) {
         toast({

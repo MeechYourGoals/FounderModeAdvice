@@ -56,9 +56,9 @@ const START_URL = `${WEB_URL}/?source=app`;
 const APP_SCHEME = "com.foundermodeadvice.app";
 
 /**
- * Full Safari/Chrome-like user agent with our token appended. Google OAuth
- * rejects stock WebView user agents ("disallowed_useragent"), so we present
- * a standard browser UA — the same approach Despia/Median-style wrappers use.
+ * Full Safari/Chrome-like user agent with our token appended. OAuth never runs
+ * in this WebView (the shell presents an OS authentication session), but the
+ * browser-like UA keeps the hosted app's device detection consistent.
  */
 const USER_AGENT =
   Platform.OS === "ios"
@@ -306,6 +306,38 @@ function Shell() {
   const [background, setBackground] = useState("#0c0e15");
   const [webViewKey, setWebViewKey] = useState(0);
   const incomingUrl = ExpoLinking.useURL();
+  const authSessionActiveRef = useRef(false);
+
+  /** Route a native callback back to the hosted SPA without leaving auth in Safari. */
+  const openWebCallback = useCallback((callbackUrl: string) => {
+    if (!callbackUrl.startsWith(`${APP_SCHEME}://`)) return;
+    const rest = callbackUrl.slice(`${APP_SCHEME}://`.length).replace(/^\/+/, "");
+    const target = `${WEB_URL}/${rest}`;
+    webViewRef.current?.injectJavaScript(
+      `window.location.href=${JSON.stringify(target)};true;`,
+    );
+  }, []);
+
+  /**
+   * Google forbids OAuth in embedded WebViews. Run the broker/provider flow in
+   * ASWebAuthenticationSession (iOS) / a custom tab (Android), then deliver the
+   * registered custom-scheme callback to the SPA for session persistence.
+   */
+  const openOAuthSession = useCallback(async (url: string) => {
+    if (authSessionActiveRef.current) return;
+    authSessionActiveRef.current = true;
+    try {
+      const result = await WebBrowser.openAuthSessionAsync(
+        url,
+        `${APP_SCHEME}://auth/callback`,
+      );
+      if (result.type === "success") openWebCallback(result.url);
+    } catch (err) {
+      console.warn("OAuth session failed", err);
+    } finally {
+      authSessionActiveRef.current = false;
+    }
+  }, [openWebCallback]);
 
   // Keep Android nav bar / root view in sync with the web theme.
   useEffect(() => {
@@ -657,6 +689,19 @@ function Shell() {
     const { url } = request;
     if (url.startsWith("about:")) return true;
 
+    // Lovable's OAuth broker is same-origin (`/~oauth/initiate`). Intercept it
+    // before the WebView loads it; Google explicitly rejects embedded user
+    // agents and an external auth session is required for a reliable login.
+    try {
+      const parsed = new URL(url);
+      if (parsed.hostname === WEB_HOST && parsed.pathname === "/~oauth/initiate") {
+        void openOAuthSession(url);
+        return false;
+      }
+    } catch {
+      // The generic URL handling below will reject malformed URLs safely.
+    }
+
     // Non-http(s) schemes (mailto:, tel:, itms-apps:, market:) → OS handler.
     if (!/^https?:/i.test(url)) {
       Linking.openURL(url).catch(() => {});
@@ -668,7 +713,7 @@ function Shell() {
     // External site → in-app browser sheet, keep the shell on the app.
     void WebBrowser.openBrowserAsync(url).catch(() => Linking.openURL(url));
     return false;
-  }, []);
+  }, [openOAuthSession]);
 
   const reload = useCallback(() => {
     setLoadError(false);
