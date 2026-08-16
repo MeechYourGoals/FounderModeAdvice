@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { verifyBulkDeleteBody } from "../_shared/posthog.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -157,32 +158,50 @@ async function eraseVendorRecords(userId: string): Promise<{
     }
   }
 
-  const posthogHost = (Deno.env.get("POSTHOG_HOST") || "https://us.i.posthog.com").replace(/\/+$/, "");
+  // POSTHOG_HOST must be the private app/API host (https://us.posthog.com),
+  // not the public ingestion host used by the browser SDK.
+  const posthogHost = (Deno.env.get("POSTHOG_HOST") || "https://us.posthog.com").replace(/\/+$/, "");
   const posthogProjectId = Deno.env.get("POSTHOG_PROJECT_ID");
   const posthogPersonalKey = Deno.env.get("POSTHOG_PERSONAL_API_KEY");
   if (posthogProjectId && posthogPersonalKey) {
     try {
       const res = await fetch(
-        `${posthogHost}/api/projects/${posthogProjectId}/delete_persons/?distinct_id=${encodeURIComponent(userId)}`,
+        `${posthogHost}/api/projects/${encodeURIComponent(posthogProjectId)}/persons/bulk_delete/`,
         {
           method: "POST",
           headers: {
             Authorization: `Bearer ${posthogPersonalKey}`,
             "Content-Type": "application/json",
           },
+          body: JSON.stringify({
+            distinct_ids: [userId],
+            delete_events: true,
+            delete_recordings: true,
+          }),
         },
       );
-      if (res.ok || res.status === 404) {
-        posthog = "deleted";
-      } else {
+
+      // 404 is NOT success here — it means the project/endpoint was wrong.
+      if (!res.ok) {
         posthog = "failed";
-        errors.push(`PostHog ${res.status}: ${await res.text()}`);
+        // Never surface the response body (may echo request data) or the key.
+        errors.push(`PostHog erasure rejected with status ${res.status}`);
+      } else {
+        const verification = verifyBulkDeleteBody(await res.text());
+        if (verification.ok) {
+          posthog = "deleted";
+        } else {
+          posthog = "failed";
+          errors.push(`PostHog erasure unverified: ${verification.reason}`);
+        }
       }
-    } catch (err) {
+    } catch {
+      // Swallow the raw error: fetch errors can include the full request URL.
       posthog = "failed";
-      errors.push(`PostHog: ${err instanceof Error ? err.message : String(err)}`);
+      errors.push("PostHog erasure request failed");
     }
   }
+
 
   if (errors.length > 0) {
     console.warn("Vendor erasure incomplete after account deletion", { userId, errors });

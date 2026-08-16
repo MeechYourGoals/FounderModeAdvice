@@ -27,7 +27,7 @@ If either is on, pause — I decide whether to turn it off (turning it off is th
 
 ### 3. IDs for Supabase deletion
 - Record **Project ID** (numeric or UUID shown in project settings / URL).
-- Record **Host**: `https://us.i.posthog.com` unless this project is on a different region.
+- Record **Host**: frontend ingestion stays `https://us.i.posthog.com`; server-side `POSTHOG_HOST` must be the private app/API host `https://us.posthog.com` (adjust region if this project is not on US cloud).
 - Personal API key: USER ACTION REQUIRED — I create a personal API key with permission to delete persons, and paste it only into Supabase secret `POSTHOG_PERSONAL_API_KEY`. You confirm a personal API key exists; do not print it.
 
 I will set these Supabase Edge Function secrets (script 4):
@@ -43,7 +43,7 @@ Do not export persons. Do not change the public `phc_` key. Do not enable advert
 ```
 POSTHOG_PROJECT_NAME=
 POSTHOG_PROJECT_ID=
-POSTHOG_HOST=https://us.i.posthog.com
+POSTHOG_HOST=https://us.posthog.com
 POSTHOG_SESSION_REPLAY=off/on
 POSTHOG_AUTOCAPTURE=off/on
 POSTHOG_PERSONAL_KEY_CREATED=yes/no (do not print)

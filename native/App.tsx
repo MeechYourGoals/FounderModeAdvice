@@ -222,7 +222,8 @@ async function performNativeAppleSignIn(): Promise<AppleSignInAck> {
 
     const available = await AppleAuthentication.isAvailableAsync();
     if (!available) {
-      return { ok: false, fallback: "web", error: "unavailable" };
+      // Guideline 4.8: never fall through to WebView OAuth on iOS.
+      return { ok: false, fallback: "none", error: "unavailable" };
     }
 
     const nonceBytes = await Crypto.getRandomBytesAsync(16);
@@ -269,7 +270,8 @@ async function performNativeAppleSignIn(): Promise<AppleSignInAck> {
       return { ok: false, fallback: "none", error: "canceled" };
     }
     console.warn("Native Apple sign-in failed", err);
-    return { ok: false, fallback: "web", error: message };
+    // Hard native failure on iOS: surface the error, never open web OAuth.
+    return { ok: false, fallback: "none", error: message };
   }
 }
 

@@ -71,7 +71,7 @@ Required for iOS launch:
 - APP_URL = `https://foundermodeadvice.com`
 
 Also set if missing (account deletion erases analytics/push when present):
-- POSTHOG_HOST = `https://us.i.posthog.com`
+- POSTHOG_HOST = `https://us.posthog.com` (private app/API host used by the PostHog REST API — not the `us.i.posthog.com` ingestion host)
 - POSTHOG_PROJECT_ID
 - POSTHOG_PERSONAL_API_KEY
 
