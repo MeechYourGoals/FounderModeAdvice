@@ -95,9 +95,20 @@ function productIdToTier(productId: string): 'free' | 'seed' | 'series_z' {
 
 async function upsertSubscription(data: any, env: PaddleEnv) {
   const { id, customerId, items, status, currentBillingPeriod, customData, scheduledChange } = data;
-  const userId = customData?.userId;
+  let userId: string | undefined = customData?.userId;
   if (!userId) {
-    console.warn('Subscription event without customData.userId — skipping');
+    // Renewals/updates can arrive without customData. Fall back to the owner
+    // already recorded for this Paddle subscription instead of dropping it.
+    const { data: existing } = await getSupabase()
+      .from('subscriptions')
+      .select('user_id')
+      .eq('paddle_subscription_id', id)
+      .eq('environment', env)
+      .maybeSingle();
+    userId = (existing as { user_id?: string } | null)?.user_id;
+  }
+  if (!userId) {
+    console.warn(`Subscription event ${id} without customData.userId and no known owner — skipping`);
     return;
   }
 
@@ -110,12 +121,17 @@ async function upsertSubscription(data: any, env: PaddleEnv) {
   }
 
   // Anti-spoof: customData.userId is client-supplied. Verify the Paddle
-  // customer's email matches the claimed user's email before granting.
-  const owns = await verifyUserOwnsCustomer(userId, customerId, env);
-  if (!owns) {
+  // customer actually belongs to the claimed user before granting.
+  const owns = await verifyUserOwnsCustomer(userId, customerId, id, env);
+  if (owns === 'error') {
+    // Transient failure — throw so the handler returns non-2xx and Paddle retries.
+    throw new Error(`Ownership verification unavailable for subscription ${id}`);
+  }
+  if (owns === 'mismatch') {
     console.warn(`Rejecting subscription ${id}: customer ${customerId} does not match claimed userId ${userId}`);
     return;
   }
+
 
   const tier = productIdToTier(productId);
 
