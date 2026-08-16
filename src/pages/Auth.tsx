@@ -108,7 +108,13 @@ const Auth = () => {
             navigate("/", { replace: true });
             return;
           }
-          console.warn("Native Apple id-token sign-in failed, falling back to web OAuth", error);
+          // Guideline 4.8: never fall back to WebView OAuth after a native token.
+          toast({
+            title: "Apple sign-in failed",
+            description: error.message,
+            variant: "destructive",
+          });
+          return;
         }
       }
 
