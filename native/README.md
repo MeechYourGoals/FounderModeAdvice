@@ -118,16 +118,16 @@ review notes) lives in `docs/store-readiness.md`.
 4. Confirm `usesAppleSignIn: true` in `app.json` (already set). EAS prebuild
    writes the `com.apple.developer.applesignin` entitlement.
 
-## Known limitation — Google OAuth in the WebView
+## Native social-auth routing
 
-Google sign-in runs inside the WebView using a browser-like user agent — the
-same mechanism the Despia wrapper for this app uses. Google officially
-discourages embedded-WebView OAuth (`disallowed_useragent`), and while the
-browser UA keeps it working today, Google could tighten detection. Verify
-Google sign-in on real hardware in every TestFlight/internal-testing round
-(it's in the `docs/store-readiness.md` checklist). If it breaks, the fix is
-to route OAuth through `expo-web-browser`'s `openAuthSessionAsync` and
-return via the app scheme — that requires moving the PKCE exchange out of
-the WebView's storage, so treat it as a deliberate follow-up, not a quick
-patch. Email/password is unaffected. **Sign in with Apple is native** in
-EAS builds (see above) and does not go through the WebView.
+Google sign-in must not run inside the embedded WebView: Google rejects that
+environment with `disallowed_useragent`. The shell intercepts the Lovable
+broker's `/~oauth/initiate` navigation, presents it with
+`expo-web-browser`'s `openAuthSessionAsync`, and returns the result through
+`com.foundermodeadvice.app://auth/callback`. Keep that exact redirect in the
+provider/Supabase allow-lists and verify it on real hardware in every
+TestFlight/internal-testing round (see `docs/store-readiness.md`).
+
+**Sign in with Apple is native** in EAS builds (see above) and does not use
+this browser session. Supabase's Apple provider must include the iOS bundle ID
+as a client ID or it will reject the native identity token's audience.

@@ -70,7 +70,10 @@ export const shouldShowAppAuthFirst = (): boolean =>
 
 /** Where OAuth providers should redirect back to after the user picks an account. */
 export const getOAuthRedirectUrl = (): string => {
-  if (Capacitor.isNativePlatform()) return NATIVE_OAUTH_REDIRECT;
+  // Both native containers need the provider to return through the registered
+  // app scheme. The Expo shell completes OAuth in an ASWebAuthenticationSession
+  // and then routes this callback back into the embedded web app.
+  if (Capacitor.isNativePlatform() || isExpoShell()) return NATIVE_OAUTH_REDIRECT;
   return `${window.location.origin}/auth/callback`;
 };
 
