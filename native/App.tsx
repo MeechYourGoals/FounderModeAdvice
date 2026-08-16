@@ -270,7 +270,8 @@ async function performNativeAppleSignIn(): Promise<AppleSignInAck> {
       return { ok: false, fallback: "none", error: "canceled" };
     }
     console.warn("Native Apple sign-in failed", err);
-    return { ok: false, fallback: "web", error: message };
+    // Hard native failure on iOS: surface the error, never open web OAuth.
+    return { ok: false, fallback: "none", error: message };
   }
 }
 
