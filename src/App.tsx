@@ -34,6 +34,7 @@ const ScenarioPage = lazy(() => import("./pages/ScenarioPage"));
 const BlogIndex = lazy(() => import("./pages/BlogIndex"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
 const ScreenshotStudio = lazy(() => import("./pages/ScreenshotStudio"));
+const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 import { OfflineBadge } from "@/components/OfflineBadge";
 import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import { AppChrome } from "@/components/AppChrome";
