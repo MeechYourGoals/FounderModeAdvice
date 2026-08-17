@@ -33,10 +33,25 @@ const Auth = () => {
   // session — don't bounce those users into the app before they set a new password.
   const isPasswordRecovery = searchParams.get("reset") === "true";
 
+  // OAuth consent (and other gated) flows send users here with ?next=<relative path>.
+  // Validate it as a same-origin relative path before ever redirecting to it.
+  const rawNext = searchParams.get("next") ?? "";
+  const nextPath = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/";
+  // Social sign-in leaves the app entirely, so the intent is stashed for
+  // /auth/callback to consume on return.
+  const rememberNext = () => {
+    try {
+      if (nextPath !== "/") sessionStorage.setItem("fma_post_auth_redirect", nextPath);
+      else sessionStorage.removeItem("fma_post_auth_redirect");
+    } catch {
+      // Private-mode storage failure is non-fatal; user lands on the app root.
+    }
+  };
+
   // Already signed in (native relaunch, deep link, or manual navigation): send the
   // user into the app instead of showing a redundant login form.
   if (!authLoading && user && !isPasswordRecovery) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={nextPath} replace />;
   }
 
   // Always show close button in browser; hide only in installed app/PWA to avoid loop.
@@ -45,6 +60,7 @@ const Auth = () => {
   const handleGoogleSignIn = async () => {
     triggerHapticFeedback('light');
     setGoogleLoading(true);
+    rememberNext();
     try {
       // Lovable Cloud managed Google auth: broker holds the OAuth secret, so
       // ALL web environments (preview, published .lovable.app, custom domain,
@@ -61,7 +77,7 @@ const Auth = () => {
         });
       } else if (!result.redirected) {
         // Session was set by the lovable bridge — navigate into the app.
-        navigate("/", { replace: true });
+        navigate(nextPath, { replace: true });
       }
     } catch (error: any) {
       toast({
@@ -77,6 +93,7 @@ const Auth = () => {
   const handleAppleSignIn = async () => {
     triggerHapticFeedback('light');
     setAppleLoading(true);
+    rememberNext();
     try {
       // Guideline 4.8: in the iOS store binary, Sign in with Apple must use
       // AuthenticationServices (native sheet), not a WebView OAuth page.
@@ -105,7 +122,7 @@ const Auth = () => {
             if (native.fullName) {
               await supabase.auth.updateUser({ data: { full_name: native.fullName } });
             }
-            navigate("/", { replace: true });
+            navigate(nextPath, { replace: true });
             return;
           }
           // Guideline 4.8: never fall back to WebView OAuth after a native token.
@@ -128,7 +145,7 @@ const Auth = () => {
           variant: "destructive",
         });
       } else if (!result.redirected) {
-        navigate("/", { replace: true });
+        navigate(nextPath, { replace: true });
       }
     } catch (error: any) {
       toast({
@@ -193,7 +210,7 @@ const Auth = () => {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: `${window.location.origin}${nextPath}`,
         },
       });
 
@@ -242,7 +259,7 @@ const Auth = () => {
           title: "Welcome back!",
           description: "Successfully logged in",
         });
-        navigate("/");
+        navigate(nextPath);
       }
     } catch (error) {
       toast({
