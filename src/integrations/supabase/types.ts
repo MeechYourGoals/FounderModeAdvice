@@ -287,6 +287,87 @@ export type Database = {
         }
         Relationships: []
       }
+      discovery_content: {
+        Row: {
+          active: boolean
+          author: string | null
+          canonical_url: string
+          categories: string[]
+          content_key: string
+          content_type: string
+          created_at: string
+          description: string | null
+          discovered_at: string
+          duration_seconds: number | null
+          featured: boolean
+          id: string
+          image_url: string | null
+          is_curated: boolean
+          language: string | null
+          priority: number
+          published_at: string | null
+          publisher: string | null
+          quality_score: number
+          source: string
+          title: string
+          topics: string[]
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          active?: boolean
+          author?: string | null
+          canonical_url: string
+          categories?: string[]
+          content_key: string
+          content_type?: string
+          created_at?: string
+          description?: string | null
+          discovered_at?: string
+          duration_seconds?: number | null
+          featured?: boolean
+          id?: string
+          image_url?: string | null
+          is_curated?: boolean
+          language?: string | null
+          priority?: number
+          published_at?: string | null
+          publisher?: string | null
+          quality_score?: number
+          source?: string
+          title: string
+          topics?: string[]
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          active?: boolean
+          author?: string | null
+          canonical_url?: string
+          categories?: string[]
+          content_key?: string
+          content_type?: string
+          created_at?: string
+          description?: string | null
+          discovered_at?: string
+          duration_seconds?: number | null
+          featured?: boolean
+          id?: string
+          image_url?: string | null
+          is_curated?: boolean
+          language?: string | null
+          priority?: number
+          published_at?: string | null
+          publisher?: string | null
+          quality_score?: number
+          source?: string
+          title?: string
+          topics?: string[]
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
       episode_folder_assignments: {
         Row: {
           created_at: string
@@ -831,6 +912,127 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_recommendation_contexts: {
+        Row: {
+          context: Json
+          created_at: string
+          last_manual_refresh_at: string | null
+          profile_fingerprint: string
+          profile_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          context: Json
+          created_at?: string
+          last_manual_refresh_at?: string | null
+          profile_fingerprint: string
+          profile_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          context?: Json
+          created_at?: string
+          last_manual_refresh_at?: string | null
+          profile_fingerprint?: string
+          profile_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_recommendation_contexts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "user_startup_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profile_recommendations: {
+        Row: {
+          analyzed_episode_id: string | null
+          batch_id: string
+          content_id: string
+          created_at: string
+          dismissed_at: string | null
+          id: string
+          position: number
+          profile_id: string
+          reason: string | null
+          saved_at: string | null
+          score: number
+          score_breakdown: Json | null
+          state: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          analyzed_episode_id?: string | null
+          batch_id: string
+          content_id: string
+          created_at?: string
+          dismissed_at?: string | null
+          id?: string
+          position?: number
+          profile_id: string
+          reason?: string | null
+          saved_at?: string | null
+          score?: number
+          score_breakdown?: Json | null
+          state?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          analyzed_episode_id?: string | null
+          batch_id?: string
+          content_id?: string
+          created_at?: string
+          dismissed_at?: string | null
+          id?: string
+          position?: number
+          profile_id?: string
+          reason?: string | null
+          saved_at?: string | null
+          score?: number
+          score_breakdown?: Json | null
+          state?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_recommendations_analyzed_episode_id_fkey"
+            columns: ["analyzed_episode_id"]
+            isOneToOne: false
+            referencedRelation: "episodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_recommendations_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "recommendation_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_recommendations_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "discovery_content"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_recommendations_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "user_startup_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rate_limits: {
         Row: {
           count: number
@@ -851,6 +1053,117 @@ export type Database = {
           window_start?: string
         }
         Relationships: []
+      }
+      recommendation_batches: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          generated_at: string
+          generation_source: string
+          generation_stats: Json | null
+          id: string
+          item_count: number
+          notified_at: string | null
+          profile_id: string
+          status: string
+          user_id: string
+          week_key: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          generated_at?: string
+          generation_source?: string
+          generation_stats?: Json | null
+          id?: string
+          item_count?: number
+          notified_at?: string | null
+          profile_id: string
+          status?: string
+          user_id: string
+          week_key: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          generated_at?: string
+          generation_source?: string
+          generation_stats?: Json | null
+          id?: string
+          item_count?: number
+          notified_at?: string | null
+          profile_id?: string
+          status?: string
+          user_id?: string
+          week_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recommendation_batches_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "user_startup_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recommendation_events: {
+        Row: {
+          content_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          position: number | null
+          profile_id: string | null
+          recommendation_id: string | null
+          surface: string
+          user_id: string
+        }
+        Insert: {
+          content_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          position?: number | null
+          profile_id?: string | null
+          recommendation_id?: string | null
+          surface?: string
+          user_id: string
+        }
+        Update: {
+          content_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          position?: number | null
+          profile_id?: string | null
+          recommendation_id?: string | null
+          surface?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recommendation_events_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "discovery_content"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recommendation_events_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "user_startup_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recommendation_events_recommendation_id_fkey"
+            columns: ["recommendation_id"]
+            isOneToOne: false
+            referencedRelation: "profile_recommendations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscriptions: {
         Row: {
@@ -1269,6 +1582,7 @@ export type Database = {
           tier: string
         }[]
       }
+      discovery_week_key: { Args: { _at?: string }; Returns: string }
       get_or_create_monthly_usage: {
         Args: { p_user_id: string }
         Returns: {
@@ -1326,6 +1640,48 @@ export type Database = {
           is_owner: boolean
           user_id: string
         }[]
+      }
+      list_profiles_needing_recommendations: {
+        Args: { _limit?: number; _week_key: string }
+        Returns: {
+          last_generated_at: string
+          profile_id: string
+          user_id: string
+        }[]
+      }
+      owns_startup_profile: {
+        Args: { _profile_id: string; _user_id: string }
+        Returns: boolean
+      }
+      set_recommendation_state: {
+        Args: {
+          p_episode_id?: string
+          p_recommendation_id: string
+          p_state: string
+        }
+        Returns: {
+          analyzed_episode_id: string | null
+          batch_id: string
+          content_id: string
+          created_at: string
+          dismissed_at: string | null
+          id: string
+          position: number
+          profile_id: string
+          reason: string | null
+          saved_at: string | null
+          score: number
+          score_breakdown: Json | null
+          state: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profile_recommendations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
