@@ -5,11 +5,16 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
 /**
- * Landing route for the OAuth redirect (redirectTo points here).
+ * Landing route for every OAuth return path:
  *
- * The Supabase client has detectSessionInUrl enabled by default, so it exchanges the
- * code/hash for a session automatically. We just wait for that to resolve, then route
- * the user into the app. If it fails, surface an error and send them back to /auth.
+ * 1. Lovable OAuth broker full-page redirect — tokens arrive as `access_token` /
+ *    `refresh_token` params (query string on web, custom-scheme URL forwarded by
+ *    the native shell). Supabase's `detectSessionInUrl` does NOT read those, so
+ *    we call `setSession` explicitly. This was the cause of "sign in failed"
+ *    loops after Google/Apple on the web and in TestFlight.
+ * 2. PKCE style `?code=` returns — exchanged for a session.
+ * 3. Implicit hash returns (`#access_token=…`) — handled by both 1 and the
+ *    client's own URL detection.
  */
 const AuthCallback = () => {
   const navigate = useNavigate();
@@ -19,37 +24,72 @@ const AuthCallback = () => {
   useEffect(() => {
     let active = true;
 
-    const finish = (session: unknown | null) => {
+    const fail = (description: string) => {
       if (!active) return;
-      if (session) {
-        navigate("/", { replace: true });
-      } else {
-        setMessage("We couldn't complete sign in.");
-        toast({
-          title: "Sign in failed",
-          description: "Something went wrong completing sign in. Please try again.",
-          variant: "destructive",
-        });
-        navigate("/auth", { replace: true });
-      }
+      setMessage("We couldn't complete sign in.");
+      toast({ title: "Sign in failed", description, variant: "destructive" });
+      navigate("/auth", { replace: true });
     };
 
-    // React to the session being established by detectSessionInUrl.
+    const succeed = () => {
+      if (!active) return;
+      // Strip tokens from the address bar before entering the app.
+      window.history.replaceState({}, "", "/auth/callback");
+      navigate("/", { replace: true });
+    };
+
+    const readParams = () => {
+      const query = new URLSearchParams(window.location.search);
+      const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      const get = (key: string) => query.get(key) ?? hash.get(key);
+      return {
+        accessToken: get("access_token"),
+        refreshToken: get("refresh_token"),
+        code: get("code"),
+        error: get("error_description") ?? get("error"),
+      };
+    };
+
+    const run = async () => {
+      const { accessToken, refreshToken, code, error } = readParams();
+
+      if (error) return fail(error);
+
+      if (accessToken && refreshToken) {
+        const { error: setErr } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        if (setErr) return fail(setErr.message);
+        return succeed();
+      }
+
+      if (code) {
+        const { error: exErr } = await supabase.auth.exchangeCodeForSession(code);
+        if (exErr) return fail(exErr.message);
+        return succeed();
+      }
+
+      // No credentials in the URL: the client may still be resolving a session
+      // it detected itself. Give it a moment before giving up.
+      await new Promise((r) => window.setTimeout(r, 1500));
+      const { data } = await supabase.auth.getSession();
+      if (data.session) return succeed();
+      fail("Something went wrong completing sign in. Please try again.");
+    };
+
+    // A session delivered by the client's own URL detection also finishes here.
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) finish(session);
+      if (session) succeed();
     });
 
-    // Fallback: give the URL exchange a moment, then check explicitly.
-    const timer = window.setTimeout(() => {
-      supabase.auth.getSession().then(({ data: { session } }) => finish(session));
-    }, 1200);
+    void run();
 
     return () => {
       active = false;
       subscription.unsubscribe();
-      window.clearTimeout(timer);
     };
   }, [navigate, toast]);
 
