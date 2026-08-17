@@ -1,0 +1,20 @@
+{
+  "//": "Test runner config for the Deno-side code: Supabase Edge Function shared modules and the pure client helpers they mirror. The app itself is built by Vite/tsc and ignores this file; the Supabase CLI reads supabase/config.toml, not this. Run with `npm test` or `deno task test`.",
+  "imports": {
+    "@/": "./src/"
+  },
+  "compilerOptions": {
+    "types": ["./deno-env.d.ts"]
+  },
+  "//unstable": "sloppy-imports lets Deno resolve the app's extensionless '@/...' imports without rewriting them to Deno style.",
+  "unstable": ["sloppy-imports"],
+  "tasks": {
+    "test": "deno test supabase/functions/_shared/ src/lib/"
+  },
+  "fmt": {
+    "exclude": ["**/*"]
+  },
+  "lint": {
+    "exclude": ["**/*"]
+  }
+}

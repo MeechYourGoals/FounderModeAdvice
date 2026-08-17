@@ -29,6 +29,9 @@ import AcceptAnalysisInvite from "./pages/AcceptAnalysisInvite";
 import SharedAnalysis from "./pages/SharedAnalysis";
 import Favorites from "./pages/Favorites";
 import NotFound from "./pages/NotFound";
+// Discover ships as its own chunk: it is a signed-in premium surface, so the
+// landing/auth path should never download it.
+const Discover = lazy(() => import("./pages/Discover"));
 const ScenariosHub = lazy(() => import("./pages/ScenariosHub"));
 const ScenarioPage = lazy(() => import("./pages/ScenarioPage"));
 const BlogIndex = lazy(() => import("./pages/BlogIndex"));
@@ -131,6 +134,10 @@ const App = () => (
               <Route path="/shared/:folderId" element={<SharedFolder />} />
               <Route path="/shared-analysis/:episodeId" element={<SharedAnalysis />} />
               <Route path="/favorites" element={<Favorites />} />
+              <Route
+                path="/discover"
+                element={<Suspense fallback={<RouteFallback />}><Discover /></Suspense>}
+              />
               <Route
                 path="/scenarios"
                 element={<Suspense fallback={<RouteFallback />}><ScenariosHub /></Suspense>}
