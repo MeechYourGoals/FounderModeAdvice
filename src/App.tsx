@@ -151,6 +151,10 @@ const App = () => (
                 path="/__screenshots/:frame"
                 element={<Suspense fallback={<RouteFallback />}><ScreenshotStudio /></Suspense>}
               />
+              <Route
+                path="/.lovable/oauth/consent"
+                element={<Suspense fallback={<RouteFallback />}><OAuthConsent /></Suspense>}
+              />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
