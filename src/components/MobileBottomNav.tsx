@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Building2, Bookmark, Users, Settings as SettingsIcon, Check, Globe } from "lucide-react";
+import { Building2, Bookmark, Compass, Settings as SettingsIcon, Check, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 import {
@@ -15,11 +15,15 @@ import { useActiveProfile } from "@/contexts/ActiveProfileContext";
 
 /**
  * Five-slot bottom nav for the mobile/PWA/native app shell:
- *   Profiles · Bookmarks · [Analyzing As] · Shared · Settings
+ *   Profiles · Bookmarks · [Analyzing As] · Discover · Settings
  *
  * The raised center button surfaces the active "analyzing as" profile — the
- * lens that personalizes every analysis. Tapping it opens a sheet to switch
- * profiles without leaving the current screen.
+ * lens that personalizes every analysis and every recommendation. Tapping it
+ * opens a sheet to switch profiles without leaving the current screen.
+ *
+ * Discover holds the fourth slot; "Shared with me" (the other Boardroom-only
+ * surface, and a much lower-frequency one) moved into the hamburger menu,
+ * which is present on every screen.
  */
 export const MobileBottomNav = () => {
   const navigate = useNavigate();
@@ -78,7 +82,7 @@ export const MobileBottomNav = () => {
 
   const lensLabel = activeProfile ? activeProfile.company_name : "Universal";
 
-  const onSharedRoute = location.pathname.startsWith("/shared");
+  const onDiscoverRoute = location.pathname.startsWith("/discover");
   const onSettingsRoute = location.pathname.startsWith("/settings") || location.pathname.startsWith("/account");
 
   return (
@@ -192,10 +196,10 @@ export const MobileBottomNav = () => {
         </div>
 
         <SideItem
-          icon={Users}
-          label="Shared"
-          active={onSharedRoute}
-          onClick={() => { triggerHapticFeedback("light"); navigate("/shared"); }}
+          icon={Compass}
+          label="Discover"
+          active={onDiscoverRoute}
+          onClick={() => { triggerHapticFeedback("light"); navigate("/discover"); }}
         />
         <SideItem
           icon={SettingsIcon}

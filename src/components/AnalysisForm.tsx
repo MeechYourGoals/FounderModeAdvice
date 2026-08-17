@@ -15,6 +15,7 @@ import { StartupProfileForm } from "./StartupProfileForm";
 import { AnalyzingScene } from "./AnalyzingScene";
 import { SourceUploadZone } from "./SourceUploadZone";
 import { UpgradePrompt } from "./subscription";
+import { markRecommendationAnalyzed } from "@/services/discovery";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 import {
   DropdownMenu,
@@ -114,10 +115,12 @@ export const AnalysisForm = () => {
     await handleAnalyzeSelectedProfiles();
   };
 
-  // Starter videos from the empty state dispatch this with a URL to one-tap analyze.
+  // One-tap analyze from starter videos and from Discover recommendations.
+  // Both go through this single path so there is one analysis pipeline.
   useEffect(() => {
     const handler = (e: Event) => {
-      const url = (e as CustomEvent<{ url: string }>).detail?.url;
+      const detail = (e as CustomEvent<{ url: string; recommendationId?: string | null }>).detail;
+      const url = detail?.url;
       if (!url) return;
       if (isAnalyzing) return; // an analysis is already running — ignore repeat taps
       setEpisodeUrl(url);
@@ -130,14 +133,27 @@ export const AnalysisForm = () => {
         });
         return;
       }
-      analyzeWithContext(activeProfile, url);
+      void (async () => {
+        const result = await analyzeWithContext(activeProfile, url, {
+          profileId: activeProfileId,
+        });
+        if (!detail?.recommendationId) return;
+        // Close the loop for Discover: mark the recommendation analyzed and
+        // link the resulting (or already existing) memo. Failures here are
+        // logged inside the service — the analysis itself already succeeded.
+        if (result?.success && result.episodeId) {
+          await markRecommendationAnalyzed(detail.recommendationId, result.episodeId);
+        } else if (result?.reason === "duplicate" && result.episodeId) {
+          await markRecommendationAnalyzed(detail.recommendationId, result.episodeId);
+        }
+      })();
     };
     window.addEventListener("analyzeUrl", handler as EventListener);
     return () => window.removeEventListener("analyzeUrl", handler as EventListener);
     // customPrompt included so the starter-video path forwards the user's current
     // instructions instead of a stale (empty) closure value.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeProfile, isAnalyzing, customPrompt]);
+  }, [activeProfile, activeProfileId, isAnalyzing, customPrompt]);
 
   const handleQuickImport = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -262,13 +278,18 @@ export const AnalysisForm = () => {
           if (manageState) {
             toast({
               title: "Episode already analyzed",
-              description: `"${existing[0].title}" has already been analyzed for this profile. View it in your episodes list.`,
+              description: `"${existing[0].title}" has already been analyzed for this profile. Opening it now.`,
             });
             setIsAnalyzing(false);
             setProgress("");
             window.dispatchEvent(new CustomEvent('episodeAnalyzed'));
+            // Surface the existing memo instead of leaving the user on an
+            // empty form wondering where it went.
+            window.dispatchEvent(
+              new CustomEvent('openEpisode', { detail: { episodeId: existing[0].id } }),
+            );
           }
-          return { success: false, reason: "duplicate" as const };
+          return { success: false, reason: "duplicate" as const, episodeId: existing[0].id as string };
         }
       }
 

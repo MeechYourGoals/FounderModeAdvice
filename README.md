@@ -24,8 +24,16 @@ npm install
 npm run dev            # web app on http://localhost:8080
 npm run lint
 npx tsc -p tsconfig.app.json --noEmit
+npm test               # Deno unit tests (edge-function shared modules + pure client helpers)
 npm run test:subscription-mapping
 ```
+
+`npm test` requires [Deno](https://deno.land) on the PATH. Database policy tests
+run separately against a live/local database:
+`DATABASE_URL=... npm run test:rls`.
+
+Discover (weekly personalized recommendations) needs some configuration outside
+this repo — see `docs/discovery-setup.md`.
 
 Native shell: see `native/README.md` (Expo Go for UI work; EAS development build
 for purchases/push).

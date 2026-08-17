@@ -58,7 +58,12 @@ const Index = () => {
 
   // Respond to the bottom-nav tray (router state) — open a panel or jump to Analyze.
   useEffect(() => {
-    const state = location.state as { panel?: string; action?: string } | null;
+    const state = location.state as {
+      panel?: string;
+      action?: string;
+      url?: string;
+      recommendationId?: string | null;
+    } | null;
     if (!state) return;
     if (state.panel === "profiles" || state.panel === "bookmarks") {
       openPanel(state.panel);
@@ -66,6 +71,19 @@ const Index = () => {
       setProfileOpen(false);
       setSelectedEpisodeId(null);
       requestAnimationFrame(scrollToAnalyze);
+    } else if (state.action === "analyzeUrl" && state.url) {
+      // Discover hands off here: the URL goes through the exact same
+      // "analyzeUrl" path a starter video uses, so the analysis pipeline,
+      // limits, consent, and history are unchanged.
+      setProfileOpen(false);
+      setSelectedEpisodeId(null);
+      const { url, recommendationId } = state;
+      requestAnimationFrame(() => {
+        scrollToAnalyze();
+        window.dispatchEvent(
+          new CustomEvent("analyzeUrl", { detail: { url, recommendationId } }),
+        );
+      });
     } else if (state.action === "walkthrough") {
       // Settings/Account "Replay app walkthrough" lands here.
       setProfileOpen(false);
@@ -80,13 +98,23 @@ const Index = () => {
     const openProfiles = () => openPanel("profiles");
     const openBookmarks = () => openPanel("bookmarks");
     const openAnalyze = () => { setSelectedEpisodeId(null); requestAnimationFrame(scrollToAnalyze); };
+    // Fired when an analysis for a submitted URL already exists — we surface
+    // the existing memo instead of recomputing it.
+    const openEpisode = (e: Event) => {
+      const id = (e as CustomEvent<{ episodeId?: string }>).detail?.episodeId;
+      if (!id) return;
+      setProfileOpen(false);
+      setSelectedEpisodeId(id);
+    };
     window.addEventListener("openProfiles", openProfiles);
     window.addEventListener("openBookmarks", openBookmarks);
     window.addEventListener("openAnalyze", openAnalyze);
+    window.addEventListener("openEpisode", openEpisode as EventListener);
     return () => {
       window.removeEventListener("openProfiles", openProfiles);
       window.removeEventListener("openBookmarks", openBookmarks);
       window.removeEventListener("openAnalyze", openAnalyze);
+      window.removeEventListener("openEpisode", openEpisode as EventListener);
     };
   }, []);
 

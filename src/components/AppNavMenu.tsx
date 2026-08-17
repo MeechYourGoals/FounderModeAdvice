@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   Bookmark,
   Briefcase,
+  Compass,
   LogOut,
   Menu,
   Moon,
@@ -120,6 +121,10 @@ export const AppNavMenu = ({
       <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
         Library &amp; account
       </DropdownMenuLabel>
+      <DropdownMenuItem onClick={() => goTo("/discover")}>
+        <Compass className="h-4 w-4 mr-2" />
+        Discover
+      </DropdownMenuItem>
       <DropdownMenuItem onClick={() => openPanel("profiles")}>
         <Briefcase className="h-4 w-4 mr-2" />
         Business Profiles
@@ -201,6 +206,10 @@ export const AppNavMenu = ({
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-1 mb-2">
               Library
             </p>
+            <button type="button" className={menuItemClass} onClick={() => goTo("/discover")}>
+              <Compass className="h-5 w-5 text-primary" />
+              Discover
+            </button>
             <button type="button" className={menuItemClass} onClick={() => openPanel("profiles")}>
               <Briefcase className="h-5 w-5 text-primary" />
               Business Profiles
