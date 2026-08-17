@@ -1,5 +1,5 @@
 import { Capacitor } from '@capacitor/core';
-import { supabase } from '@/integrations/supabase/client';
+
 
 // Platform detection
 export const isNative = Capacitor.isNativePlatform();
