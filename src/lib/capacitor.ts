@@ -1,5 +1,5 @@
 import { Capacitor } from '@capacitor/core';
-import { supabase } from '@/integrations/supabase/client';
+
 
 // Platform detection
 export const isNative = Capacitor.isNativePlatform();
@@ -37,23 +37,18 @@ export async function initializeNativePlugins() {
       console.log('App state changed:', isActive ? 'active' : 'background');
     });
 
-    App.addListener('appUrlOpen', async ({ url }) => {
+    App.addListener('appUrlOpen', ({ url }) => {
       console.log('App opened with URL:', url);
-      // Complete OAuth: the provider redirects to com.foundermodeadvice.app://auth/callback
-      // with a PKCE code; exchange it for a session, then route into the app.
+      // OAuth return: com.foundermodeadvice.app://auth/callback?access_token=…
+      // (broker) or ?code=… (PKCE). Hand the credentials to /auth/callback,
+      // which is the single place that knows how to finish every variant.
       if (url.includes('auth/callback')) {
-        try {
-          await supabase.auth.exchangeCodeForSession(url);
-          // Success: land on the app shell (Index routes signed-in users in).
-          window.location.href = '/';
-        } catch (error) {
-          // Failure: return to the auth screen so the user can retry, instead of
-          // bouncing through the marketing/app shell with no session.
-          console.error('Error completing OAuth sign in:', error);
-          window.location.href = '/auth';
-        }
+        const marker = 'auth/callback';
+        const tail = url.slice(url.indexOf(marker) + marker.length);
+        window.location.href = `/auth/callback${tail}`;
       }
     });
+
 
     // Hide splash screen after app is ready
     const { SplashScreen } = await import('@capacitor/splash-screen');
