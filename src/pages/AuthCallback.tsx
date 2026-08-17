@@ -35,7 +35,17 @@ const AuthCallback = () => {
       if (!active) return;
       // Strip tokens from the address bar before entering the app.
       window.history.replaceState({}, "", "/auth/callback");
-      navigate("/", { replace: true });
+      // Resume an interrupted flow (e.g. the OAuth consent screen) if one was
+      // stashed before leaving for the provider; validated as relative.
+      let target = "/";
+      try {
+        const stashed = sessionStorage.getItem("fma_post_auth_redirect");
+        sessionStorage.removeItem("fma_post_auth_redirect");
+        if (stashed && stashed.startsWith("/") && !stashed.startsWith("//")) target = stashed;
+      } catch {
+        // ignore storage failures
+      }
+      navigate(target, { replace: true });
     };
 
     const readParams = () => {

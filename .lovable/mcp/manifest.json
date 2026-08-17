@@ -1,0 +1,134 @@
+{
+  "version": 1,
+  "sdk_version": "0.26.2",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://iffcuueutmsusgdfekvm.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "founder-mode-advisor",
+      "version": "0.1.0",
+      "title": "Founder Mode Advisor"
+    },
+    "tools": [
+      {
+        "name": "list_analyses",
+        "title": "List analyses",
+        "description": "List the signed-in user's analyzed sources (videos, decks, documents), newest first. Optionally filter by topic or title text.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Match against the source title."
+            },
+            "topic": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Filter by a topic tag, e.g. 'marketing'."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_analysis",
+        "title": "Get analysis",
+        "description": "Get one analyzed source the signed-in user can access, with its extracted lessons and personalized insights.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "analysis_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Analysis (episode) id from list_analyses."
+            }
+          },
+          "required": [
+            "analysis_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "search_lessons",
+        "title": "Search lessons",
+        "description": "Search the lessons extracted from the signed-in user's analyzed sources by free text, optionally narrowed to a category.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "minLength": 2,
+              "description": "Free text to match inside lesson content."
+            },
+            "category": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Optional lesson category filter."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          },
+          "required": [
+            "query"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_startup_profiles",
+        "title": "List startup profiles",
+        "description": "List the signed-in user's startup/company profiles used to personalize insights, so an assistant knows the business context.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}

@@ -34,6 +34,7 @@ const ScenarioPage = lazy(() => import("./pages/ScenarioPage"));
 const BlogIndex = lazy(() => import("./pages/BlogIndex"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
 const ScreenshotStudio = lazy(() => import("./pages/ScreenshotStudio"));
+const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 import { OfflineBadge } from "@/components/OfflineBadge";
 import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import { AppChrome } from "@/components/AppChrome";
@@ -149,6 +150,10 @@ const App = () => (
               <Route
                 path="/__screenshots/:frame"
                 element={<Suspense fallback={<RouteFallback />}><ScreenshotStudio /></Suspense>}
+              />
+              <Route
+                path="/.lovable/oauth/consent"
+                element={<Suspense fallback={<RouteFallback />}><OAuthConsent /></Suspense>}
               />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
