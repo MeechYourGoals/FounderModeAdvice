@@ -3,6 +3,8 @@
 // revenuecat-webhook (server-triggered re-verify). Both paths treat the
 // RevenueCat REST API as the source of truth and never trust caller input.
 
+import { isFounderUserId } from "./founders.ts";
+
 export type Tier = "free" | "seed" | "series_z";
 
 // Map RevenueCat entitlement/product identifiers to internal tiers.
