@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Bookmark, BookmarkCheck, ExternalLink, Play, Sparkles, X } from "lucide-react";
+import { Bookmark, BookmarkCheck, Check, ExternalLink, Play, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -13,11 +13,15 @@ import {
 } from "@/lib/discovery";
 import type { DiscoveryContent } from "@/services/discovery";
 
+export type DiscoveryCardVariant = "library" | "featured" | "compact";
+
 interface DiscoveryCardProps {
   content: DiscoveryContent;
   /** Personalized "why this matters to you" — omitted for library items. */
   reason?: string | null;
   state?: RecommendationState;
+  /** library = thumbnail grid; featured/compact = briefing letter. */
+  variant?: DiscoveryCardVariant;
   /** Fires once when the card first enters the viewport (impression signal). */
   onImpression?: () => void;
   onAnalyze: () => void;
@@ -29,27 +33,26 @@ interface DiscoveryCardProps {
 }
 
 /**
- * One editorial card, shared by the For You feed, the Inspiration Library, and
- * Saved. Only the personalization (reason, save/dismiss) differs between them,
- * so the surfaces stay visually identical and there is one card to maintain.
+ * One editorial card, shared by the For You feed, the Inspiration Library,
+ * Saved, and the Home desk. Personalization (reason, save/dismiss) and
+ * layout (library vs briefing) vary; the analyze pipeline does not.
  */
 export const DiscoveryCard = ({
   content,
   reason,
   state = "unseen",
+  variant = "library",
   onImpression,
   onAnalyze,
   onOpenSource,
   onToggleSave,
   onDismiss,
   analyzeDisabled = false,
-  analyzeLabel = "Analyze",
+  analyzeLabel = "Prepare memo",
 }: DiscoveryCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const impressionSent = useRef(false);
 
-  // Impressions power the CTR metric, so they must mean "actually seen" —
-  // hence IntersectionObserver rather than firing on mount.
   useEffect(() => {
     if (!onImpression || impressionSent.current) return;
     const node = cardRef.current;
@@ -75,6 +78,9 @@ export const DiscoveryCard = ({
   const published = formatPublishedAt(content.published_at);
   const saved = state === "saved";
   const analyzed = state === "analyzed";
+  const compact = variant === "compact";
+  const featured = variant === "featured";
+  const showThumbnail = Boolean(content.image_url) && variant !== "compact";
 
   const withHaptics = (handler?: () => void) => () => {
     if (!handler) return;
@@ -82,24 +88,125 @@ export const DiscoveryCard = ({
     handler();
   };
 
+  const meta = (
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption-1 text-foreground-tertiary">
+      <Badge variant="secondary" className="rounded-full px-2 py-0 text-caption-2 font-medium">
+        {contentTypeLabel(content.content_type)}
+      </Badge>
+      {content.publisher && <span className="truncate max-w-[45%]">{content.publisher}</span>}
+      {duration && <span aria-label={`Duration ${duration}`}>· {duration}</span>}
+      {published && <span>· {published}</span>}
+    </div>
+  );
+
+  const reasonBlock = reason ? (
+    <div className={cn("rounded-xl border border-primary/20 bg-primary/5", featured ? "p-4" : "p-3")}>
+      <p className="mb-1 text-caption-2 font-semibold uppercase tracking-wide text-primary">
+        Why this matters to you
+      </p>
+      <p
+        className={cn(
+          "leading-relaxed text-foreground/90",
+          featured ? "text-subhead" : "text-footnote",
+          compact && "line-clamp-3",
+        )}
+      >
+        {reason}
+      </p>
+    </div>
+  ) : null;
+
+  const actions = (
+    <div className={cn("flex items-center gap-2", !compact && "mt-auto pt-1")}>
+      <Button
+        size="sm"
+        variant={analyzed ? "outline" : "default"}
+        className={cn("min-h-[40px] rounded-full", compact ? "shrink-0" : "flex-1")}
+        onClick={withHaptics(onAnalyze)}
+        disabled={analyzeDisabled}
+      >
+        {analyzed ? <Check className="mr-1.5 h-4 w-4" /> : <Play className="mr-1.5 h-4 w-4" />}
+        {analyzed ? "Open memo" : analyzeLabel}
+      </Button>
+
+      <Button
+        size="icon"
+        variant="ghost"
+        className="h-10 w-10 shrink-0"
+        onClick={withHaptics(onOpenSource)}
+        aria-label="Open source in a new tab"
+        title="Open source"
+      >
+        <ExternalLink className="h-4 w-4" />
+      </Button>
+
+      {onToggleSave && (
+        <Button
+          size="icon"
+          variant="ghost"
+          className={cn("h-10 w-10 shrink-0", saved && "text-primary")}
+          onClick={withHaptics(onToggleSave)}
+          aria-label={saved ? "Remove from saved" : "Save for later"}
+          aria-pressed={saved}
+          title={saved ? "Saved" : "Save"}
+        >
+          {saved ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
+        </Button>
+      )}
+
+      {onDismiss && (
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-10 w-10 shrink-0 text-muted-foreground hover:text-destructive"
+          onClick={withHaptics(onDismiss)}
+          aria-label="Not interested"
+          title="Not interested"
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      )}
+    </div>
+  );
+
+  if (compact) {
+    return (
+      <Card ref={cardRef} className="overflow-hidden p-4 transition-shadow duration-300 hover:shadow-elegant">
+        <div className="flex flex-col gap-3">
+          {meta}
+          <button type="button" onClick={withHaptics(onOpenSource)} className="text-left">
+            <h3 className="text-headline line-clamp-2 transition-colors hover:text-primary">{content.title}</h3>
+          </button>
+          {reasonBlock}
+          {actions}
+        </div>
+      </Card>
+    );
+  }
+
   return (
     <Card
       ref={cardRef}
-      className="group flex h-full flex-col overflow-hidden transition-shadow duration-300 hover:shadow-elegant"
+      className={cn(
+        "group flex h-full flex-col overflow-hidden transition-shadow duration-300 hover:shadow-elegant",
+        featured && "sm:flex-row",
+      )}
     >
-      {content.image_url && (
+      {showThumbnail && (
         <button
           type="button"
           onClick={withHaptics(onOpenSource)}
-          className="relative block aspect-[16/9] w-full overflow-hidden bg-muted"
+          className={cn(
+            "relative block overflow-hidden bg-muted",
+            featured ? "aspect-[16/9] w-full sm:aspect-auto sm:w-[42%] sm:min-h-[220px]" : "aspect-[16/9] w-full",
+          )}
           aria-label={`Open ${content.title}`}
         >
           <img
-            src={content.image_url}
+            src={content.image_url ?? undefined}
             alt=""
             loading="lazy"
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-            // A dead thumbnail must not leave a broken-image box in the grid.
             onError={(event) => {
               event.currentTarget.parentElement?.classList.add("hidden");
             }}
@@ -114,39 +221,25 @@ export const DiscoveryCard = ({
         </button>
       )}
 
-      <div className="flex flex-1 flex-col gap-3 p-4">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption-1 text-foreground-tertiary">
-          <Badge variant="secondary" className="rounded-full px-2 py-0 text-caption-2 font-medium">
-            {contentTypeLabel(content.content_type)}
-          </Badge>
-          {content.publisher && <span className="truncate max-w-[45%]">{content.publisher}</span>}
-          {duration && <span aria-label={`Duration ${duration}`}>· {duration}</span>}
-          {published && <span>· {published}</span>}
-        </div>
+      <div className={cn("flex flex-1 flex-col gap-3 p-4", featured && "sm:p-6")}>
+        {meta}
 
-        <button
-          type="button"
-          onClick={withHaptics(onOpenSource)}
-          className="text-left"
-        >
-          <h3 className="text-headline line-clamp-3 transition-colors group-hover:text-primary">
+        <button type="button" onClick={withHaptics(onOpenSource)} className="text-left">
+          <h3
+            className={cn(
+              "transition-colors group-hover:text-primary",
+              featured ? "text-title-3 line-clamp-3" : "text-headline line-clamp-3",
+            )}
+          >
             {content.title}
           </h3>
         </button>
 
-        {content.description && (
+        {content.description && variant === "library" && (
           <p className="text-footnote text-muted-foreground line-clamp-2">{content.description}</p>
         )}
 
-        {reason && (
-          <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
-            <p className="mb-1 flex items-center gap-1.5 text-caption-2 font-semibold uppercase tracking-wide text-primary">
-              <Sparkles className="h-3 w-3" />
-              Why this matters to you
-            </p>
-            <p className="text-footnote leading-relaxed text-foreground/90">{reason}</p>
-          </div>
-        )}
+        {reasonBlock}
 
         {content.topics?.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
@@ -158,55 +251,7 @@ export const DiscoveryCard = ({
           </div>
         )}
 
-        <div className="mt-auto flex items-center gap-2 pt-1">
-          <Button
-            size="sm"
-            className="min-h-[40px] flex-1 rounded-full"
-            onClick={withHaptics(onAnalyze)}
-            disabled={analyzeDisabled}
-          >
-            <Sparkles className="mr-1.5 h-4 w-4" />
-            {analyzed ? "Analyzed" : analyzeLabel}
-          </Button>
-
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-10 w-10 shrink-0"
-            onClick={withHaptics(onOpenSource)}
-            aria-label="Open source in a new tab"
-            title="Open source"
-          >
-            <ExternalLink className="h-4 w-4" />
-          </Button>
-
-          {onToggleSave && (
-            <Button
-              size="icon"
-              variant="ghost"
-              className={cn("h-10 w-10 shrink-0", saved && "text-primary")}
-              onClick={withHaptics(onToggleSave)}
-              aria-label={saved ? "Remove from saved" : "Save for later"}
-              aria-pressed={saved}
-              title={saved ? "Saved" : "Save"}
-            >
-              {saved ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
-            </Button>
-          )}
-
-          {onDismiss && (
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-10 w-10 shrink-0 text-muted-foreground hover:text-destructive"
-              onClick={withHaptics(onDismiss)}
-              aria-label="Not interested"
-              title="Not interested"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
+        {actions}
       </div>
     </Card>
   );

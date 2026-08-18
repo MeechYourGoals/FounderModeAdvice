@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import {
   Bookmark,
   Building2,
+  Compass,
   FileText,
   FolderOpen,
   MapPin,
@@ -26,7 +27,7 @@ import {
 } from "lucide-react";
 
 /** Slots of the real MobileBottomNav, mirrored by the mini mock below. */
-type NavSlot = "profiles" | "saved" | "lens" | "shared" | "settings";
+type NavSlot = "profiles" | "saved" | "lens" | "briefing" | "settings";
 
 interface WalkthroughSlide {
   icon: LucideIcon;
@@ -41,31 +42,41 @@ interface WalkthroughSlide {
 const SLIDES: WalkthroughSlide[] = [
   {
     icon: Video,
-    title: "Analyze any video",
-    body: "Paste any public founder, operator, or investor link — YouTube, podcasts, X, LinkedIn — and get an operating memo: lessons, risks, and action items grounded in the transcript.",
+    title: "Bring any source",
+    body: "Paste a founder, operator, or investor link — YouTube, podcasts, X, LinkedIn — and I'll write an operating memo: lessons, risks, and action items grounded in the transcript.",
     findIt: {
-      mobile: "The analyze box at the top of Home.",
-      desktop: "The analyze box at the top of Home.",
+      mobile: "Have a source? on today's desk.",
+      desktop: "Have a source? on today's desk.",
     },
   },
   {
     icon: FileText,
     title: "Watch your memo write itself",
-    body: "While we analyze, the stages play out live — transcript, lessons, mapping to your company. The finished memo reads like a publication, with scores on every insight.",
+    body: "While I write, the stages play out live — transcript, lessons, mapping to your company. The finished memo reads like a note from staff, not a dashboard.",
     findIt: {
-      mobile: "Starts the moment you tap Analyze.",
-      desktop: "Starts the moment you tap Analyze.",
+      mobile: "Starts the moment you tap Prepare memo.",
+      desktop: "Starts the moment you tap Prepare memo.",
     },
   },
   {
     icon: Target,
     title: "Choose who it's for",
-    body: "The “Analyzing as” lens tailors each memo to one of your businesses — or go Universal for general takeaways.",
+    body: "Today's lens tailors each memo to one of your businesses — or go Universal for general takeaways.",
     findIt: {
       mobile: "The blue button in the middle of the bottom bar.",
       desktop: "The profile switcher next to the menu (☰) in the top bar.",
     },
     navSlot: "lens",
+  },
+  {
+    icon: Compass,
+    title: "Your weekly briefing",
+    body: "I choose a short set of articles, talks, and research for what you're building. Ask me for a memo on any of them.",
+    findIt: {
+      mobile: "Briefing, fourth tab in the bottom bar.",
+      desktop: "Briefing, in the menu (☰).",
+    },
+    navSlot: "briefing",
   },
   {
     icon: Building2,
@@ -92,18 +103,17 @@ const SLIDES: WalkthroughSlide[] = [
     title: "Share and collaborate",
     body: "Send folders or single analyses to teammates. Anything shared with you lands in Shared.",
     findIt: {
-      mobile: "Shared, fourth tab in the bottom bar.",
-      desktop: "Shared, in the menu (☰).",
+      mobile: "Shared with me, in the menu (☰).",
+      desktop: "Shared with me, in the menu (☰).",
     },
-    navSlot: "shared",
   },
   {
     icon: MessageSquare,
-    title: "Ask the video",
+    title: "Ask the source",
     body: "On The Boardroom plan, open a chat grounded in any analyzed video and ask unlimited follow-up questions about your business.",
     findIt: {
-      mobile: "Inside any memo — look for “Ask the video.”",
-      desktop: "Inside any memo — look for “Ask the video.”",
+      mobile: "Inside any memo — look for “Ask the source.”",
+      desktop: "Inside any memo — look for “Ask the source.”",
     },
   },
   {
@@ -235,7 +245,7 @@ const MiniNav = ({ active }: { active: NavSlot }) => (
     >
       <Target className="h-4 w-4" />
     </span>
-    <MiniSlot icon={Users} highlighted={active === "shared"} />
+    <MiniSlot icon={Compass} highlighted={active === "briefing"} />
     <MiniSlot icon={Settings} highlighted={active === "settings"} />
   </div>
 );

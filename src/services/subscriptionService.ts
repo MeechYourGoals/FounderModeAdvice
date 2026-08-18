@@ -16,9 +16,6 @@ import {
   restoreShellPurchasesAndWait,
 } from './expoShellService';
 
-/** Founder/Super Admin emails with unlimited access - no feature limits */
-const FOUNDER_EMAILS = ['ccamechi@gmail.com'];
-
 /** RevenueCat API key — platform-specific and mandatory for native builds. */
 function getRevenueCatApiKey(): string {
   const platform = Capacitor.getPlatform();
@@ -378,7 +375,7 @@ export async function restorePurchases(): Promise<SubscriptionTier> {
   }
 
   if (!Purchases || !Capacitor.isNativePlatform()) {
-    return 'free';
+    throw new Error('Restore is only available in the app');
   }
 
   try {
@@ -388,7 +385,7 @@ export async function restorePurchases(): Promise<SubscriptionTier> {
     return tier;
   } catch (error) {
     console.error('RevenueCat: Failed to restore purchases', error);
-    return 'free';
+    throw error instanceof Error ? error : new Error('Restore failed');
   }
 }
 
@@ -414,40 +411,21 @@ export async function syncSubscriptionToSupabase(tier: SubscriptionTier): Promis
 
 
 // Get subscription info from Supabase (direct queries, no RPC)
-export async function getSubscriptionInfo(): Promise<SubscriptionInfo | null> {
+export async function getSubscriptionInfo(
+  knownUser?: { id: string; email?: string | null } | null,
+): Promise<SubscriptionInfo | null> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    // Prefer the already-resolved session user. `getUser()` hits the Auth
+    // server and can deadlock with onAuthStateChange / concurrent requests
+    // (https://github.com/supabase/gotrue-js/issues/762).
+    const user =
+      knownUser ??
+      (await supabase.auth.getSession()).data.session?.user ??
+      null;
     if (!user) return null;
 
-    // Founder/Super Admin: unlimited access, no feature limits
-    const isFounder = user.email && FOUNDER_EMAILS.includes(user.email.toLowerCase());
-    if (isFounder) {
-      const profilesUsed = (await supabase
-        .from('user_startup_profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)).count ?? 0;
-      const bookmarksUsed = (await supabase
-        .from('bookmarked_episodes')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)).count ?? 0;
-      const { data: usage } = await supabase
-        .from('user_monthly_usage' as any)
-        .select('analyses_count')
-        .eq('user_id', user.id)
-        .eq('month_year', new Date().toISOString().slice(0, 7))
-        .single();
-      return {
-        tier: 'series_z',
-        limits: {
-          profiles: { max: 9999, used: profilesUsed || 0 },
-          bookmarks: { max: 9999, used: bookmarksUsed || 0 },
-          analyses: { max: 9999, used: (usage as any)?.analyses_count || 0 },
-        },
-        isActive: true,
-      };
-    }
-
-    // Get subscription tier
+    // Entitlement is the user_subscriptions row only. The client is untrusted
+    // in a public repo — emails are not authorization.
     const { data: subscription } = await supabase
       .from('user_subscriptions' as any)
       .select('*')

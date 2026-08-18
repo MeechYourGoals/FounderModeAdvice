@@ -28,6 +28,6 @@ export function isUniversalAnalysis(analysis: AnalysisProfileLike): boolean {
 
 /** Header for the profile-specific advice column. */
 export function getBoardMeetingMemoTitle(analysis: AnalysisProfileLike): string {
-  if (isUniversalAnalysis(analysis)) return "Board Meeting Memo";
-  return `Board Meeting Memo for: ${getAnalysisProfileLabel(analysis)}`;
+  if (isUniversalAnalysis(analysis)) return "Advice for you";
+  return `Advice for ${getAnalysisProfileLabel(analysis)}`;
 }

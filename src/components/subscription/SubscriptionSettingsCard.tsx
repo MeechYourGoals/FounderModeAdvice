@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { CreditCard, RotateCcw, Users, Bookmark, Video } from "lucide-react";
 import { TIER_PRICING, isUnlimited, tierPriceLabel } from "@/types/subscription";
 import { triggerHapticFeedback } from "@/lib/capacitor";
+import { useToast } from "@/hooks/use-toast";
 
 /**
  * Subscription home for Settings → Subscription.
@@ -18,6 +19,7 @@ import { triggerHapticFeedback } from "@/lib/capacitor";
 export function SubscriptionSettingsCard() {
   const { subscription, loading, manageSubscription, isNative, restorePurchases } = useSubscription();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   if (loading || !subscription) {
     return (
@@ -105,7 +107,25 @@ export function SubscriptionSettingsCard() {
               variant="ghost"
               size="sm"
               className="w-full sm:w-auto"
-              onClick={() => restorePurchases()}
+              onClick={async () => {
+                triggerHapticFeedback("light");
+                try {
+                  const restored = await restorePurchases();
+                  if (restored) {
+                    triggerHapticFeedback("success");
+                    toast({
+                      title: "Purchases restored",
+                      description: "Your subscription status has been updated.",
+                    });
+                  }
+                } catch {
+                  toast({
+                    title: "Restore failed",
+                    description: "Could not restore purchases. Please try again.",
+                    variant: "destructive",
+                  });
+                }
+              }}
             >
               <RotateCcw className="h-4 w-4 mr-2" />
               Restore Purchases

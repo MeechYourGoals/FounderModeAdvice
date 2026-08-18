@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Loader2, ArrowLeft, FastForward, Building2, Check, ChevronDown, Globe, Sparkles } from "lucide-react";
+import { Loader2, ArrowLeft, FastForward, Building2, Check, ChevronDown, Globe } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -51,8 +51,16 @@ interface SavedProfile {
   role?: string | null;
 }
 
-export const AnalysisForm = () => {
+interface AnalysisFormProps {
+  /** composer = quiet capture on today's desk; expands when writing. */
+  variant?: "default" | "composer";
+  /** Hide the collapsed composer while a memo is open; stay mounted for events. */
+  inactive?: boolean;
+}
+
+export const AnalysisForm = ({ variant = "default", inactive = false }: AnalysisFormProps) => {
   const [episodeUrl, setEpisodeUrl] = useState("");
+  const [composerOpen, setComposerOpen] = useState(variant !== "composer");
   const [podcastName, setPodcastName] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [progress, setProgress] = useState("");
@@ -123,6 +131,7 @@ export const AnalysisForm = () => {
       const url = detail?.url;
       if (!url) return;
       if (isAnalyzing) return; // an analysis is already running — ignore repeat taps
+      setComposerOpen(true);
       setEpisodeUrl(url);
       const analysisCheck = canAnalyzeVideo();
       if (!analysisCheck.allowed) {
@@ -154,6 +163,12 @@ export const AnalysisForm = () => {
     // instructions instead of a stale (empty) closure value.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeProfile, activeProfileId, isAnalyzing, customPrompt]);
+
+  useEffect(() => {
+    const expand = () => setComposerOpen(true);
+    window.addEventListener("openAnalyze", expand);
+    return () => window.removeEventListener("openAnalyze", expand);
+  }, []);
 
   const handleQuickImport = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -277,8 +292,8 @@ export const AnalysisForm = () => {
         if (existing && existing.length > 0) {
           if (manageState) {
             toast({
-              title: "Episode already analyzed",
-              description: `"${existing[0].title}" has already been analyzed for this profile. Opening it now.`,
+              title: "This memo is already on your desk",
+              description: `Opening “${existing[0].title}”.`,
             });
             setIsAnalyzing(false);
             setProgress("");
@@ -325,8 +340,8 @@ export const AnalysisForm = () => {
 
       if (manageState) {
         toast({
-          title: "Analysis complete!",
-          description: "Episode analyzed successfully.",
+          title: "Memo ready",
+          description: "I added it to today's desk.",
         });
 
         setEpisodeUrl("");
@@ -335,6 +350,7 @@ export const AnalysisForm = () => {
         setShowCustomPrompt(false);
         setStep("episode");
         setStartupContext(null);
+        if (variant === "composer") setComposerOpen(false);
         window.dispatchEvent(new CustomEvent('episodeAnalyzed'));
       }
       return { success: true as const, episodeId: data?.episodeId as string | undefined };
@@ -477,6 +493,42 @@ export const AnalysisForm = () => {
   }
 
   const analysisCheck = canAnalyzeVideo();
+  const collapsedComposer = variant === "composer" && !composerOpen && !isAnalyzing;
+
+  if (inactive && collapsedComposer) {
+    return aiConsentDialog;
+  }
+
+  if (collapsedComposer) {
+    return (
+      <Card className="relative overflow-hidden p-4 sm:p-5 shadow-md border-primary/10">
+        <div aria-hidden className="absolute inset-x-0 top-0 h-[3px]" style={{ background: "var(--gradient-primary)" }} />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-title-3">
+              Have a source?{" "}
+              <span className="font-display font-medium italic text-gradient">I'll write the memo</span>
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {activeProfile
+                ? `Drop in a link or document for ${activeProfile.company_name}.`
+                : "Drop in a public link or a private document."}
+            </p>
+          </div>
+          <Button
+            className="min-h-[44px] rounded-full sm:min-h-0"
+            onClick={() => {
+              triggerHapticFeedback("light");
+              setComposerOpen(true);
+            }}
+          >
+            Bring a source
+          </Button>
+        </div>
+        {aiConsentDialog}
+      </Card>
+    );
+  }
 
   return (
     <Card className="relative overflow-hidden p-4 sm:p-8 shadow-lg border-primary/10 hover:shadow-elegant transition-shadow duration-300">
@@ -538,13 +590,22 @@ export const AnalysisForm = () => {
       ) : (
       <form onSubmit={handleEpisodeSubmit} className="space-y-6">
         <div className="space-y-2 text-center">
-          <h2 className="text-title-2 sm:text-title-1 text-center">
-            New{" "}
-            <span className="font-display font-medium italic text-gradient">analysis</span>
+            <h2 className="text-title-2 sm:text-title-1 text-center">
+            Write a{" "}
+            <span className="font-display font-medium italic text-gradient">memo</span>
           </h2>
           <p className="text-muted-foreground">
-            Paste almost any public link — article, post, newsletter, video, or podcast — or upload a private document, and get a memo tailored to your company
+            Drop in a public link or a private document. I'll write the memo for your company.
           </p>
+          {variant === "composer" && (
+            <button
+              type="button"
+              className="text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+              onClick={() => setComposerOpen(false)}
+            >
+              Not now
+            </button>
+          )}
         </div>
 
         <Tabs value={inputMode} onValueChange={(v) => setInputMode(v as "series" | "url" | "upload")} className="w-full">
@@ -633,14 +694,12 @@ export const AnalysisForm = () => {
               disabled={isAnalyzing || uploadBusy}
               className="mx-auto flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground min-h-[44px] sm:min-h-0"
             >
-              <Sparkles className="h-3.5 w-3.5 text-primary" />
               Add custom instructions
               <span className="text-muted-foreground/70">(optional)</span>
             </button>
           ) : (
             <div className="space-y-1.5">
               <label htmlFor="customPrompt" className="flex items-center gap-1.5 text-sm font-medium">
-                <Sparkles className="h-3.5 w-3.5 text-primary" />
                 Custom instructions
                 <span className="font-normal text-muted-foreground">— optional</span>
               </label>
@@ -655,7 +714,7 @@ export const AnalysisForm = () => {
                 className="resize-y text-sm min-h-[92px]"
               />
               <p className="text-xs text-muted-foreground">
-                We’ll use this to write the Board Meeting Memo. Leave blank for Intriguing Insights only.
+                I'll use this to shape the advice. Leave blank for lessons from the source only.
               </p>
             </div>
           )}
@@ -678,7 +737,7 @@ export const AnalysisForm = () => {
                     ) : (
                       <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
                     )}
-                    <span className="truncate">Analyze for {selectedProfileLabel}</span>
+                    <span className="truncate">Write for {selectedProfileLabel}</span>
                   </span>
                   <ChevronDown className="h-4 w-4 opacity-60" />
                 </Button>
@@ -759,13 +818,13 @@ export const AnalysisForm = () => {
                 Upgrade to Continue
               </>
             ) : canBatchProfiles && selectedProfileIds.length > 1 ? (
-              <>Analyze for {selectedProfileIds.length} profiles</>
+              <>Prepare memo for {selectedProfileIds.length} profiles</>
             ) : selectedProfiles.length === 1 ? (
-              <>Analyze for {selectedProfiles[0].company_name}</>
+              <>Prepare memo for {selectedProfiles[0].company_name}</>
             ) : activeProfile ? (
-              <>Analyze for {activeProfile.company_name}</>
+              <>Prepare memo for {activeProfile.company_name}</>
             ) : (
-              <>Add context &amp; analyze</>
+              <>Add context &amp; write the memo</>
             )}
           </Button>
 
@@ -779,7 +838,7 @@ export const AnalysisForm = () => {
               className="min-w-[150px] min-h-[48px] sm:min-h-0 rounded-full"
             >
               <FastForward className="mr-2 h-4 w-4" />
-              Quick analyze
+              Quick memo
             </Button>
           )}
         </div>

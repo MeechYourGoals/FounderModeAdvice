@@ -46,6 +46,9 @@ import {
   isUploadedDocumentUrl,
   type AnalysisSourceKind,
 } from "@/lib/analysisSource";
+import { signalLibraryRefreshDone } from "@/lib/libraryRefresh";
+
+const MAX_VISIBLE_TAGS = 3;
 
 interface Episode {
   id: string;
@@ -90,6 +93,17 @@ interface EpisodesTableProps {
 type SortColumn = "title" | "company" | "founder" | "stage" | "industry" | "created_at" | "release_date" | "tag_count";
 type SortDirection = "asc" | "desc";
 type ViewMode = "chronological" | "tag" | "folder";
+
+const SORT_LABELS: Record<SortColumn, string> = {
+  title: "Title",
+  company: "Company",
+  founder: "Speaker",
+  stage: "Stage",
+  industry: "Industry",
+  created_at: "Added",
+  release_date: "Date",
+  tag_count: "Tags",
+};
 
 const PAGE_SIZE = 15;
 
@@ -579,9 +593,15 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     });
     const handleEpisodeAnalyzed = () => { fetchEpisodes(); };
     // Pull-to-refresh on the home screen re-syncs both episodes and folders.
-    const handleLibraryRefresh = () => {
-      fetchEpisodes();
-      fetchFolders().catch(() => undefined);
+    const handleLibraryRefresh = async () => {
+      try {
+        await Promise.all([
+          fetchEpisodes(),
+          fetchFolders().catch(() => undefined),
+        ]);
+      } finally {
+        signalLibraryRefreshDone();
+      }
     };
     const handleHomeReset = () => {
       setSelectedTags(new Set());
@@ -686,61 +706,64 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
       .map(fId => folders.find(f => f.id === fId))
       .filter(Boolean);
 
+    const tags = getEpisodeTags(episode);
+    const visibleTags = tags.slice(0, MAX_VISIBLE_TAGS);
+    const extraTagCount = tags.length - visibleTags.length;
+
     return (
+      <div className="px-3 py-1.5">
       <div
         style={{ "--stagger-i": index } as React.CSSProperties}
-        className="stagger-item cv-row group p-4 min-h-[72px] rounded-xl border border-border bg-card shadow-sm transition-all hover:bg-primary/[0.03] active:bg-primary/5 active:scale-[0.995] cursor-pointer touch-manipulation"
+        className="stagger-item cv-row group rounded-2xl border border-border bg-card px-4 py-4 min-h-[72px] transition-all hover:bg-primary/[0.03] active:bg-primary/5 active:scale-[0.995] cursor-pointer touch-manipulation"
         onClick={() => onSelectEpisode(episode.id)}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => e.key === "Enter" && onSelectEpisode(episode.id)}
       >
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <p className="font-medium text-sm line-clamp-2 mb-1">{episode.title}</p>
-            <div className="mb-1 flex flex-wrap items-center gap-1">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0 space-y-2">
+            <p className="font-medium text-[15px] leading-snug line-clamp-2">{episode.title}</p>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
               <AnalysisSourceChip url={episode.url} />
-              <Badge variant={isUniversalAnalysis(episode) ? "outline" : "secondary"} className="text-[10px]">
+              <p className="text-sm leading-relaxed text-muted-foreground">
                 {getAnalysisProfileLabel(episode)}
-              </Badge>
+                {episode.companies?.name ? ` · ${episode.companies.name}` : ""}
+                {episode.founder_names ? ` · ${episode.founder_names}` : ""}
+              </p>
             </div>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-              {episode.companies?.name && <span>{episode.companies.name}</span>}
-              {episode.founder_names && <span>{episode.founder_names}</span>}
-            </div>
-            <div className="flex flex-wrap items-center gap-1.5 mt-2">
-              {episode.companies?.current_stage && (
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                  {episode.companies.current_stage}
-                </Badge>
-              )}
-              {getEpisodeTags(episode).slice(0, 4).map(tagName => (
-                <Badge
-                  key={tagName}
-                  variant={selectedTags.has(tagName) ? "default" : "outline"}
-                  className="cursor-pointer text-[10px] px-1.5 py-0 flex items-center gap-0.5"
-                  onClick={(e) => { e.stopPropagation(); toggleTag(tagName); }}
-                >
-                  <Tag className="w-2.5 h-2.5" />{tagName}
-                </Badge>
-              ))}
-              {episodeFolders.map(f => (
-                <span key={f!.id} className="text-[10px] px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: f!.color }}>
-                  {f!.name}
-                </span>
-              ))}
-              {episode.created_at && (
-                <span className="text-[10px] text-muted-foreground">
-                  {new Date(episode.created_at).toLocaleDateString()}
-                </span>
-              )}
-            </div>
+            {(visibleTags.length > 0 || episodeFolders.length > 0) && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                {visibleTags.map(tagName => (
+                  <Badge
+                    key={tagName}
+                    variant={selectedTags.has(tagName) ? "default" : "outline"}
+                    className="cursor-pointer text-xs px-2 py-0.5"
+                    onClick={(e) => { e.stopPropagation(); toggleTag(tagName); }}
+                  >
+                    {tagName}
+                  </Badge>
+                ))}
+                {extraTagCount > 0 && (
+                  <span className="text-xs text-muted-foreground">+{extraTagCount}</span>
+                )}
+                {episodeFolders.map(f => (
+                  <span key={f!.id} className="text-xs px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: f!.color }}>
+                    {f!.name}
+                  </span>
+                ))}
+              </div>
+            )}
+            {episode.created_at && (
+              <p className="text-xs text-muted-foreground">
+                {new Date(episode.created_at).toLocaleDateString()}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-0.5 flex-shrink-0">
             <BookmarkButton episodeId={episode.id} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                <Button variant="ghost" size="icon" className="h-10 w-10" onClick={(e) => e.stopPropagation()} aria-label="More">
                   <MoreVertical className="w-4 h-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -790,6 +813,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
           </div>
         </div>
       </div>
+      </div>
     );
   };
 
@@ -812,26 +836,23 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                 <span className="flex h-8 w-8 sm:h-9 sm:w-9 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
                 </span>
-                <span className="truncate">Analyzed Episodes</span>
+                <span className="truncate">Your playbook</span>
               </h2>
               <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                 {selectedIndustries.size > 0 || selectedFolderId || founderFilter !== "all"
-                  ? `${filteredEpisodes.length} of ${allEpisodes.length} episodes`
-                  : `${allEpisodes.length} episode${allEpisodes.length !== 1 ? "s" : ""} in database`}
+                  ? `${filteredEpisodes.length} of ${allEpisodes.length} memos`
+                  : `${allEpisodes.length} memo${allEpisodes.length !== 1 ? "s" : ""}`}
               </p>
             </div>
-            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-              <Button variant={showFilters ? "secondary" : "outline"} size="sm" className="text-xs sm:text-sm" onClick={() => setShowFilters(!showFilters)}>
-                <Filter className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Filters</span>
+            <div className="flex items-center gap-0.5 flex-shrink-0">
+              <Button variant={showFilters ? "secondary" : "ghost"} size="icon" className="h-10 w-10" onClick={() => setShowFilters(!showFilters)} aria-label="Filters">
+                <Filter className="w-4 h-4" />
               </Button>
-              <Button variant="outline" size="sm" className="text-xs sm:text-sm" onClick={() => setManageFoldersOpen(true)}>
-                <FolderPlus className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Folders</span>
+              <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => setManageFoldersOpen(true)} aria-label="Folders">
+                <FolderPlus className="w-4 h-4" />
               </Button>
-              <Button variant="outline" size="sm" className="text-xs sm:text-sm" onClick={() => { setSelectedExportId(undefined); setExportModalOpen(true); }}>
-                <Download className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">{selectedFolderId ? "Export Folder" : "Export All"}</span>
+              <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => { setSelectedExportId(undefined); setExportModalOpen(true); }} aria-label={selectedFolderId ? "Export folder" : "Export all"}>
+                <Download className="w-4 h-4" />
               </Button>
             </div>
           </div>
@@ -902,57 +923,54 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
           )}
         </div>
 
-        {/* View mode toggle */}
-        <div className="px-4 sm:px-6 py-2 border-b bg-muted/5 flex items-center gap-2 overflow-x-auto scroll-touch">
-          <span className="text-xs text-muted-foreground whitespace-nowrap">View:</span>
-          <Badge variant={viewMode === "chronological" ? "default" : "outline"} className="cursor-pointer whitespace-nowrap text-[10px] flex items-center gap-1" onClick={() => changeViewMode("chronological")}>
-            <LayoutList className="w-3 h-3" />Chronological
-          </Badge>
-          <Badge variant={viewMode === "tag" ? "default" : "outline"} className="cursor-pointer whitespace-nowrap text-[10px] flex items-center gap-1" onClick={() => changeViewMode("tag")}>
-            <Tag className="w-3 h-3" />By Tag
-          </Badge>
-          <Badge variant={viewMode === "folder" ? "default" : "outline"} className="cursor-pointer whitespace-nowrap text-[10px] flex items-center gap-1" onClick={() => changeViewMode("folder")}>
-            <Folder className="w-3 h-3" />By Folder
-          </Badge>
+        {/* View + sort on one row so chrome does not eat the list. */}
+        <div className="px-4 sm:px-6 py-2.5 border-b flex items-center gap-2">
+          <div className="flex items-center gap-1.5 min-w-0 overflow-x-auto scroll-touch">
+            <Badge variant={viewMode === "chronological" ? "default" : "outline"} className="cursor-pointer whitespace-nowrap min-h-9 px-3 text-xs flex items-center gap-1" onClick={() => changeViewMode("chronological")}>
+              <LayoutList className="w-3.5 h-3.5" />Chronological
+            </Badge>
+            <Badge variant={viewMode === "tag" ? "default" : "outline"} className="cursor-pointer whitespace-nowrap min-h-9 px-3 text-xs flex items-center gap-1" onClick={() => changeViewMode("tag")}>
+              <Tag className="w-3.5 h-3.5" />By Tag
+            </Badge>
+            <Badge variant={viewMode === "folder" ? "default" : "outline"} className="cursor-pointer whitespace-nowrap min-h-9 px-3 text-xs flex items-center gap-1" onClick={() => changeViewMode("folder")}>
+              <Folder className="w-3.5 h-3.5" />By Folder
+            </Badge>
+          </div>
+          {isMobile && (
+            <Select value={sortColumn} onValueChange={(val) => handleSort(val as SortColumn)}>
+              <SelectTrigger className="h-9 w-[7.5rem] shrink-0 text-xs" aria-label="Sort">
+                <SelectValue placeholder="Sort" />
+              </SelectTrigger>
+              <SelectContent>
+                {(["created_at", "release_date", "title", "company", "founder", "tag_count"] as SortColumn[]).map((col) => (
+                  <SelectItem key={col} value={col}>
+                    {SORT_LABELS[col]}{sortColumn === col ? (sortDirection === "asc" ? " ↑" : " ↓") : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
         {/* Tag filter chip bar */}
         {uniqueTags.length > 0 && (
-          <div className="px-4 sm:px-6 py-2 border-b bg-muted/10 flex items-center gap-2 overflow-x-auto scroll-touch">
+          <div className="px-4 sm:px-6 py-2.5 border-b flex items-center gap-2 overflow-x-auto scroll-touch">
             <Tag className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             {uniqueTags.slice(0, 24).map(([name, count]) => (
               <Badge
                 key={name}
                 variant={selectedTags.has(name) ? "default" : "outline"}
-                className="cursor-pointer whitespace-nowrap text-[10px]"
+                className="cursor-pointer whitespace-nowrap min-h-9 px-3 text-xs"
                 onClick={() => toggleTag(name)}
               >
                 {name}<span className="ml-1 opacity-60">{count}</span>
               </Badge>
             ))}
             {selectedTags.size > 0 && (
-              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => { setSelectedTags(new Set()); setSearchParams(p => { p.delete("tags"); return p; }); }}>
+              <Button variant="ghost" size="sm" className="h-9 text-xs px-3" onClick={() => { setSelectedTags(new Set()); setSearchParams(p => { p.delete("tags"); return p; }); }}>
                 Clear tags
               </Button>
             )}
-          </div>
-        )}
-
-        {/* Sort controls for mobile */}
-        {isMobile && (
-          <div className="px-4 py-2 border-b bg-muted/10 flex items-center gap-2 overflow-x-auto scroll-touch">
-            <span className="text-xs text-muted-foreground whitespace-nowrap">Sort:</span>
-            {(["created_at", "release_date", "title", "company", "founder", "tag_count"] as SortColumn[]).map(col => (
-              <Badge
-                key={col}
-                variant={sortColumn === col ? "default" : "outline"}
-                className="cursor-pointer whitespace-nowrap text-[10px]"
-                onClick={() => handleSort(col)}
-              >
-                {col === "created_at" ? "Added" : col === "release_date" ? "Date" : col === "tag_count" ? "Tags" : col === "founder" ? "Speaker" : col.charAt(0).toUpperCase() + col.slice(1)}
-                {sortColumn === col && (sortDirection === "asc" ? " ↑" : " ↓")}
-              </Badge>
-            ))}
           </div>
         )}
 
@@ -962,7 +980,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
             <Folder className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             <Badge
               variant={selectedFolderId === null ? "default" : "outline"}
-              className="cursor-pointer whitespace-nowrap"
+              className="cursor-pointer whitespace-nowrap min-h-9 px-3"
               onClick={() => setSelectedFolderId(null)}
             >
               All
@@ -971,7 +989,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
               <Badge
                 key={folder.id}
                 variant={selectedFolderId === folder.id ? "default" : "outline"}
-                className="cursor-pointer whitespace-nowrap"
+                className="cursor-pointer whitespace-nowrap min-h-9 px-3"
                 style={selectedFolderId === folder.id ? { backgroundColor: folder.color, borderColor: folder.color } : {}}
                 onClick={() => setSelectedFolderId(folder.id === selectedFolderId ? null : folder.id)}
               >
@@ -1016,9 +1034,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                     <span className="font-semibold text-sm">{tagName}</span>
                     <Badge variant="outline" className="text-[10px]">{eps.length}</Badge>
                   </div>
-                  <div className="space-y-2.5 p-3">
-                    {eps.map((ep, i) => <MobileEpisodeCard key={ep.id} episode={ep} index={i} />)}
-                  </div>
+                  {eps.map((ep, i) => <MobileEpisodeCard key={ep.id} episode={ep} index={i} />)}
                 </div>
               );
             })}
@@ -1044,15 +1060,13 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                     <span className="font-semibold text-sm">{folder.name}</span>
                     <Badge variant="outline" className="text-[10px]">{eps.length}</Badge>
                   </div>
-                  <div className="space-y-2.5 p-3">
-                    {eps.map((ep, i) => <MobileEpisodeCard key={ep.id} episode={ep} index={i} />)}
-                  </div>
+                  {eps.map((ep, i) => <MobileEpisodeCard key={ep.id} episode={ep} index={i} />)}
                 </div>
               );
             })}
           </div>
         ) : isMobile ? (
-          <div className="space-y-2.5 p-3">
+          <div>
             {paginatedEpisodes.map((episode, i) => (
               <MobileEpisodeCard key={episode.id} episode={episode} index={i} />
             ))}
@@ -1105,16 +1119,19 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                           </Badge>
                         </div>
                           <div className="flex gap-1 flex-wrap">
-                            {getEpisodeTags(episode).slice(0, 5).map(tagName => (
+                            {getEpisodeTags(episode).slice(0, MAX_VISIBLE_TAGS).map(tagName => (
                               <Badge
                                 key={tagName}
                                 variant={selectedTags.has(tagName) ? "default" : "outline"}
-                                className="cursor-pointer text-[10px] px-1.5 py-0 flex items-center gap-0.5"
+                                className="cursor-pointer text-xs px-2 py-0.5"
                                 onClick={(e) => { e.stopPropagation(); toggleTag(tagName); }}
                               >
-                                <Tag className="w-2.5 h-2.5" />{tagName}
+                                {tagName}
                               </Badge>
                             ))}
+                            {getEpisodeTags(episode).length > MAX_VISIBLE_TAGS && (
+                              <span className="text-xs text-muted-foreground">+{getEpisodeTags(episode).length - MAX_VISIBLE_TAGS}</span>
+                            )}
                             {episodeFolders.map(f => (
                               <span key={f!.id} className="text-[10px] px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: f!.color }}>
                                 {f!.name}

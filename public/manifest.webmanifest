@@ -41,9 +41,9 @@
   ],
   "shortcuts": [
     {
-      "name": "Analyze a video",
+      "name": "Analyze a source",
       "short_name": "Analyze",
-      "description": "Paste a YouTube URL and get an operating memo",
+      "description": "Paste a link and get an operating memo",
       "url": "/?action=analyze&source=pwa",
       "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
     },

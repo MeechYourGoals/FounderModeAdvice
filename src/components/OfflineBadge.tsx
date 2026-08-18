@@ -15,7 +15,7 @@ const AUTH_AND_MARKETING_ROUTES = new Set([
 ]);
 
 /** Routes where saved bookmarks / last analysis offline cache is supported. */
-const OFFLINE_APP_ROUTES = new Set(["/", "/account", "/settings", "/founders"]);
+const OFFLINE_APP_ROUTES = new Set(["/", "/account", "/settings", "/founders", "/discover", "/favorites"]);
 
 async function verifyConnectivity(): Promise<boolean> {
   if (typeof navigator !== "undefined" && navigator.onLine) return true;

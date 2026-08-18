@@ -58,10 +58,10 @@ Changes marked ✅ were applied to the live legal pages in this release branch
    whether to introduce support@foundermodeadvice.com everywhere instead
    (the one stray reference to it in the error boundary was aligned to
    CA@saintmarlolabs.com in this branch).
-5. **Founder bypass.** `FOUNDER_EMAILS = ['ccamechi@gmail.com']` grants
-   unlimited paid features in two edge functions, keyed to a personal Gmail.
-   Consider migrating to the existing `user_roles`/`has_role` mechanism.
-   (Left unchanged — behavior/revenue decision.)
+5. **Founder bypass.** Resolved: client and edge functions no longer grant
+   privileges by email. Operator access is `user_roles.role = admin` plus
+   the `user_subscriptions` row (webhooks refuse to write admins below
+   `series_z`). The client bundle is untrusted in this public repo.
 6. **EU DSA trader status.** If distributing in the EU, App Store Connect
    requires trader declaration (address + contact published on the store
    page). Saint Marlo Labs LLC's publishable address/phone are not in the

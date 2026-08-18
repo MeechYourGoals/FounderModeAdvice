@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppNavMenu } from "@/components/AppNavMenu";
 import { cn } from "@/lib/utils";
+import { triggerHapticFeedback } from "@/lib/capacitor";
 
 interface SecondaryPageHeaderProps {
   title: string;
@@ -32,7 +33,7 @@ export const SecondaryPageHeader = ({
     style={{ paddingTop: "var(--safe-area-top)" }}
   >
     <div className="flex items-center justify-between gap-2 px-4 py-3">
-      <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2 shrink-0">
+      <Button variant="ghost" size="sm" onClick={() => { triggerHapticFeedback("light"); onBack(); }} className="-ml-2 shrink-0">
         <ArrowLeft className="h-4 w-4 mr-2" />
         {backLabel}
       </Button>

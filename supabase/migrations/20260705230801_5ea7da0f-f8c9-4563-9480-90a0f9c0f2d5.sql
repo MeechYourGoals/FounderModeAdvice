@@ -8,11 +8,10 @@ SET search_path = public
 AS $$
 DECLARE
   v_tier text;
-  v_email text;
 BEGIN
-  -- Founder super admin: unlimited.
-  SELECT email INTO v_email FROM auth.users WHERE id = _user_id;
-  IF lower(coalesce(v_email, '')) = 'ccamechi@gmail.com' THEN
+  -- Operators with user_roles.role = admin keep unlimited allowances.
+  -- Privilege is the database role, never an email allowlist.
+  IF public.has_role(_user_id, 'admin') THEN
     RETURN 2147483647;
   END IF;
 

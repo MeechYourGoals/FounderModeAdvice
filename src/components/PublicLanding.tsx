@@ -438,7 +438,7 @@ export const PublicLanding = () => {
                 </m.div>
               </section>
 
-              <Footer />
+              <Footer showAppStoreBadge />
             </div>
           </div>
         </div>

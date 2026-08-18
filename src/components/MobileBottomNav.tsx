@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Building2, Bookmark, Compass, Settings as SettingsIcon, Check, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { triggerHapticFeedback } from "@/lib/capacitor";
+import { homePanelFromLocationState, mobileNavActiveTab } from "@/lib/mobileNav";
 import {
   Drawer,
   DrawerContent,
@@ -15,13 +16,13 @@ import { useActiveProfile } from "@/contexts/ActiveProfileContext";
 
 /**
  * Five-slot bottom nav for the mobile/PWA/native app shell:
- *   Profiles · Bookmarks · [Analyzing As] · Discover · Settings
+ *   Profiles · Bookmarks · [Today's lens] · Briefing · Settings
  *
  * The raised center button surfaces the active "analyzing as" profile — the
  * lens that personalizes every analysis and every recommendation. Tapping it
  * opens a sheet to switch profiles without leaving the current screen.
  *
- * Discover holds the fourth slot; "Shared with me" (the other Boardroom-only
+ * Briefing holds the fourth slot; "Shared with me" (the other Boardroom-only
  * surface, and a much lower-frequency one) moved into the hamburger menu,
  * which is present on every screen.
  */
@@ -33,7 +34,12 @@ export const MobileBottomNav = () => {
 
   const goHomeWith = (state: Record<string, unknown>) => {
     triggerHapticFeedback("light");
-    navigate("/", { state: { ...state, ts: Date.now() } });
+    const next = { ...state, ts: Date.now() };
+    if (location.pathname === "/") {
+      navigate(".", { replace: true, state: next });
+      return;
+    }
+    navigate("/", { state: next });
   };
 
   // Pick the "analyzing as" lens, then jump straight into a fresh analysis on home.
@@ -43,8 +49,6 @@ export const MobileBottomNav = () => {
     setLensOpen(false);
     navigate("/", { state: { action: "analyze", ts: Date.now() } });
   };
-
-  const isActive = (predicate: boolean) => predicate;
 
   const SideItem = ({
     icon: Icon,
@@ -74,7 +78,7 @@ export const MobileBottomNav = () => {
       >
         <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
       </span>
-      <span className={cn("text-[10px] leading-tight tracking-wide", active ? "font-semibold" : "font-medium")}>
+      <span className={cn("text-[11px] leading-tight tracking-wide", active ? "font-semibold" : "font-medium")}>
         {label}
       </span>
     </button>
@@ -82,8 +86,10 @@ export const MobileBottomNav = () => {
 
   const lensLabel = activeProfile ? activeProfile.company_name : "Universal";
 
-  const onDiscoverRoute = location.pathname.startsWith("/discover");
-  const onSettingsRoute = location.pathname.startsWith("/settings") || location.pathname.startsWith("/account");
+  const activeTab = mobileNavActiveTab(
+    location.pathname,
+    homePanelFromLocationState(location.state),
+  );
 
   return (
     <nav
@@ -95,13 +101,13 @@ export const MobileBottomNav = () => {
         <SideItem
           icon={Building2}
           label="Profiles"
-          active={isActive(false)}
+          active={activeTab === "profiles"}
           onClick={() => goHomeWith({ panel: "profiles" })}
         />
         <SideItem
           icon={Bookmark}
           label="Saved"
-          active={isActive(false)}
+          active={activeTab === "saved"}
           onClick={() => goHomeWith({ panel: "bookmarks" })}
         />
 
@@ -111,7 +117,7 @@ export const MobileBottomNav = () => {
           <Drawer open={lensOpen} onOpenChange={setLensOpen}>
             <DrawerTrigger asChild>
               <button
-                aria-label={`Founder Mode Advice. Analyzing as ${lensLabel}. Tap to start a new analysis.`}
+                aria-label={`Founder Mode Advice. Working as ${lensLabel}. Tap to write a memo.`}
                 onClick={() => triggerHapticFeedback("light")}
                 className="-mt-6 h-14 w-14 overflow-hidden rounded-full shadow-[inset_0_1px_0_0_hsl(0_0%_100%/0.25),0_8px_24px_-6px_hsl(var(--primary)/0.6)] flex items-center justify-center ring-4 ring-background transition-transform duration-200 active:scale-90 touch-manipulation"
                 style={{ background: "var(--gradient-primary)" }}
@@ -126,9 +132,9 @@ export const MobileBottomNav = () => {
             </DrawerTrigger>
             <DrawerContent className="px-4 pb-[calc(1rem+var(--safe-area-bottom))]">
               <DrawerHeader className="px-0 text-left">
-                <DrawerTitle>Analyzing as</DrawerTitle>
+                <DrawerTitle>Today's lens</DrawerTitle>
                 <DrawerDescription>
-                  Pick the lens used to personalize every insight, chat, and recommendation.
+                  Pick the company I should write every memo, chat, and briefing for.
                 </DrawerDescription>
               </DrawerHeader>
               <div className="max-h-[55vh] space-y-1 overflow-y-auto overscroll-contain">
@@ -197,14 +203,14 @@ export const MobileBottomNav = () => {
 
         <SideItem
           icon={Compass}
-          label="Discover"
-          active={onDiscoverRoute}
+          label="Briefing"
+          active={activeTab === "briefing"}
           onClick={() => { triggerHapticFeedback("light"); navigate("/discover"); }}
         />
         <SideItem
           icon={SettingsIcon}
           label="Settings"
-          active={onSettingsRoute}
+          active={activeTab === "settings"}
           onClick={() => { triggerHapticFeedback("light"); navigate("/settings"); }}
         />
       </div>

@@ -1633,6 +1633,7 @@ export type Database = {
         Args: { _folder_id: string; _user_id: string }
         Returns: boolean
       }
+      is_founder_user: { Args: { _user_id: string }; Returns: boolean }
       list_episode_collaborators: {
         Args: { p_episode_id: string }
         Returns: {
