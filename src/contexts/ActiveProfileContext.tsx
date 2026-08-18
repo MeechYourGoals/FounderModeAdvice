@@ -32,12 +32,13 @@ const cacheKey = (userId: string) => `fma_active_profile_${userId}`;
 
 export function ActiveProfileProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
+  const userId = user?.id ?? null;
   const [profiles, setProfiles] = useState<ActiveProfile[]>([]);
   const [activeProfileId, setActiveProfileIdState] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const refreshProfiles = useCallback(async () => {
-    if (!user) {
+    if (!userId) {
       setProfiles([]);
       setActiveProfileIdState(null);
       setLoading(false);
@@ -55,7 +56,7 @@ export function ActiveProfileProvider({ children }: { children: React.ReactNode 
       setProfiles(rows);
 
       // Resolve the active id: stored choice if still valid, otherwise the newest profile.
-      const stored = localStorage.getItem(cacheKey(user.id));
+      const stored = localStorage.getItem(cacheKey(userId));
       const storedValid = stored && rows.some((p) => p.id === stored);
       if (storedValid) {
         setActiveProfileIdState(stored);
@@ -69,11 +70,11 @@ export function ActiveProfileProvider({ children }: { children: React.ReactNode 
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [userId]);
 
   useEffect(() => {
     setLoading(true);
-    refreshProfiles();
+    void refreshProfiles();
   }, [refreshProfiles]);
 
   // Other components dispatch "profilesChanged" after creating/deleting a profile.
@@ -86,11 +87,11 @@ export function ActiveProfileProvider({ children }: { children: React.ReactNode 
   const setActiveProfileId = useCallback(
     (id: string | null) => {
       setActiveProfileIdState(id);
-      if (user) {
-        localStorage.setItem(cacheKey(user.id), id ?? "__none__");
+      if (userId) {
+        localStorage.setItem(cacheKey(userId), id ?? "__none__");
       }
     },
-    [user],
+    [userId],
   );
 
   const activeProfile = profiles.find((p) => p.id === activeProfileId) ?? null;

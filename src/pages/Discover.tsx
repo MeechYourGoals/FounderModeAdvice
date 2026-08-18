@@ -42,6 +42,11 @@ import {
   nextStateAfterSaveToggle,
   profileNeedsMoreContext,
 } from "@/lib/discovery";
+import {
+  DISCOVER_BOOT_TIMEOUT_MS,
+  resolveDiscoverBoot,
+  resolveDiscoverForYou,
+} from "@/lib/discoverBoot";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 import { cn } from "@/lib/utils";
 
@@ -49,14 +54,27 @@ type DiscoverTab = "for-you" | "inspiration" | "saved";
 
 const Discover = () => {
   const { user, loading: authLoading } = useAuth();
-  const { subscription, loading: subscriptionLoading } = useSubscription();
-  const { profiles, activeProfile, activeProfileId, setActiveProfileId, loading: profilesLoading } =
-    useActiveProfile();
+  const {
+    subscription,
+    loading: subscriptionLoading,
+    error: subscriptionError,
+    refreshSubscription,
+  } = useSubscription();
+  const {
+    profiles,
+    activeProfileId,
+    setActiveProfileId,
+    loading: profilesLoading,
+    refreshProfiles,
+  } = useActiveProfile();
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useMediaQuery("(max-width: 767px)");
 
   const [tab, setTab] = useState<DiscoverTab>("for-you");
+  const [bootGeneration, setBootGeneration] = useState(0);
+  const [timedOut, setTimedOut] = useState(false);
+  const [hasBootstrapped, setHasBootstrapped] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [saved, setSaved] = useState<ProfileRecommendation[]>([]);
   const [savedLoading, setSavedLoading] = useState(false);
@@ -98,6 +116,23 @@ const Discover = () => {
     hasMore,
     loadMore,
   } = useInspirationLibrary(selectedCategories);
+
+  useEffect(() => {
+    setTimedOut(false);
+    const id = window.setTimeout(() => setTimedOut(true), DISCOVER_BOOT_TIMEOUT_MS);
+    return () => window.clearTimeout(id);
+  }, [bootGeneration]);
+
+  const boot = resolveDiscoverBoot({
+    authLoading,
+    hasUser: Boolean(user),
+    hasBootstrapped,
+    timedOut,
+  });
+
+  useEffect(() => {
+    if (boot === "page" && user) setHasBootstrapped(true);
+  }, [boot, user]);
 
   useEffect(() => {
     captureEvent("discovery_viewed", { premium: isPremium, has_profile: Boolean(feedProfileId) });
@@ -336,12 +371,31 @@ const Discover = () => {
     [analyzeContent, libraryItems, openSource],
   );
 
-  if (authLoading || subscriptionLoading || profilesLoading) {
+  const retryBoot = useCallback(() => {
+    setHasBootstrapped(false);
+    setBootGeneration((generation) => generation + 1);
+    void refreshSubscription();
+    void refreshProfiles();
+    void reloadFeed();
+  }, [refreshProfiles, refreshSubscription, reloadFeed]);
+
+  const forYou = resolveDiscoverForYou({
+    subscriptionLoading,
+    hasSubscription: Boolean(subscription),
+    subscriptionError: Boolean(subscriptionError),
+    isPremium,
+    profilesLoading,
+    profileCount: profiles.length,
+    feedLoading,
+    feedError: Boolean(feedError),
+    timedOut,
+  });
+
+  if (boot === "spinner") {
     return <AppLoadingScreen label="Opening your briefing..." />;
   }
-  if (!user) return <Navigate to="/auth" replace />;
+  if (boot === "redirect-auth" || !user) return <Navigate to="/auth" replace />;
 
-  const showProfilePrompt = isPremium && profiles.length === 0;
   const needsMoreContext = isPremium && profileNeedsMoreContext(feedProfile);
 
   return (
@@ -442,7 +496,16 @@ const Discover = () => {
 
             {/* ------------------------------------------------------ For You */}
             <TabsContent value="for-you" className="mt-6 space-y-6">
-              {!isPremium ? (
+              {forYou === "skeleton" || forYou === "feed-loading" ? (
+                <DiscoveryBriefingSkeleton />
+              ) : forYou === "boot-error" ? (
+                <DiscoverEmptyState
+                  title="We couldn't load your briefing"
+                  description="This is taking longer than expected. Try again — you can still browse inspiration in the meantime."
+                  action={{ label: "Try again", onClick: () => void retryBoot() }}
+                  secondaryAction={{ label: "Browse inspiration", onClick: () => setTab("inspiration") }}
+                />
+              ) : forYou === "upgrade" ? (
                 <>
                   <UpgradePrompt
                     message="Your briefing unlocks on The Boardroom — a short weekly set chosen for what you're building."
@@ -453,7 +516,7 @@ const Discover = () => {
                     {libraryLoading ? <DiscoveryGridSkeleton count={3} /> : inspirationGrid}
                   </div>
                 </>
-              ) : showProfilePrompt ? (
+              ) : forYou === "no-profile" ? (
                 <DiscoverEmptyState
                   title="Tell us what you're building"
                   description="I'll write each week's briefing for a specific company. Create a profile and the first edition follows."
@@ -462,12 +525,10 @@ const Discover = () => {
                     onClick: () => navigate("/", { state: { panel: "profiles", ts: Date.now() } }),
                   }}
                 />
-              ) : feedLoading ? (
-                <DiscoveryBriefingSkeleton />
-              ) : feedError ? (
+              ) : forYou === "feed-error" ? (
                 <DiscoverEmptyState
                   title="We couldn't load your briefing"
-                  description={feedError}
+                  description={feedError ?? "Pull to refresh or try again shortly."}
                   action={{ label: "Try again", onClick: () => void reloadFeed() }}
                 />
               ) : (

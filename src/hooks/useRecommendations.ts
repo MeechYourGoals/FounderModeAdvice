@@ -19,6 +19,7 @@ import type { RecommendationState } from "@/lib/discovery";
  */
 export function useRecommendations(profileId: string | null) {
   const { user } = useAuth();
+  const userId = user?.id;
   const [batches, setBatches] = useState<RecommendationBatch[]>([]);
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [recommendations, setRecommendations] = useState<ProfileRecommendation[]>([]);
@@ -33,7 +34,7 @@ export function useRecommendations(profileId: string | null) {
   const itemsRequestRef = useRef(0);
 
   const loadBatches = useCallback(async () => {
-    if (!user || !profileId) {
+    if (!userId || !profileId) {
       setBatches([]);
       setSelectedBatchId(null);
       setRecommendations([]);
@@ -56,7 +57,7 @@ export function useRecommendations(profileId: string | null) {
     } finally {
       if (requestId === batchRequestRef.current) setLoading(false);
     }
-  }, [user, profileId]);
+  }, [userId, profileId]);
 
   useEffect(() => {
     void loadBatches();
