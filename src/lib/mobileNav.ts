@@ -46,3 +46,18 @@ export function shouldPublishHomePanel(
 ): boolean {
   return homePanelFromLocationState(currentState) !== panel;
 }
+
+/**
+ * Next `location.state` after a home-panel publish.
+ *
+ * `undefined` means skip navigate (already on that panel). `null` clears
+ * the overlay after dismiss. A `{ panel }` object is what reopen must write
+ * so the tab highlight comes back.
+ */
+export function nextHomePanelLocationState(
+  currentState: unknown,
+  panel: HomePanel | null,
+): { panel: HomePanel } | null | undefined {
+  if (!shouldPublishHomePanel(currentState, panel)) return undefined;
+  return panel ? { panel } : null;
+}
