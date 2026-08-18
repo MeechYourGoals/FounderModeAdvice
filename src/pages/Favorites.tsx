@@ -24,9 +24,9 @@ import { SHORTCUT_TOPICS, normalizeTopics } from "@/lib/topics";
 import { useToast } from "@/hooks/use-toast";
 
 const KIND_META: Record<FavoriteKind, { label: string; icon: typeof Tv; empty: string }> = {
-  channel: { label: "Channels", icon: Tv, empty: "Analyze a source to see its channel here." },
-  founder: { label: "Founders", icon: UserIcon, empty: "Founder names from your analyses appear here." },
-  topic: { label: "Topics", icon: Tag, empty: "Topics get tagged automatically as you analyze." },
+  channel: { label: "Channels", icon: Tv, empty: "Write a memo to see its channel here." },
+  founder: { label: "Founders", icon: UserIcon, empty: "Founder names from your memos appear here." },
+  topic: { label: "Topics", icon: Tag, empty: "Topics get tagged automatically as you write memos." },
 };
 
 const isPaid = (tier?: string) => tier === "seed" || tier === "series_z";

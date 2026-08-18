@@ -788,12 +788,12 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                 <span className="flex h-8 w-8 sm:h-9 sm:w-9 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
                 </span>
-                <span className="truncate">Analyzed Episodes</span>
+                <span className="truncate">Your playbook</span>
               </h2>
               <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                 {selectedIndustries.size > 0 || selectedFolderId || founderFilter !== "all"
-                  ? `${filteredEpisodes.length} of ${allEpisodes.length} episodes`
-                  : `${allEpisodes.length} episode${allEpisodes.length !== 1 ? "s" : ""} in database`}
+                  ? `${filteredEpisodes.length} of ${allEpisodes.length} memos`
+                  : `${allEpisodes.length} memo${allEpisodes.length !== 1 ? "s" : ""}`}
               </p>
             </div>
             <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">

@@ -1,6 +1,7 @@
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Building2, Play, ArrowUp } from "lucide-react";
+import { Building2, Compass, Play, ArrowUp } from "lucide-react";
 import { useActiveProfile } from "@/contexts/ActiveProfileContext";
 import { STARTER_VIDEOS } from "@/lib/starterVideos";
 import { triggerHapticFeedback } from "@/lib/capacitor";
@@ -8,12 +9,13 @@ import { HighlightedFounders } from "@/components/HighlightedFounders";
 import { InspirationRecommendations } from "@/components/InspirationRecommendations";
 
 /**
- * First-run activation state for the analyzed-videos library. Nudges the user to
- * create a business profile (so analyses are personalized) and offers one-tap
- * starter videos that kick off their first analysis.
+ * First-run activation state for the playbook. Nudges the user to create a
+ * business profile (so memos are personalized) and offers one-tap starter
+ * sources plus the weekly briefing.
  */
 export const LibraryEmptyState = () => {
   const { activeProfile, profiles } = useActiveProfile();
+  const navigate = useNavigate();
 
   const analyzeStarter = (url: string) => {
     triggerHapticFeedback("medium");
@@ -33,14 +35,14 @@ export const LibraryEmptyState = () => {
           </div>
         </div>
         <h3 className="text-lg sm:text-xl font-semibold tracking-tight">
-          Analyze your{" "}
-          <span className="font-display font-medium italic text-gradient">first source</span>
+          Write your{" "}
+          <span className="font-display font-medium italic text-gradient">first memo</span>
         </h3>
         <p className="text-sm text-muted-foreground max-w-md mx-auto mt-1">
-          Paste almost any public link above — or start with one of these.
+          Bring a source on today's desk — or start with one of these.
           {activeProfile
-            ? <> The memo will be tailored to <span className="font-medium text-foreground">{activeProfile.company_name}</span>.</>
-            : <> Add a company profile to tailor the advice to your stage and industry.</>}
+            ? <> I'll tailor it to <span className="font-medium text-foreground">{activeProfile.company_name}</span>.</>
+            : <> Add a company profile so the advice matches your stage and industry.</>}
         </p>
       </div>
 
@@ -59,7 +61,7 @@ export const LibraryEmptyState = () => {
             className="text-xs text-muted-foreground underline hover:text-primary inline-flex items-center gap-1"
             onClick={() => window.dispatchEvent(new Event("openAnalyze"))}
           >
-            <ArrowUp className="h-3 w-3" /> or paste a URL above
+            <ArrowUp className="h-3 w-3" /> or bring a source above
           </button>
         </div>
       )}
@@ -82,6 +84,18 @@ export const LibraryEmptyState = () => {
           </button>
         ))}
       </div>
+
+      <Button
+        variant="outline"
+        className="rounded-full"
+        onClick={() => {
+          triggerHapticFeedback("light");
+          navigate("/discover");
+        }}
+      >
+        <Compass className="h-4 w-4 mr-2" />
+        Open this week's briefing
+      </Button>
 
       {/* Personalized recommendations from the onboarding "who inspires you?" picks */}
       <InspirationRecommendations />

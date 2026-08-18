@@ -123,7 +123,7 @@ export const AppNavMenu = ({
       </DropdownMenuLabel>
       <DropdownMenuItem onClick={() => goTo("/discover")}>
         <Compass className="h-4 w-4 mr-2" />
-        Discover
+        Briefing
       </DropdownMenuItem>
       <DropdownMenuItem onClick={() => openPanel("profiles")}>
         <Briefcase className="h-4 w-4 mr-2" />
@@ -197,7 +197,7 @@ export const AppNavMenu = ({
         <div className="mt-6 space-y-6">
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-1">
-              Analyzing as
+              Today's lens
             </p>
             <ProfileSwitcher className="w-full max-w-none" />
           </div>
@@ -208,7 +208,7 @@ export const AppNavMenu = ({
             </p>
             <button type="button" className={menuItemClass} onClick={() => goTo("/discover")}>
               <Compass className="h-5 w-5 text-primary" />
-              Discover
+              Briefing
             </button>
             <button type="button" className={menuItemClass} onClick={() => openPanel("profiles")}>
               <Briefcase className="h-5 w-5 text-primary" />
