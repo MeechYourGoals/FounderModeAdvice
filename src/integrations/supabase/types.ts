@@ -407,38 +407,6 @@ export type Database = {
           },
         ]
       }
-      episode_folder_tag_rules: {
-        Row: {
-          created_at: string
-          folder_id: string
-          id: string
-          tag_name: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          folder_id: string
-          id?: string
-          tag_name: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          folder_id?: string
-          id?: string
-          tag_name?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "episode_folder_tag_rules_folder_id_fkey"
-            columns: ["folder_id"]
-            isOneToOne: false
-            referencedRelation: "episode_folders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       episode_folders: {
         Row: {
           color: string | null
