@@ -2,9 +2,8 @@ CREATE OR REPLACE FUNCTION public.is_founder_user(_user_id uuid)
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
 AS $$
   SELECT EXISTS (
-    SELECT 1 FROM auth.users u
-    WHERE u.id = _user_id
-      AND lower(coalesce(u.email, '')) IN ('ccamechi@gmail.com','chrisatown@gmail.com','ca@saintmarlolabs.com')
+    SELECT 1 FROM public.user_roles r
+    WHERE r.user_id = _user_id AND r.role = 'admin'
   );
 $$;
 REVOKE EXECUTE ON FUNCTION public.is_founder_user(uuid) FROM PUBLIC, anon;
@@ -16,7 +15,7 @@ AS $$
 DECLARE
   v_tier text;
 BEGIN
-  -- Founder super admins: unlimited.
+  -- Admin role (public.user_roles): unlimited.
   IF public.is_founder_user(_user_id) THEN
     RETURN 2147483647;
   END IF;
