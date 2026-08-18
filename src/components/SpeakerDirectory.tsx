@@ -73,7 +73,9 @@ export const SpeakerDirectory = ({
         });
 
         setSpeakers(
-          Array.from(statsMap.values()).sort((a, b) => b.episodeCount - a.episodeCount)
+          Array.from(statsMap.values())
+            .filter((speaker) => !(speaker.companyName === "Unknown" && !speaker.industry))
+            .sort((a, b) => b.episodeCount - a.episodeCount)
         );
       } catch (error) {
         console.error("Error fetching speakers:", error);

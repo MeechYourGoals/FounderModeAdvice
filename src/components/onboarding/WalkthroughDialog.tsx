@@ -109,11 +109,11 @@ const SLIDES: WalkthroughSlide[] = [
   },
   {
     icon: MessageSquare,
-    title: "Ask the video",
+    title: "Ask the source",
     body: "On The Boardroom plan, open a chat grounded in any analyzed video and ask unlimited follow-up questions about your business.",
     findIt: {
-      mobile: "Inside any memo — look for “Ask the video.”",
-      desktop: "Inside any memo — look for “Ask the video.”",
+      mobile: "Inside any memo — look for “Ask the source.”",
+      desktop: "Inside any memo — look for “Ask the source.”",
     },
   },
   {

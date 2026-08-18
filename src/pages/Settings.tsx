@@ -22,7 +22,7 @@ import { clearOfflineCache } from "@/lib/offlineCache";
 import { useToast } from "@/hooks/use-toast";
 import {
   ChevronRight, Loader2, Shield, FileText, LifeBuoy, Mail,
-  RotateCcw, Building2, Globe, SlidersHorizontal, Sparkles, User, Users, Trash2, Info,
+  RotateCcw, Building2, Globe, SlidersHorizontal, User, Users, Trash2, Info,
 } from "lucide-react";
 import {
   getLibraryPrefs, setLibraryPrefs, SORT_LABELS, VIEW_LABELS,
@@ -79,7 +79,7 @@ const Settings = () => {
   if (!user) return null;
 
   return (
-    <div className="app-ambient h-screen flex flex-col bg-gradient-to-b from-background to-muted/20">
+    <div className="app-ambient h-dvh flex flex-col bg-gradient-to-b from-background to-muted/20">
       <SecondaryPageHeader title="Settings" onBack={() => navigate("/")} />
 
       <div className="despia-scroll">
@@ -224,7 +224,7 @@ const Settings = () => {
                   Replay app walkthrough
                 </Button>
                 <Button variant="ghost" className="justify-start w-full" onClick={handleRedoSetup}>
-                  <Sparkles className="h-4 w-4 mr-2" />
+                  <SlidersHorizontal className="h-4 w-4 mr-2" />
                   Redo quick setup
                 </Button>
               </CardContent>

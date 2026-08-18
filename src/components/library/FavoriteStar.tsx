@@ -5,6 +5,7 @@ import { useFavorites, type FavoriteKind } from "@/hooks/useFavorites";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { triggerHapticFeedback } from "@/lib/capacitor";
 
 interface FavoriteStarProps {
   kind: FavoriteKind;
@@ -26,6 +27,7 @@ export const FavoriteStar = ({ kind, displayName, size = "icon", className }: Fa
   const onClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+    triggerHapticFeedback("light");
     if (!isPaid(subscription?.tier)) {
       toast({
         title: "Favorites is a Pro feature",
@@ -38,7 +40,9 @@ export const FavoriteStar = ({ kind, displayName, size = "icon", className }: Fa
       });
       return;
     }
+    const turningOn = !active;
     void toggle(kind, displayName);
+    if (turningOn) triggerHapticFeedback("success");
   };
 
   return (

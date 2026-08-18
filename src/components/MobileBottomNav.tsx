@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Building2, Bookmark, Compass, Settings as SettingsIcon, Check, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { triggerHapticFeedback } from "@/lib/capacitor";
+import { homePanelFromLocationState, mobileNavActiveTab } from "@/lib/mobileNav";
 import {
   Drawer,
   DrawerContent,
@@ -33,7 +34,12 @@ export const MobileBottomNav = () => {
 
   const goHomeWith = (state: Record<string, unknown>) => {
     triggerHapticFeedback("light");
-    navigate("/", { state: { ...state, ts: Date.now() } });
+    const next = { ...state, ts: Date.now() };
+    if (location.pathname === "/") {
+      navigate(".", { replace: true, state: next });
+      return;
+    }
+    navigate("/", { state: next });
   };
 
   // Pick the "analyzing as" lens, then jump straight into a fresh analysis on home.
@@ -43,8 +49,6 @@ export const MobileBottomNav = () => {
     setLensOpen(false);
     navigate("/", { state: { action: "analyze", ts: Date.now() } });
   };
-
-  const isActive = (predicate: boolean) => predicate;
 
   const SideItem = ({
     icon: Icon,
@@ -74,7 +78,7 @@ export const MobileBottomNav = () => {
       >
         <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
       </span>
-      <span className={cn("text-[10px] leading-tight tracking-wide", active ? "font-semibold" : "font-medium")}>
+      <span className={cn("text-[11px] leading-tight tracking-wide", active ? "font-semibold" : "font-medium")}>
         {label}
       </span>
     </button>
@@ -82,8 +86,10 @@ export const MobileBottomNav = () => {
 
   const lensLabel = activeProfile ? activeProfile.company_name : "Universal";
 
-  const onDiscoverRoute = location.pathname.startsWith("/discover");
-  const onSettingsRoute = location.pathname.startsWith("/settings") || location.pathname.startsWith("/account");
+  const activeTab = mobileNavActiveTab(
+    location.pathname,
+    homePanelFromLocationState(location.state),
+  );
 
   return (
     <nav
@@ -95,13 +101,13 @@ export const MobileBottomNav = () => {
         <SideItem
           icon={Building2}
           label="Profiles"
-          active={isActive(false)}
+          active={activeTab === "profiles"}
           onClick={() => goHomeWith({ panel: "profiles" })}
         />
         <SideItem
           icon={Bookmark}
           label="Saved"
-          active={isActive(false)}
+          active={activeTab === "saved"}
           onClick={() => goHomeWith({ panel: "bookmarks" })}
         />
 
@@ -198,13 +204,13 @@ export const MobileBottomNav = () => {
         <SideItem
           icon={Compass}
           label="Briefing"
-          active={onDiscoverRoute}
+          active={activeTab === "briefing"}
           onClick={() => { triggerHapticFeedback("light"); navigate("/discover"); }}
         />
         <SideItem
           icon={SettingsIcon}
           label="Settings"
-          active={onSettingsRoute}
+          active={activeTab === "settings"}
           onClick={() => { triggerHapticFeedback("light"); navigate("/settings"); }}
         />
       </div>

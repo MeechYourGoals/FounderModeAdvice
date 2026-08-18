@@ -2,6 +2,7 @@ import { useRef } from "react";
 import { ArrowRight, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HeroMontage } from "@/components/marketing/HeroMontage";
+import { AppStoreComingSoonBadge } from "@/components/marketing/AppStoreComingSoonBadge";
 import {
   m,
   useScroll,
@@ -124,6 +125,14 @@ export const LandingHero = ({ onPrimary, onSecondary }: LandingHeroProps) => {
                 Watch the demo
               </Button>
             </m.div>
+          </m.div>
+          <m.div
+            className="mt-5 flex justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, ease: EASE_IOS, delay: 1.05 }}
+          >
+            <AppStoreComingSoonBadge />
           </m.div>
         </m.div>
 

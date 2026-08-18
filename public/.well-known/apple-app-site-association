@@ -2,7 +2,7 @@
   "applinks": {
     "details": [
       {
-        "appIDs": ["TEAMID.com.foundermodeadvice.app"],
+        "appIDs": ["H8G3D6S8P4.com.foundermodeadvice.app"],
         "components": [
           { "/": "*" }
         ]
@@ -10,6 +10,6 @@
     ]
   },
   "webcredentials": {
-    "apps": ["TEAMID.com.foundermodeadvice.app"]
+    "apps": ["H8G3D6S8P4.com.foundermodeadvice.app"]
   }
 }

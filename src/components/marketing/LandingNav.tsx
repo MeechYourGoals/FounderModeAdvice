@@ -122,7 +122,7 @@ export const LandingNav = ({ onNavigate, onAuth, onSignIn, onHome }: LandingNavP
             <m.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.95 }} transition={SPRING_SOFT}>
               <Button size="sm" className="rounded-full px-4 h-9 sm:h-8" onClick={onAuth}>
                 <span className="md:hidden">Start free</span>
-                <span className="hidden md:inline">Analyze a video</span>
+                <span className="hidden md:inline">Analyze a source</span>
                 <ArrowRight className="ml-1.5 h-4 w-4 hidden md:inline-block" />
               </Button>
             </m.div>

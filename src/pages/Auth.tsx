@@ -273,10 +273,10 @@ const Auth = () => {
   };
 
   return (
-    <div className="grain relative h-screen flex flex-col items-center justify-center gap-6 p-4" style={{ background: 'var(--gradient-hero)', paddingTop: 'calc(1rem + var(--safe-area-top))', paddingBottom: 'calc(1rem + var(--safe-area-bottom))' }}>
+    <div className="grain relative h-dvh flex flex-col items-center justify-center gap-6 p-4" style={{ background: 'var(--gradient-hero)', paddingTop: 'calc(1rem + var(--safe-area-top))', paddingBottom: 'calc(1rem + var(--safe-area-bottom))' }}>
       <div className="pointer-events-none absolute inset-0" style={{ background: 'var(--gradient-mesh)' }} />
       <BrandLogo className="relative h-12 w-auto animate-fade-in" />
-      <Card className="glass-strong relative w-full max-w-md max-h-[calc(100vh-7rem-var(--safe-area-top)-var(--safe-area-bottom))] overflow-y-auto rounded-3xl shadow-glass animate-scale-in">
+      <Card className="glass-strong relative w-full max-w-md max-h-[calc(100dvh-7rem-var(--safe-area-top)-var(--safe-area-bottom))] overflow-y-auto rounded-3xl shadow-glass animate-scale-in">
         {showClose && (
           <Button
             type="button"

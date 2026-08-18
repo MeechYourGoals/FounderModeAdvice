@@ -1,5 +1,6 @@
 import { Moon, Sun, Monitor } from "lucide-react";
 import { useTheme } from "next-themes";
+import { triggerHapticFeedback } from "@/lib/capacitor";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -21,15 +22,15 @@ export function ThemeToggle() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme("light")}>
+        <DropdownMenuItem onClick={() => { triggerHapticFeedback("light"); setTheme("light"); }}>
           <Sun className="mr-2 h-4 w-4" />
           <span>Light</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")}>
+        <DropdownMenuItem onClick={() => { triggerHapticFeedback("light"); setTheme("dark"); }}>
           <Moon className="mr-2 h-4 w-4" />
           <span>Dark</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("system")}>
+        <DropdownMenuItem onClick={() => { triggerHapticFeedback("light"); setTheme("system"); }}>
           <Monitor className="mr-2 h-4 w-4" />
           <span>System</span>
         </DropdownMenuItem>

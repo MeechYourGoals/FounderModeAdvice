@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState, type MouseEvent, type ReactNode } from 'react';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import {
   Dialog,
@@ -14,9 +14,11 @@ import { PricingPlans } from './PricingPlans';
 import { UsageDisplay } from './UsageDisplay';
 import { Crown, RotateCcw, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { isNativeWrapper } from '@/lib/appMode';
+import { triggerHapticFeedback } from '@/lib/capacitor';
 
 interface SubscriptionModalProps {
-  trigger?: React.ReactNode;
+  trigger?: ReactNode;
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
@@ -28,10 +30,38 @@ export function SubscriptionModal({
 }: SubscriptionModalProps) {
   const [open, setOpen] = useState(defaultOpen);
   const [restoring, setRestoring] = useState(false);
-  const { restorePurchases, isNative, subscription } = useSubscription();
+  const {
+    restorePurchases,
+    isNative,
+    subscription,
+    presentPaywallAlways,
+    presentCustomerCenter,
+  } = useSubscription();
   const { toast } = useToast();
+  const nativeShell = isNativeWrapper();
+
+  const openNativeBilling = async () => {
+    triggerHapticFeedback("light");
+    const paid = subscription?.tier && subscription.tier !== "free";
+    if (paid) await presentCustomerCenter();
+    else await presentPaywallAlways();
+  };
+
+  useEffect(() => {
+    if (nativeShell && defaultOpen) {
+      void openNativeBilling();
+      onOpenChange?.(false);
+    }
+    // Present once when a native caller asks to open immediately.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nativeShell, defaultOpen]);
 
   const handleOpenChange = (isOpen: boolean) => {
+    if (nativeShell && isOpen) {
+      void openNativeBilling();
+      onOpenChange?.(false);
+      return;
+    }
     setOpen(isOpen);
     onOpenChange?.(isOpen);
   };
@@ -39,11 +69,14 @@ export function SubscriptionModal({
   const handleRestore = async () => {
     setRestoring(true);
     try {
-      await restorePurchases();
-      toast({
-        title: 'Purchases restored',
-        description: 'Your subscription has been restored successfully.',
-      });
+      const restored = await restorePurchases();
+      if (restored) {
+        triggerHapticFeedback("success");
+        toast({
+          title: 'Purchases restored',
+          description: 'Your subscription has been restored successfully.',
+        });
+      }
     } catch (error) {
       toast({
         title: 'Restore failed',
@@ -55,10 +88,24 @@ export function SubscriptionModal({
     }
   };
 
+  if (nativeShell) {
+    if (!trigger) return null;
+    const onClick = (event: MouseEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      void openNativeBilling();
+    };
+    return (
+      <span onClick={onClick} role="presentation">
+        {trigger}
+      </span>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Crown className="h-5 w-5 text-amber-500" />

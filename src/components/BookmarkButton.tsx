@@ -13,6 +13,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { triggerHapticFeedback } from "@/lib/capacitor";
 
 interface BookmarkButtonProps {
   episodeId: string;
@@ -100,7 +101,8 @@ export const BookmarkButton = ({
   const quickBookmark = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (popoverOpen) return; // Don't quick bookmark if menu is open
-    
+    triggerHapticFeedback("light");
+
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -146,6 +148,7 @@ export const BookmarkButton = ({
 
         setIsBookmarked(true);
         setSelectedFolderIds(new Set([defaultFolder!.id]));
+        triggerHapticFeedback("success");
         toast({ title: "Saved to Default folder" });
         await refreshSubscription();
       }

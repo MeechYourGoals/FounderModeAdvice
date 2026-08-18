@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AppLoadingScreen } from "@/components/AppLoadingScreen";
-import { Star, Tv, User as UserIcon, Tag, Sparkles, ExternalLink } from "lucide-react";
+import { Star, Tv, User as UserIcon, Tag, ExternalLink } from "lucide-react";
 import { SecondaryPageHeader } from "@/components/SecondaryPageHeader";
 import { SHORTCUT_TOPICS, normalizeTopics } from "@/lib/topics";
 import { useToast } from "@/hooks/use-toast";
@@ -272,7 +272,7 @@ const Favorites = () => {
           {!paid && (
             <Card className="p-5 border-primary/40 bg-primary/5">
               <div className="flex items-start gap-3">
-                <Sparkles className="h-5 w-5 text-primary mt-0.5" />
+                <Star className="h-5 w-5 text-primary mt-0.5" />
                 <div className="flex-1">
                   <h2 className="font-semibold">Pin favorites with Pro</h2>
                   <p className="text-sm text-muted-foreground mt-1">

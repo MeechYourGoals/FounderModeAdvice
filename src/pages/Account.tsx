@@ -56,11 +56,14 @@ const Account = () => {
     triggerHapticFeedback('medium');
     setIsBillingBusy(true);
     try {
-      await restorePurchases();
-      toast({
-        title: "Purchases restored",
-        description: "Your subscription status has been updated.",
-      });
+      const restored = await restorePurchases();
+      if (restored) {
+        triggerHapticFeedback("success");
+        toast({
+          title: "Purchases restored",
+          description: "Your subscription status has been updated.",
+        });
+      }
     } catch (error) {
       toast({
         title: "Restore failed",
@@ -121,7 +124,7 @@ const Account = () => {
   }
 
   return (
-    <div className="app-ambient h-screen flex flex-col bg-gradient-to-b from-background to-muted/20">
+    <div className="app-ambient h-dvh flex flex-col bg-gradient-to-b from-background to-muted/20">
       {/* Mobile/Tablet header - relative top bar with safe area (Despia pattern) */}
       <SecondaryPageHeader title="Account" onBack={() => navigate("/")} />
 
