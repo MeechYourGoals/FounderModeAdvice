@@ -109,7 +109,7 @@ const SharedAnalysis = () => {
             </Card>
 
             <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Intriguing Insights</h2>
+              <h2 className="text-xl font-semibold mb-4">Lessons from the source</h2>
               <div className="space-y-3">
                 {lessons.map((lesson) => (
                   <div key={lesson.id} className="rounded-xl border border-border/60 bg-muted/20 p-4">

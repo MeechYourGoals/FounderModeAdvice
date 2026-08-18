@@ -47,7 +47,7 @@ export const ProfileSwitcher = ({ compact = false, className }: ProfileSwitcherP
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-60">
         <DropdownMenuLabel className="text-xs text-muted-foreground">
-          Analyzing as
+          Today's lens
         </DropdownMenuLabel>
 
         <DropdownMenuItem onClick={() => setActiveProfileId(null)} className="gap-2">

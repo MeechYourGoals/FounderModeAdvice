@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
-import { HeroSection } from "@/components/HeroSection";
 import { AnalysisForm } from "@/components/AnalysisForm";
 import { EpisodesTable } from "@/components/EpisodesTable";
 import { EpisodeDetail } from "@/components/EpisodeDetail";
+import { TodayDesk } from "@/components/today/TodayDesk";
 import { ProfileSettings } from "@/components/ProfileSettings";
 import { AppHeader } from "@/components/AppHeader";
 import { AppLoadingScreen } from "@/components/AppLoadingScreen";
@@ -63,10 +63,14 @@ const Index = () => {
       action?: string;
       url?: string;
       recommendationId?: string | null;
+      episodeId?: string;
     } | null;
     if (!state) return;
     if (state.panel === "profiles" || state.panel === "bookmarks") {
       openPanel(state.panel);
+    } else if (state.action === "openEpisode" && state.episodeId) {
+      setProfileOpen(false);
+      setSelectedEpisodeId(state.episodeId);
     } else if (state.action === "analyze") {
       setProfileOpen(false);
       setSelectedEpisodeId(null);
@@ -144,7 +148,7 @@ const Index = () => {
   }
 
   if (loading) {
-    return <AppLoadingScreen label="Preparing your library..." />;
+    return <AppLoadingScreen label="Getting your desk ready..." />;
   }
 
   const handleToggle = (tab: "profiles" | "bookmarks") => {
@@ -238,10 +242,23 @@ const Index = () => {
           return new Promise((resolve) => setTimeout(resolve, 900));
         }}
       >
-        <HeroSection />
         <div className="container mx-auto px-4 py-8 sm:py-12 space-y-8 sm:space-y-12 max-w-6xl pb-24 md:pb-8" style={{ paddingBottom: isMobile ? 'calc(5rem + var(--safe-area-bottom))' : undefined }}>
+          {!selectedEpisodeId && (
+            <TodayDesk
+              onOpenEpisode={setSelectedEpisodeId}
+              onPrepareMemo={(url, recommendationId) => {
+                setSelectedEpisodeId(null);
+                requestAnimationFrame(() => {
+                  scrollToAnalyze();
+                  window.dispatchEvent(
+                    new CustomEvent("analyzeUrl", { detail: { url, recommendationId } }),
+                  );
+                });
+              }}
+            />
+          )}
           <div ref={analyzeRef} className="scroll-mt-20">
-            <AnalysisForm />
+            <AnalysisForm variant="composer" inactive={Boolean(selectedEpisodeId)} />
           </div>
           {selectedEpisodeId ? (
             <EpisodeDetail

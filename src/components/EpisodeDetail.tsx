@@ -658,10 +658,10 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
               <span className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                 <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
               </span>
-              Intriguing Insights <span className="text-muted-foreground font-normal">({lessons.length})</span>
+              Lessons from the source <span className="text-muted-foreground font-normal">({lessons.length})</span>
             </h2>
             <p className="text-sm text-muted-foreground mb-4 sm:mb-6 ml-10 sm:ml-11">
-              Generic takeaways from the source — not tailored to your business
+              What the source actually said — not yet tailored to your company
             </p>
             <div className="space-y-4 sm:space-y-5">
               {lessons.map((lesson, index) => (
@@ -734,7 +734,7 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
                   <div key={lesson.id} className="space-y-3 sm:space-y-4">
                     <div className="p-3 sm:p-5 bg-card rounded-2xl border border-primary/15 shadow-sm">
                       <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
-                        Intriguing Insights
+                        From the source
                       </p>
                       <p className="text-sm text-muted-foreground leading-relaxed max-w-[65ch] mb-3 line-clamp-2">
                         {toGenericInsightText(lesson.lesson_text, getViewerCompanyName(episode))}
@@ -800,7 +800,7 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
             <span className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
               <Target className="w-4 h-4 sm:w-5 sm:h-5" />
             </span>
-            Relevant for You <span className="text-muted-foreground font-normal">({callouts.length})</span>
+            Called out for you <span className="text-muted-foreground font-normal">({callouts.length})</span>
           </h2>
           <div className="space-y-3 sm:space-y-4">
             {callouts.map((callout, index) => (
@@ -845,9 +845,9 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
 
 /* Soft metric chip — replaces solid badges so scores read as data, not buttons */
 const ScorePill = ({ label, score }: { label: string; score: number }) => (
-  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary">
+  <span className="inline-flex items-center gap-1 rounded-full bg-muted/70 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
     {label}
-    <span className="font-semibold">{score}/10</span>
+    <span>{score}</span>
   </span>
 );
 

@@ -6,7 +6,6 @@ import { AppLoadingScreen } from "@/components/AppLoadingScreen";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { SecondaryPageHeader } from "@/components/SecondaryPageHeader";
 import { UpgradePrompt } from "@/components/subscription";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -18,7 +17,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DiscoverEmptyState } from "@/components/discover/DiscoverEmptyState";
 import { DiscoveryCard } from "@/components/discover/DiscoveryCard";
-import { DiscoveryGridSkeleton } from "@/components/discover/DiscoveryCardSkeleton";
+import { DiscoveryBriefingSkeleton, DiscoveryGridSkeleton } from "@/components/discover/DiscoveryCardSkeleton";
 
 import { useActiveProfile } from "@/contexts/ActiveProfileContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
@@ -64,9 +63,9 @@ const Discover = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   usePageMeta({
-    title: "Discover",
+    title: "Briefing",
     description:
-      "A weekly briefing of articles, talks, and research chosen for what you're building — one tap from a tailored analysis.",
+      "A weekly briefing of articles, talks, and research chosen for what you're building — one tap from a tailored memo.",
     path: "/discover",
     // Signed-in, per-user surface; nothing here belongs in a search index.
     noindex: true,
@@ -74,8 +73,8 @@ const Discover = () => {
 
   const isPremium = hasDiscoveryAccess(subscription?.tier);
 
-  // Discover follows the same "analyzing as" lens the rest of the app uses, so
-  // the profile shown here is the profile an Analyze click will run against.
+  // Briefing follows the same working-as lens the rest of the app uses, so
+  // the profile shown here is the profile a Prepare memo tap will run against.
   const feedProfileId = activeProfileId ?? profiles[0]?.id ?? null;
   const feedProfile = profiles.find((p) => p.id === feedProfileId) ?? null;
 
@@ -161,6 +160,17 @@ const Discover = () => {
       // profile, so switch the lens before handing off.
       if (recommendation && recommendation.profile_id !== activeProfileId) {
         setActiveProfileId(recommendation.profile_id);
+      }
+
+      if (recommendation?.state === "analyzed" && recommendation.analyzed_episode_id) {
+        navigate("/", {
+          state: {
+            action: "openEpisode",
+            episodeId: recommendation.analyzed_episode_id,
+            ts: Date.now(),
+          },
+        });
+        return;
       }
 
       // Hand off to the existing analysis pipeline on Home — same path a
@@ -263,8 +273,8 @@ const Discover = () => {
           item_count: result.itemCount ?? 0,
         });
         toast({
-          title: "Recommendations refreshed",
-          description: `${result.itemCount ?? 0} new picks for ${feedProfile?.company_name ?? "your profile"}.`,
+          title: "Briefing refreshed",
+          description: `${result.itemCount ?? 0} new picks for ${feedProfile?.company_name ?? "your company"}.`,
         });
         await reloadFeed();
       } else {
@@ -327,7 +337,7 @@ const Discover = () => {
   );
 
   if (authLoading || subscriptionLoading || profilesLoading) {
-    return <AppLoadingScreen label="Loading Discover..." />;
+    return <AppLoadingScreen label="Opening your briefing..." />;
   }
   if (!user) return <Navigate to="/auth" replace />;
 
@@ -339,7 +349,7 @@ const Discover = () => {
     // scrolling element inside it (the Despia pattern), which needs a bounded
     // parent to size against.
     <div className="app-ambient flex h-screen flex-col bg-gradient-to-b from-background to-muted/20">
-      <SecondaryPageHeader title="Discover" onBack={() => navigate("/")} />
+      <SecondaryPageHeader title="Briefing" onBack={() => navigate("/")} />
 
       <PullToRefresh
         onRefresh={async () => {
@@ -355,7 +365,7 @@ const Discover = () => {
           <header className="mb-6 space-y-3">
             <div className="flex items-center gap-2 text-caption-1 font-medium uppercase tracking-wide text-primary">
               <Compass className="h-4 w-4" />
-              Discover
+              Briefing
             </div>
             <h1 className="text-title-1 sm:text-large-title">
               Your weekly{" "}
@@ -363,8 +373,8 @@ const Discover = () => {
             </h1>
             <p className="max-w-2xl text-subhead text-muted-foreground">
               {isPremium
-                ? "Things worth your attention, chosen for what you're building. One tap turns any of them into a memo for your company."
-                : "A library of the kind of material Founder Mode Advice turns into tailored advice. Upgrade to get a personalized set every week."}
+                ? `I chose these for ${feedProfile?.company_name ?? "what you're building"} this week. Ask me for a memo on any of them.`
+                : "Your briefing unlocks on The Boardroom — a short weekly set chosen for what you're building."}
             </p>
 
             {/* Profile lens — the same selector concept used across the app */}
@@ -435,25 +445,25 @@ const Discover = () => {
               {!isPremium ? (
                 <>
                   <UpgradePrompt
-                    message="Personalized weekly recommendations are part of The Boardroom plan."
+                    message="Your briefing unlocks on The Boardroom — a short weekly set chosen for what you're building."
                     feature="discovery"
                   />
                   <div className="space-y-3">
-                    <h2 className="text-title-3">A taste of what we surface</h2>
+                    <h2 className="text-title-3">From the inspiration library</h2>
                     {libraryLoading ? <DiscoveryGridSkeleton count={3} /> : inspirationGrid}
                   </div>
                 </>
               ) : showProfilePrompt ? (
                 <DiscoverEmptyState
                   title="Tell us what you're building"
-                  description="Recommendations are built per business profile. Create one and your first weekly briefing follows."
+                  description="I'll write each week's briefing for a specific company. Create a profile and the first edition follows."
                   action={{
                     label: "Create a business profile",
                     onClick: () => navigate("/", { state: { panel: "profiles", ts: Date.now() } }),
                   }}
                 />
               ) : feedLoading ? (
-                <DiscoveryGridSkeleton />
+                <DiscoveryBriefingSkeleton />
               ) : feedError ? (
                 <DiscoverEmptyState
                   title="We couldn't load your briefing"
@@ -462,8 +472,7 @@ const Discover = () => {
                 />
               ) : (
                 <>
-                  {/* Weekly edition archive */}
-                  {batches.length > 0 && (
+                  {batches.length > 1 && (
                     <div className="flex flex-wrap items-center gap-2">
                       {batches.map((batch, index) => (
                         <button
@@ -487,54 +496,44 @@ const Discover = () => {
                   )}
 
                   {needsMoreContext && (
-                    <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-footnote">
-                      Your profile is light on detail, so these picks are broader than they could be.{" "}
+                    <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-footnote">
+                      I can get sharper next week if I know more about{" "}
+                      {feedProfile?.company_name ?? "your company"}.{" "}
                       <button
                         type="button"
                         className="font-medium text-primary underline-offset-2 hover:underline"
                         onClick={() => navigate("/", { state: { panel: "profiles", ts: Date.now() } })}
                       >
-                        Add more about {feedProfile?.company_name ?? "your company"}
-                      </button>{" "}
-                      to sharpen next week's briefing.
+                        Add a bit more context
+                      </button>
+                      .
                     </div>
                   )}
 
                   {itemsLoading ? (
-                    <DiscoveryGridSkeleton />
+                    <DiscoveryBriefingSkeleton />
                   ) : recommendations.length > 0 ? (
-                    <>
-                      <div className="flex items-baseline justify-between gap-3">
-                        <h2 className="text-title-3">
-                          {recommendations.length} ideas worth your attention
-                        </h2>
-                        {selectedBatch && (
-                          <Badge variant="secondary" className="shrink-0 rounded-full">
-                            {editionLabel(selectedBatch.generated_at)}
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {recommendations.map((recommendation) => (
-                          <DiscoveryCard
-                            key={recommendation.id}
-                            content={recommendation.content}
-                            reason={recommendation.reason}
-                            state={recommendation.state}
-                            onImpression={() => recordImpression(recommendation, "for_you")}
-                            onAnalyze={() => analyzeContent(recommendation.content, recommendation, "for_you")}
-                            onOpenSource={() => openSource(recommendation.content, recommendation, "for_you")}
-                            onToggleSave={() => void toggleSave(recommendation, "for_you")}
-                            onDismiss={() => void dismiss(recommendation)}
-                          />
-                        ))}
-                      </div>
-                    </>
+                    <div className="space-y-4">
+                      {recommendations.map((recommendation, index) => (
+                        <DiscoveryCard
+                          key={recommendation.id}
+                          content={recommendation.content}
+                          reason={recommendation.reason}
+                          state={recommendation.state}
+                          variant={index === 0 ? "featured" : "compact"}
+                          onImpression={() => recordImpression(recommendation, "for_you")}
+                          onAnalyze={() => analyzeContent(recommendation.content, recommendation, "for_you")}
+                          onOpenSource={() => openSource(recommendation.content, recommendation, "for_you")}
+                          onToggleSave={() => void toggleSave(recommendation, "for_you")}
+                          onDismiss={() => void dismiss(recommendation)}
+                        />
+                      ))}
+                    </div>
                   ) : (
                     <>
                       <DiscoverEmptyState
-                        title={`We're finding resources based on ${feedProfile?.company_name ?? "your profile"}`}
-                        description="Your first briefing is generated on our weekly cycle. In the meantime, here's the Inspiration Library — every item works with Analyze."
+                        title={`I'm still gathering this week's set for ${feedProfile?.company_name ?? "your company"}`}
+                        description="The first briefing lands on the weekly cycle. Meanwhile, the Inspiration Library is ready whenever you want a memo."
                         action={{ label: "Refresh now", onClick: () => void refreshRecommendations() }}
                         secondaryAction={{ label: "Browse inspiration", onClick: () => setTab("inspiration") }}
                       />
