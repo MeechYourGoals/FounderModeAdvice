@@ -38,7 +38,11 @@ import { useNavigate, Navigate, useLocation } from "react-router-dom";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 import { requestLibraryRefresh } from "@/lib/libraryRefresh";
 import { shouldShowAppAuthFirst } from "@/lib/appMode";
-import { homePanelFromLocationState, type HomePanel } from "@/lib/mobileNav";
+import {
+  homePanelFromLocationState,
+  shouldPublishHomePanel,
+  type HomePanel,
+} from "@/lib/mobileNav";
 import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
 import { WalkthroughDialog } from "@/components/onboarding/WalkthroughDialog";
 import { useOnboarding } from "@/hooks/useOnboarding";
@@ -53,6 +57,10 @@ const Index = () => {
   const { loading: onboardingLoading, completed: onboardingCompleted, complete: completeOnboarding } = useOnboarding();
   const navigate = useNavigate();
   const location = useLocation();
+  // Window listeners mount once; always read the latest location.state so
+  // re-opening Profiles/Saved after dismiss still publishes (tab highlight).
+  const locationStateRef = useRef(location.state);
+  locationStateRef.current = location.state;
   const isMobile = useMediaQuery("(max-width: 767px)");
   // Match the bottom tab bar (`lg:hidden`) so Profiles/Saved are a page sheet
   // wherever the tray is visible; desktop keeps the right-hand sheet.
@@ -69,8 +77,7 @@ const Index = () => {
   };
 
   const publishPanel = (panel: HomePanel | null) => {
-    const current = homePanelFromLocationState(location.state);
-    if (current === panel) return;
+    if (!shouldPublishHomePanel(locationStateRef.current, panel)) return;
     navigate(".", { replace: true, state: panel ? { panel, ts: Date.now() } : null });
   };
 

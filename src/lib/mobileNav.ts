@@ -32,3 +32,17 @@ export function homePanelFromLocationState(state: unknown): HomePanel | null {
   if (panel === "profiles" || panel === "bookmarks") return panel;
   return null;
 }
+
+/**
+ * Whether homepage overlay state should be written again.
+ *
+ * After dismiss, location.state is cleared. Re-opening the same panel must
+ * navigate — otherwise Profiles/Saved stay unhighlighted. Skip only when
+ * the URL already matches (avoids a no-op replace).
+ */
+export function shouldPublishHomePanel(
+  currentState: unknown,
+  panel: HomePanel | null,
+): boolean {
+  return homePanelFromLocationState(currentState) !== panel;
+}
