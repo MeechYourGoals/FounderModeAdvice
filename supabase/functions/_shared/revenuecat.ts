@@ -133,6 +133,12 @@ export async function syncUserEntitlements(
   userId: string,
   rcKey: string,
 ): Promise<Tier> {
+  // Permanent founder accounts are pinned to Boardroom — a restore/purchase
+  // sync must never overwrite their row with a lower tier.
+  if (await isFounderUserId(admin, userId)) {
+    await writeUserSubscriptionTier(admin, userId, "series_z", null);
+    return "series_z";
+  }
   const rc = await verifyRevenueCatEntitlements(userId, rcKey);
   const paddleTier = await fetchActivePaddleTier(admin, userId);
   const tier = pickHighestTier([rc.tier, paddleTier]);
