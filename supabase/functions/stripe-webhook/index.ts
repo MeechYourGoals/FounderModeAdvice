@@ -161,8 +161,8 @@ serve(async (req) => {
 
         const subscription = await subResponse.json();
         const priceId = subscription.items?.data?.[0]?.price?.id;
-        const founder = await isProtectedAdmin(supabase, userId);
-        const tier = founder ? 'series_z' : getTierFromPriceId(priceId);
+        const protectedAdmin = await isProtectedAdmin(supabase, userId);
+        const tier = protectedAdmin ? 'series_z' : getTierFromPriceId(priceId);
 
         // Update subscription in database
         const { error } = await supabase
@@ -236,14 +236,14 @@ serve(async (req) => {
         const subscription = event.data.object;
         const customerId = subscription.customer;
 
-        // Founder accounts are permanently on Boardroom — skip the downgrade.
+        // Protected admin accounts are permanently on Boardroom — skip the downgrade.
         const { data: ownerRow } = await supabase
           .from('user_subscriptions')
           .select('user_id')
           .eq('stripe_customer_id', customerId)
           .maybeSingle();
         if (await isProtectedAdmin(supabase, ownerRow?.user_id)) {
-          console.log('Skipping cancel downgrade for founder account');
+          console.log('Skipping cancel downgrade for protected admin account');
           break;
         }
 

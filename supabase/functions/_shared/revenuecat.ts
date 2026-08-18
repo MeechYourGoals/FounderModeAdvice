@@ -135,7 +135,7 @@ export async function syncUserEntitlements(
   userId: string,
   rcKey: string,
 ): Promise<Tier> {
-  // Permanent founder accounts are pinned to Boardroom — a restore/purchase
+  // Protected admin accounts are pinned to Boardroom — a restore/purchase
   // sync must never overwrite their row with a lower tier.
   if (await isProtectedAdmin(admin, userId)) {
     await writeUserSubscriptionTier(admin, userId, "series_z", null);

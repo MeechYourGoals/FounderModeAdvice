@@ -164,13 +164,13 @@ async function upsertSubscription(data: any, env: PaddleEnv) {
   }
 
   const isActive = status === 'active' || status === 'trialing';
-  // Permanent founder accounts stay on Boardroom regardless of billing state.
-  const founder = await isProtectedAdmin(getSupabase(), userId);
+  // Protected admin accounts stay on Boardroom regardless of billing state.
+  const protectedAdmin = await isProtectedAdmin(getSupabase(), userId);
   await getSupabase().from('user_subscriptions').upsert(
     {
       user_id: userId,
-      tier: founder ? 'series_z' : isActive ? tier : 'free',
-      status: founder ? 'active' : isActive ? 'active' : status,
+      tier: protectedAdmin ? 'series_z' : isActive ? tier : 'free',
+      status: protectedAdmin ? 'active' : isActive ? 'active' : status,
       updated_at: new Date().toISOString(),
     },
     { onConflict: 'user_id' },
