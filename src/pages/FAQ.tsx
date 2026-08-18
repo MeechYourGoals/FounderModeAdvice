@@ -26,7 +26,7 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
   },
   {
     q: "How do folders work?",
-    a: "Folders let you organize your analyses and bookmarks by topic, business, workflow, or learning path so your advice stays structured and easy to revisit.",
+    a: "Folders let you organize your analyses and bookmarks by topic, business, workflow, or learning path so your advice stays structured and easy to revisit. On Free and The C-Suite you file analyses yourself. On The Boardroom, long-press any tag on your playbook to create a smart folder: we assign every analysis that already has that tag and auto-file new ones when analysis completes.",
   },
   {
     q: "What is included in The C-Suite plan?",
@@ -34,7 +34,7 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
   },
   {
     q: "What is included in The Boardroom plan?",
-    a: "The Boardroom ($19.99/month) includes unlimited source analyses, unlimited business profiles, one-click multi-profile batch analysis for the same source, unlimited Ask-the-video chat, and invite-based collaboration so teammates and advisors can view shared insights.",
+    a: "The Boardroom ($19.99/month) includes unlimited source analyses, unlimited business profiles, one-click multi-profile batch analysis for the same source, unlimited Ask-the-video chat, smart tag folders that auto-file past and future analyses, and invite-based collaboration so teammates and advisors can view shared insights.",
   },
   {
     q: "What happens if I hit my monthly limits?",

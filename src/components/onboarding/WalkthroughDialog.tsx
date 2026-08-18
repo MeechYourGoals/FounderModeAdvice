@@ -91,7 +91,7 @@ const SLIDES: WalkthroughSlide[] = [
   {
     icon: FolderOpen,
     title: "Save, organize, favorite",
-    body: "Bookmark memos into folders by topic or business, and star the founders, channels, and topics you keep coming back to.",
+    body: "Bookmark memos into folders by topic or business, and star the founders, channels, and topics you keep coming back to. On The Boardroom, long-press a tag to create a smart folder that files matching analyses automatically.",
     findIt: {
       mobile: "Saved, second tab in the bottom bar — Favorites lives in the menu.",
       desktop: "Bookmarks and Favorites, in the menu (☰).",
