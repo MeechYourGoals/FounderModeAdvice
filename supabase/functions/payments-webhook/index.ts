@@ -1,5 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { verifyWebhook, EventName, gatewayFetch, type PaddleEnv } from '../_shared/paddle.ts';
+import { isFounderUserId } from '../_shared/founders.ts';
 
 type OwnershipResult = 'ok' | 'mismatch' | 'error';
 
