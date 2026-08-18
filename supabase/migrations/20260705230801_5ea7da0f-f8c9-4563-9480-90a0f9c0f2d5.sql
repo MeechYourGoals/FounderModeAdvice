@@ -8,11 +8,9 @@ SET search_path = public
 AS $$
 DECLARE
   v_tier text;
-  v_email text;
 BEGIN
-  -- Founder super admin: unlimited.
-  SELECT email INTO v_email FROM auth.users WHERE id = _user_id;
-  IF lower(coalesce(v_email, '')) = 'ccamechi@gmail.com' THEN
+  -- Admin role (public.user_roles): unlimited.
+  IF EXISTS (SELECT 1 FROM public.user_roles r WHERE r.user_id = _user_id AND r.role = 'admin') THEN
     RETURN 2147483647;
   END IF;
 

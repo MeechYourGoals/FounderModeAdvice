@@ -17,19 +17,19 @@ type ChatMessage = {
   created_at?: string;
 };
 
+import { isProtectedAdmin } from "../_shared/adminRoles.ts";
+
 const MAX_TRANSCRIPT_CHARS = 22000;
 const CHUNK_SIZE = 2200;
 const CHUNK_OVERLAP = 250;
-
-/** Founder/Super Admin emails with unlimited access - no feature limits */
-const FOUNDER_EMAILS = ["ccamechi@gmail.com", "chrisatown@gmail.com", "ca@saintmarlolabs.com"];
 
 /**
  * Ask-the-video chat is gated to the Boardroom (series_z) plan.
  * Enforced here server-side so the entitlement can never be bypassed from the client.
  */
 const userCanChat = async (supabase: any, user: any): Promise<boolean> => {
-  if (user?.email && FOUNDER_EMAILS.includes(user.email.toLowerCase())) return true;
+  // Entitlement comes only from the database: admin role or Boardroom tier.
+  if (await isProtectedAdmin(supabase, user?.id)) return true;
   const { data: sub } = await supabase
     .from("user_subscriptions")
     .select("tier")

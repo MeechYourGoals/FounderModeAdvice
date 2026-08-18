@@ -15,8 +15,7 @@ AS $$
 DECLARE
   v_tier text;
 BEGIN
-  -- Admin role (public.user_roles): unlimited.
-  IF public.is_founder_user(_user_id) THEN
+  IF EXISTS (SELECT 1 FROM public.user_roles r WHERE r.user_id = _user_id AND r.role = 'admin') THEN
     RETURN 2147483647;
   END IF;
 
@@ -38,7 +37,7 @@ GRANT EXECUTE ON FUNCTION public.get_tier_max(uuid, text) TO authenticated, serv
 CREATE OR REPLACE FUNCTION public.user_has_boardroom_plan(_user_id uuid)
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
 AS $$
-  SELECT public.is_founder_user(_user_id)
+  SELECT EXISTS (SELECT 1 FROM public.user_roles r WHERE r.user_id = _user_id AND r.role = 'admin')
       OR EXISTS (SELECT 1 FROM public.user_subscriptions s WHERE s.user_id = _user_id AND s.tier = 'series_z');
 $$;
 REVOKE EXECUTE ON FUNCTION public.user_has_boardroom_plan(uuid) FROM PUBLIC, anon;

@@ -5,6 +5,7 @@ import JSZip from "https://esm.sh/jszip@3.10.1";
 import * as XLSX from "https://esm.sh/xlsx@0.18.5";
 import { getVideoContext, deriveChannelHandle } from "../_shared/transcript.ts";
 import { mentionsViewerCompany, sanitizeLessonText } from "../_shared/genericLessons.ts";
+import { isProtectedAdmin } from "../_shared/adminRoles.ts";
 
 // Canonical topic vocabulary (keep in sync with src/lib/topics.ts).
 const CANONICAL_TOPICS = [
@@ -101,9 +102,6 @@ const TIER_LIMITS = {
   seed: { analyses: 20 },
   series_z: { analyses: 999999 },
 } as const;
-
-/** Founder/Super Admin emails with unlimited access - no feature limits */
-const FOUNDER_EMAILS = ['ccamechi@gmail.com', 'chrisatown@gmail.com', 'ca@saintmarlolabs.com'];
 
 // ---- Premium document upload support ----
 // Uploaded private documents are analyzed through the SAME pipeline as URLs:
@@ -438,12 +436,12 @@ serve(async (req) => {
     }
 
 
-    // Check subscription limits if we have a user (skip for Founder/Super Admin)
+    // Check subscription limits if we have a user. Admins (public.user_roles)
+    // bypass limits — entitlement is read from the database only.
     if (authenticatedUserId) {
-      const { data: { user: authUser } } = await supabase.auth.admin.getUserById(authenticatedUserId);
-      const isFounder = authUser?.email && FOUNDER_EMAILS.includes(authUser.email.toLowerCase());
+      const isAdmin = await isProtectedAdmin(supabase, authenticatedUserId);
 
-      if (!isFounder) {
+      if (!isAdmin) {
         const monthYear = new Date().toISOString().slice(0, 7); // YYYY-MM
 
         // Get user's subscription tier

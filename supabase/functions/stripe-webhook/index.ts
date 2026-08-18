@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import { isFounderUserId } from '../_shared/founders.ts';
+import { isProtectedAdmin } from '../_shared/adminRoles.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -161,8 +161,8 @@ serve(async (req) => {
 
         const subscription = await subResponse.json();
         const priceId = subscription.items?.data?.[0]?.price?.id;
-        const founder = await isFounderUserId(supabase, userId);
-        const tier = founder ? 'series_z' : getTierFromPriceId(priceId);
+        const protectedAdmin = await isProtectedAdmin(supabase, userId);
+        const tier = protectedAdmin ? 'series_z' : getTierFromPriceId(priceId);
 
         // Update subscription in database
         const { error } = await supabase
@@ -208,7 +208,7 @@ serve(async (req) => {
         }
 
         const priceId = subscription.items?.data?.[0]?.price?.id;
-        const tier = (await isFounderUserId(supabase, userSub.user_id))
+        const tier = (await isProtectedAdmin(supabase, userSub.user_id))
           ? 'series_z'
           : getTierFromPriceId(priceId);
 
@@ -236,14 +236,14 @@ serve(async (req) => {
         const subscription = event.data.object;
         const customerId = subscription.customer;
 
-        // Founder accounts are permanently on Boardroom — skip the downgrade.
+        // Protected admin accounts are permanently on Boardroom — skip the downgrade.
         const { data: ownerRow } = await supabase
           .from('user_subscriptions')
           .select('user_id')
           .eq('stripe_customer_id', customerId)
           .maybeSingle();
-        if (await isFounderUserId(supabase, ownerRow?.user_id)) {
-          console.log('Skipping cancel downgrade for founder account');
+        if (await isProtectedAdmin(supabase, ownerRow?.user_id)) {
+          console.log('Skipping cancel downgrade for protected admin account');
           break;
         }
 

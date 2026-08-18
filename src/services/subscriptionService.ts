@@ -16,8 +16,8 @@ import {
   restoreShellPurchasesAndWait,
 } from './expoShellService';
 
-/** Founder/Super Admin emails with unlimited access - no feature limits */
-const FOUNDER_EMAILS = ['ccamechi@gmail.com', 'chrisatown@gmail.com', 'ca@saintmarlolabs.com'];
+
+
 
 /** RevenueCat API key — platform-specific and mandatory for native builds. */
 function getRevenueCatApiKey(): string {
@@ -419,33 +419,7 @@ export async function getSubscriptionInfo(): Promise<SubscriptionInfo | null> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
-    // Founder/Super Admin: unlimited access, no feature limits
-    const isFounder = user.email && FOUNDER_EMAILS.includes(user.email.toLowerCase());
-    if (isFounder) {
-      const profilesUsed = (await supabase
-        .from('user_startup_profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)).count ?? 0;
-      const bookmarksUsed = (await supabase
-        .from('bookmarked_episodes')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)).count ?? 0;
-      const { data: usage } = await supabase
-        .from('user_monthly_usage' as any)
-        .select('analyses_count')
-        .eq('user_id', user.id)
-        .eq('month_year', new Date().toISOString().slice(0, 7))
-        .single();
-      return {
-        tier: 'series_z',
-        limits: {
-          profiles: { max: 9999, used: profilesUsed || 0 },
-          bookmarks: { max: 9999, used: bookmarksUsed || 0 },
-          analyses: { max: 9999, used: (usage as any)?.analyses_count || 0 },
-        },
-        isActive: true,
-      };
-    }
+
 
     // Get subscription tier
     const { data: subscription } = await supabase
