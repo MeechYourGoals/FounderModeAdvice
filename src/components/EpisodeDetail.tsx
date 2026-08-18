@@ -16,6 +16,7 @@ import { AnalysisShareDialog } from "@/components/AnalysisShareDialog";
 import { InsightComments } from "@/components/InsightComments";
 import { useInsightComments } from "@/hooks/useInsightComments";
 import { hasSharing } from "@/types/subscription";
+import { applyRulesForEpisodeTags } from "@/services/folderTagRules";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 import { getAnalysisProfileLabel, getBoardMeetingMemoTitle, getViewerCompanyName, isUniversalAnalysis } from "@/lib/analysisProfile";
 import { toGenericInsightText } from "@/lib/genericLessons";
@@ -103,7 +104,19 @@ interface EpisodeDetailProps {
   onBack: () => void;
 }
 
-const LessonTags = ({ lessonId, initialTags, onUpdate }: { lessonId: string, initialTags: { id: string, name: string }[], onUpdate: () => void }) => {
+const LessonTags = ({
+  lessonId,
+  episodeId,
+  userId,
+  initialTags,
+  onUpdate,
+}: {
+  lessonId: string;
+  episodeId: string;
+  userId: string | null;
+  initialTags: { id: string, name: string }[];
+  onUpdate: () => void;
+}) => {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [availableTags, setAvailableTags] = useState<{ id: string, name: string }[]>([]);
@@ -135,6 +148,9 @@ const LessonTags = ({ lessonId, initialTags, onUpdate }: { lessonId: string, ini
 
      if (tagId) {
        await supabase.from('lesson_tags').insert({ lesson_id: lessonId, tag_id: tagId });
+       if (userId) {
+         await applyRulesForEpisodeTags(userId, episodeId, [tagName]);
+       }
        onUpdate();
        setOpen(false);
        setSearchValue("");
@@ -694,6 +710,8 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
                   )}
                   <LessonTags
                      lessonId={lesson.id}
+                     episodeId={episode.id}
+                     userId={currentUserId}
                      initialTags={lesson.lesson_tags?.map(lt => lt.tags).filter(Boolean) as {id: string, name: string}[] || []}
                      onUpdate={fetchEpisodeDetails}
                   />
