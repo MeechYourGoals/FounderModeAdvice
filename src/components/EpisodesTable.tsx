@@ -8,9 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   ExternalLink, TrendingUp, MoreVertical, Eye, Bookmark, Download, Copy,
-  Youtube, Headphones, FileText, Trash2, X, ArrowUpDown, ArrowUp, ArrowDown,
+  Headphones, FileText, File, Trash2, X, ArrowUpDown, ArrowUp, ArrowDown,
   FolderPlus, Folder, ChevronLeft, ChevronRight, Filter, Search,
-  Tag, LayoutList, Plus, Share2
+  Tag, LayoutList, Plus, Share2, Video, Newspaper, Image
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -39,6 +39,13 @@ import { triggerHapticFeedback } from "@/lib/capacitor";
 import { LibraryEmptyState } from "@/components/LibraryEmptyState";
 import { getLibraryPrefs, setLibraryPrefs } from "@/lib/libraryPrefs";
 import { getAnalysisProfileLabel, isUniversalAnalysis } from "@/lib/analysisProfile";
+import {
+  getAnalysisSourceActionLabel,
+  getAnalysisSourceKind,
+  getAnalysisSourceLabel,
+  isUploadedDocumentUrl,
+  type AnalysisSourceKind,
+} from "@/lib/analysisSource";
 
 interface Episode {
   id: string;
@@ -85,6 +92,26 @@ type SortDirection = "asc" | "desc";
 type ViewMode = "chronological" | "tag" | "folder";
 
 const PAGE_SIZE = 15;
+
+const SOURCE_ICONS: Record<AnalysisSourceKind, typeof Video> = {
+  video: Video,
+  article: Newspaper,
+  podcast: Headphones,
+  pdf: FileText,
+  screenshot: Image,
+  document: File,
+};
+
+function AnalysisSourceChip({ url }: { url: string }) {
+  const kind = getAnalysisSourceKind(url);
+  const Icon = SOURCE_ICONS[kind];
+  return (
+    <Badge variant="outline" className="text-[10px] px-1.5 py-0 flex items-center gap-0.5">
+      <Icon className="w-2.5 h-2.5" />
+      {getAnalysisSourceLabel(kind)}
+    </Badge>
+  );
+}
 
 export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -616,20 +643,16 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     );
   }
 
-  // Uploaded documents use a synthetic, non-navigable "document://" url.
-  const isUploadedDocument = (url: string) => url.startsWith("document://");
-  const getPlatformIcon = (url: string) =>
-    isUploadedDocument(url) ? <FileText className="w-4 h-4" />
-      : (url.includes("youtube.com") || url.includes("youtu.be")) ? <Youtube className="w-4 h-4" />
-      : <Headphones className="w-4 h-4" />;
+  const getPlatformIcon = (url: string) => {
+    const Icon = SOURCE_ICONS[getAnalysisSourceKind(url)];
+    return <Icon className="w-4 h-4" />;
+  };
   const getPlatformLabel = (url: string) =>
-    isUploadedDocument(url) ? "View Details"
-      : (url.includes("youtube.com") || url.includes("youtu.be")) ? "Watch Now"
-      : "Listen Now";
+    getAnalysisSourceActionLabel(getAnalysisSourceKind(url));
   // Open the source (or, for uploaded documents which have no navigable URL, open details).
   const openSource = (episode: Episode, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isUploadedDocument(episode.url)) {
+    if (isUploadedDocumentUrl(episode.url)) {
       onSelectEpisode(episode.id);
     } else {
       window.open(episode.url, "_blank");
@@ -666,7 +689,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     return (
       <div
         style={{ "--stagger-i": index } as React.CSSProperties}
-        className="stagger-item cv-row group p-4 min-h-[72px] border-b border-border/60 last:border-b-0 transition-all hover:bg-primary/[0.03] active:bg-primary/5 active:scale-[0.995] cursor-pointer touch-manipulation"
+        className="stagger-item cv-row group p-4 min-h-[72px] rounded-xl border border-border bg-card shadow-sm transition-all hover:bg-primary/[0.03] active:bg-primary/5 active:scale-[0.995] cursor-pointer touch-manipulation"
         onClick={() => onSelectEpisode(episode.id)}
         role="button"
         tabIndex={0}
@@ -675,7 +698,8 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <p className="font-medium text-sm line-clamp-2 mb-1">{episode.title}</p>
-            <div className="mb-1">
+            <div className="mb-1 flex flex-wrap items-center gap-1">
+              <AnalysisSourceChip url={episode.url} />
               <Badge variant={isUniversalAnalysis(episode) ? "outline" : "secondary"} className="text-[10px]">
                 {getAnalysisProfileLabel(episode)}
               </Badge>
@@ -992,7 +1016,9 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                     <span className="font-semibold text-sm">{tagName}</span>
                     <Badge variant="outline" className="text-[10px]">{eps.length}</Badge>
                   </div>
-                  {eps.map((ep, i) => <MobileEpisodeCard key={ep.id} episode={ep} index={i} />)}
+                  <div className="space-y-2.5 p-3">
+                    {eps.map((ep, i) => <MobileEpisodeCard key={ep.id} episode={ep} index={i} />)}
+                  </div>
                 </div>
               );
             })}
@@ -1018,13 +1044,15 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                     <span className="font-semibold text-sm">{folder.name}</span>
                     <Badge variant="outline" className="text-[10px]">{eps.length}</Badge>
                   </div>
-                  {eps.map((ep, i) => <MobileEpisodeCard key={ep.id} episode={ep} index={i} />)}
+                  <div className="space-y-2.5 p-3">
+                    {eps.map((ep, i) => <MobileEpisodeCard key={ep.id} episode={ep} index={i} />)}
+                  </div>
                 </div>
               );
             })}
           </div>
         ) : isMobile ? (
-          <div>
+          <div className="space-y-2.5 p-3">
             {paginatedEpisodes.map((episode, i) => (
               <MobileEpisodeCard key={episode.id} episode={episode} index={i} />
             ))}
@@ -1070,7 +1098,8 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                       <TableCell className="font-medium max-w-md">
                         <div className="space-y-1">
                           <div className="line-clamp-2">{episode.title}</div>
-                        <div className="mt-1">
+                        <div className="mt-1 flex flex-wrap items-center gap-1">
+                          <AnalysisSourceChip url={episode.url} />
                           <Badge variant={isUniversalAnalysis(episode) ? "outline" : "secondary"} className="text-[10px]">
                             {getAnalysisProfileLabel(episode)}
                           </Badge>
