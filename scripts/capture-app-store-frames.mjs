@@ -50,8 +50,8 @@ async function main() {
         await page.evaluate(async () => {
           document.documentElement.classList.remove("dark");
           document.documentElement.classList.add("light");
-          // Hide toast/install chrome if present
-          document.querySelectorAll("[data-sonner-toaster], .PWAInstallPrompt").forEach((el) => {
+          // Hide toast chrome if present
+          document.querySelectorAll("[data-sonner-toaster]").forEach((el) => {
             el.style.display = "none";
           });
           if (document.fonts?.ready) await document.fonts.ready;
