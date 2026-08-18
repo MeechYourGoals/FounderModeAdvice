@@ -22,7 +22,7 @@ const CHUNK_SIZE = 2200;
 const CHUNK_OVERLAP = 250;
 
 /** Founder/Super Admin emails with unlimited access - no feature limits */
-const FOUNDER_EMAILS = ["ccamechi@gmail.com"];
+const FOUNDER_EMAILS = ["ccamechi@gmail.com", "chrisatown@gmail.com", "ca@saintmarlolabs.com"];
 
 /**
  * Ask-the-video chat is gated to the Boardroom (series_z) plan.
