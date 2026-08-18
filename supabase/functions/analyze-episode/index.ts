@@ -5,6 +5,7 @@ import JSZip from "https://esm.sh/jszip@3.10.1";
 import * as XLSX from "https://esm.sh/xlsx@0.18.5";
 import { getVideoContext, deriveChannelHandle } from "../_shared/transcript.ts";
 import { mentionsViewerCompany, sanitizeLessonText } from "../_shared/genericLessons.ts";
+import { isProtectedAdmin } from "../_shared/adminRoles.ts";
 
 // Canonical topic vocabulary (keep in sync with src/lib/topics.ts).
 const CANONICAL_TOPICS = [
