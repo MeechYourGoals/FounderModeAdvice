@@ -20,8 +20,9 @@ import {
 } from '@/services/subscriptionService';
 import { isExpoShell, identifyShellUser } from '@/services/expoShellService';
 import type { SubscriptionInfo, SubscriptionTier } from '@/types/subscription';
-import { STRIPE_PRICE_IDS, REVENUECAT_ENTITLEMENTS } from '@/types/subscription';
+import { STRIPE_PRICE_IDS, REVENUECAT_ENTITLEMENTS, TIER_LIMITS } from '@/types/subscription';
 import type { PaywallResult } from '@/services/subscriptionService';
+import { isTimeoutError, withTimeout } from '@/lib/asyncTimeout';
 
 interface SubscriptionContextType {
   subscription: SubscriptionInfo | null;
@@ -46,8 +47,22 @@ interface SubscriptionContextType {
 
 const SubscriptionContext = createContext<SubscriptionContextType | null>(null);
 
+const SUBSCRIPTION_FETCH_TIMEOUT_MS = 10_000;
+
+const FREE_FALLBACK: SubscriptionInfo = {
+  tier: 'free',
+  limits: {
+    profiles: { max: TIER_LIMITS.free.profiles.max, used: 0 },
+    bookmarks: { max: TIER_LIMITS.free.bookmarks.max, used: 0 },
+    analyses: { max: TIER_LIMITS.free.analyses.max, used: 0 },
+  },
+  isActive: true,
+};
+
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
+  const userId = user?.id ?? null;
+  const userEmail = user?.email ?? null;
   const { isDespia } = useDespia();
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -55,16 +70,21 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const isNative = Capacitor.isNativePlatform();
   const isDespiaApp = isDespia();
   const isShellApp = isExpoShell();
+  const hasSnapshotRef = useRef(false);
 
   const refreshSubscription = useCallback(async () => {
-    if (!user) {
+    if (!userId) {
+      hasSnapshotRef.current = false;
       setSubscription(null);
       setLoading(false);
       return;
     }
 
+    // Foreground / token-refresh re-reads must not flip `loading` back to true
+    // — Discover (and Account/Favorites) treat that as a full-page spinner.
+    const blocking = !hasSnapshotRef.current;
     try {
-      setLoading(true);
+      if (blocking) setLoading(true);
       setError(null);
 
       // On native platforms, also check RevenueCat entitlements
@@ -81,25 +101,28 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       // Sync happens only after a shell purchase/restore (see the purchase
       // callback below and restorePurchases in subscriptionService).
 
-      const info = await getSubscriptionInfo();
+      const info = await withTimeout(
+        getSubscriptionInfo({ id: userId, email: userEmail }),
+        SUBSCRIPTION_FETCH_TIMEOUT_MS,
+        'getSubscriptionInfo',
+      );
       setSubscription(info);
+      hasSnapshotRef.current = true;
     } catch (err) {
       console.error('Failed to fetch subscription', err);
       setError('Failed to load subscription info');
-      // Default to free tier on error (limits mirror TIER_LIMITS.free)
-      setSubscription({
-        tier: 'free',
-        limits: {
-          profiles: { max: 1, used: 0 },
-          bookmarks: { max: 5, used: 0 },
-          analyses: { max: 3, used: 0 },
-        },
-        isActive: true,
-      });
+      if (isTimeoutError(err)) {
+        // Keep whatever we already have. Inventing a free tier here would
+        // show the upgrade wall to a Boardroom member whose fetch hung.
+        setSubscription((current) => current);
+      } else {
+        setSubscription((current) => current ?? FREE_FALLBACK);
+        hasSnapshotRef.current = true;
+      }
     } finally {
       setLoading(false);
     }
-  }, [user, isNative, isDespiaApp, isShellApp]);
+  }, [userId, userEmail, isNative, isDespiaApp, isShellApp]);
 
   // Despia and the Expo shell report purchase/restore completion through global
   // callbacks. Register them in one place so callbacks cannot overwrite each other.
@@ -132,7 +155,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   // flapping hammering the backend.
   const lastForegroundRefreshRef = useRef(0);
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
     const onVisible = () => {
       if (document.visibilityState !== 'visible') return;
       const now = Date.now();
@@ -142,24 +165,24 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [user, refreshSubscription]);
+  }, [userId, refreshSubscription]);
 
   // Initialize RevenueCat and load subscription on mount
   useEffect(() => {
     async function init() {
-      if (user && isNative && !isDespiaApp) {
-        await initializeRevenueCat(user.id);
-        await identifyUser(user.id);
+      if (userId && isNative && !isDespiaApp) {
+        await initializeRevenueCat(userId);
+        await identifyUser(userId);
       }
-      if (user && isShellApp) {
+      if (userId && isShellApp) {
         // Configure RevenueCat/OneSignal in the shell with the Supabase user id
         // so server-side entitlement verification keys off the same identity.
-        identifyShellUser(user.id);
+        identifyShellUser(userId);
       }
       await refreshSubscription();
     }
-    init();
-  }, [user, isNative, isDespiaApp, isShellApp, refreshSubscription]);
+    void init();
+  }, [userId, isNative, isDespiaApp, isShellApp, refreshSubscription]);
 
   const canCreateProfile = useCallback(() => {
     if (!subscription?.limits) {

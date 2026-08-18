@@ -9,6 +9,7 @@ import {
 } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { isSameAuthUser } from "@/lib/authUser";
 import { clearOfflineCache } from "@/lib/offlineCache";
 
 interface AuthContextValue {
@@ -41,10 +42,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let listenerFired = false;
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    } =     supabase.auth.onAuthStateChange((_event, nextSession) => {
       listenerFired = true;
       setSession(nextSession);
-      setUser(nextSession?.user ?? null);
+      // Keep the user reference stable across TOKEN_REFRESHED so consumers
+      // that depend on `user` (not `user.id`) do not retrigger loads.
+      setUser((prev) => {
+        const next = nextSession?.user ?? null;
+        return isSameAuthUser(prev, next) ? prev : next;
+      });
       setLoading(false);
     });
 
@@ -54,7 +60,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session: existing } }) => {
       if (listenerFired) return;
       setSession(existing);
-      setUser(existing?.user ?? null);
+      setUser((prev) => {
+        const next = existing?.user ?? null;
+        return isSameAuthUser(prev, next) ? prev : next;
+      });
       setLoading(false);
     });
 

@@ -414,9 +414,17 @@ export async function syncSubscriptionToSupabase(tier: SubscriptionTier): Promis
 
 
 // Get subscription info from Supabase (direct queries, no RPC)
-export async function getSubscriptionInfo(): Promise<SubscriptionInfo | null> {
+export async function getSubscriptionInfo(
+  knownUser?: { id: string; email?: string | null } | null,
+): Promise<SubscriptionInfo | null> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    // Prefer the already-resolved session user. `getUser()` hits the Auth
+    // server and can deadlock with onAuthStateChange / concurrent requests
+    // (https://github.com/supabase/gotrue-js/issues/762).
+    const user =
+      knownUser ??
+      (await supabase.auth.getSession()).data.session?.user ??
+      null;
     if (!user) return null;
 
 
