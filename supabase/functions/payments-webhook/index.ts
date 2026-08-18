@@ -201,7 +201,7 @@ async function handleCanceled(data: any, env: PaddleEnv) {
     .eq('environment', env)
     .maybeSingle();
   const ownerUserId = (subRow as { user_id?: string } | null)?.user_id;
-  if (ownerUserId) {
+  if (ownerUserId && !(await isFounderUserId(getSupabase(), ownerUserId))) {
     await getSupabase()
       .from('user_subscriptions')
       .update({ tier: 'free', status: 'canceled', updated_at: new Date().toISOString() })
