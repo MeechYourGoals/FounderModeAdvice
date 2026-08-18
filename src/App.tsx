@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useSearchParams, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider";
+import { THEME_DEFAULT, THEME_ENABLE_SYSTEM } from "@/lib/theme";
 import { AuthProvider } from "@/hooks/useAuth";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import { ActiveProfileProvider } from "@/contexts/ActiveProfileContext";
@@ -100,7 +101,7 @@ function ScreenTransition({ children }: { children: ReactNode }) {
 const App = () => (
   <AppErrorBoundary>
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+    <ThemeProvider attribute="class" defaultTheme={THEME_DEFAULT} enableSystem={THEME_ENABLE_SYSTEM}>
       <AuthProvider>
       <SubscriptionProvider>
         <ActiveProfileProvider>
