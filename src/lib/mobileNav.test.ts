@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {
   homePanelFromLocationState,
   mobileNavActiveTab,
+  nextHomePanelLocationState,
   shouldPublishHomePanel,
 } from "@/lib/mobileNav.ts";
 
@@ -40,4 +41,27 @@ Deno.test("shouldPublishHomePanel — republish after dismiss so the tab highlig
   assert.equal(shouldPublishHomePanel({ panel: "profiles" }, "bookmarks"), true);
   assert.equal(shouldPublishHomePanel({ panel: "profiles" }, null), true);
   assert.equal(shouldPublishHomePanel(null, null), false);
+});
+
+Deno.test("nextHomePanelLocationState — mount with panel, dismiss, openProfiles restores it", () => {
+  // Land on / with the sheet already open (Discover/Settings CTA).
+  let state: unknown = { panel: "profiles" };
+  assert.equal(homePanelFromLocationState(state), "profiles");
+  assert.equal(mobileNavActiveTab("/", homePanelFromLocationState(state)), "profiles");
+  // Same-panel publish at mount is a no-op.
+  assert.equal(nextHomePanelLocationState(state, "profiles"), undefined);
+
+  // Dismiss clears location.state — tab unhighlights.
+  const dismissed = nextHomePanelLocationState(state, null);
+  assert.equal(dismissed, null);
+  state = dismissed;
+  assert.equal(homePanelFromLocationState(state), null);
+  assert.equal(mobileNavActiveTab("/", homePanelFromLocationState(state)), null);
+
+  // Window `openProfiles` after dismiss must republish so the tab highlights.
+  const reopened = nextHomePanelLocationState(state, "profiles");
+  assert.deepEqual(reopened, { panel: "profiles" });
+  state = reopened;
+  assert.equal(homePanelFromLocationState(state), "profiles");
+  assert.equal(mobileNavActiveTab("/", homePanelFromLocationState(state)), "profiles");
 });

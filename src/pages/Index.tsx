@@ -40,7 +40,7 @@ import { requestLibraryRefresh } from "@/lib/libraryRefresh";
 import { shouldShowAppAuthFirst } from "@/lib/appMode";
 import {
   homePanelFromLocationState,
-  shouldPublishHomePanel,
+  nextHomePanelLocationState,
   type HomePanel,
 } from "@/lib/mobileNav";
 import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
@@ -77,14 +77,18 @@ const Index = () => {
   };
 
   const publishPanel = (panel: HomePanel | null) => {
-    if (!shouldPublishHomePanel(locationStateRef.current, panel)) return;
-    navigate(".", { replace: true, state: panel ? { panel, ts: Date.now() } : null });
+    const next = nextHomePanelLocationState(locationStateRef.current, panel);
+    if (next === undefined) return;
+    navigate(".", { replace: true, state: next ? { ...next, ts: Date.now() } : null });
   };
 
   const openPanelAndPublish = (tab: HomePanel) => {
     openPanel(tab);
     publishPanel(tab);
   };
+  // Listeners register once; always call the latest publisher after dismiss.
+  const openPanelAndPublishRef = useRef(openPanelAndPublish);
+  openPanelAndPublishRef.current = openPanelAndPublish;
 
   const setSheetOpen = (open: boolean) => {
     setProfileOpen(open);
@@ -143,8 +147,8 @@ const Index = () => {
 
   // Respond to same-page triggers (ProfileSwitcher "manage", empty-state CTAs).
   useEffect(() => {
-    const openProfiles = () => openPanelAndPublish("profiles");
-    const openBookmarks = () => openPanelAndPublish("bookmarks");
+    const openProfiles = () => openPanelAndPublishRef.current("profiles");
+    const openBookmarks = () => openPanelAndPublishRef.current("bookmarks");
     const openAnalyze = () => { setSelectedEpisodeId(null); requestAnimationFrame(scrollToAnalyze); };
     // Fired when an analysis for a submitted URL already exists — we surface
     // the existing memo instead of recomputing it.
