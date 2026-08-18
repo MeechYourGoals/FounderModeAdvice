@@ -69,6 +69,11 @@ export function hasSharing(tier: SubscriptionTier): boolean {
   return TIER_LIMITS[tier].sharing;
 }
 
+/** Tiers that can turn a tag into a living folder (backfill + auto-file). */
+export function hasAutoFolderRules(tier: SubscriptionTier): boolean {
+  return TIER_LIMITS[tier].autoFolderRules;
+}
+
 /** Tiers that can submit one video across multiple profiles in one action. */
 export function canBatchAnalyzeProfiles(tier: SubscriptionTier): boolean {
   return TIER_LIMITS[tier].batchProfileAnalysis;
@@ -87,6 +92,8 @@ export const TIER_LIMITS: Record<SubscriptionTier, Omit<TierLimits, 'profiles' |
   sharing: boolean;
   /** Whether one URL submission can target multiple profiles. */
   batchProfileAnalysis: boolean;
+  /** Whether a tag can create a folder that auto-files past and future analyses. */
+  autoFolderRules: boolean;
 }> = {
   free: {
     profiles: { max: 1 },
@@ -97,6 +104,7 @@ export const TIER_LIMITS: Record<SubscriptionTier, Omit<TierLimits, 'profiles' |
     exports: false,
     sharing: false,
     batchProfileAnalysis: false,
+    autoFolderRules: false,
   },
   // "The C-Suite" — entry paid plan.
   seed: {
@@ -108,6 +116,7 @@ export const TIER_LIMITS: Record<SubscriptionTier, Omit<TierLimits, 'profiles' |
     exports: false,
     sharing: false,
     batchProfileAnalysis: false,
+    autoFolderRules: false,
   },
   // "The Boardroom" — power plan. Everything unlimited + Ask-the-video AI chat + export.
   series_z: {
@@ -119,6 +128,7 @@ export const TIER_LIMITS: Record<SubscriptionTier, Omit<TierLimits, 'profiles' |
     exports: true,
     sharing: true,
     batchProfileAnalysis: true,
+    autoFolderRules: true,
   },
 };
 
@@ -146,7 +156,7 @@ export const TIER_PRICING: Record<SubscriptionTier, TierPricing> = {
       '3 source analyses per month',
       'Analyze almost any public URL: articles, posts, videos, newsletters & more',
       'Universal, industry-aware insights',
-      'Organize analyses into private folders',
+      'Organize analyses into private folders (manual)',
     ],
   },
   seed: {
@@ -160,7 +170,7 @@ export const TIER_PRICING: Record<SubscriptionTier, TierPricing> = {
       'Up to 5 business profiles',
       'Personalized insights by industry & stage',
       'One analysis target per submission',
-      'Organize analyses into private folders',
+      'Organize analyses into private folders (manual)',
     ],
     recommended: true,
   },
@@ -176,6 +186,7 @@ export const TIER_PRICING: Record<SubscriptionTier, TierPricing> = {
       'Run one source across multiple profiles in one go',
       'Ask-the-video AI chat (unlimited)',
       'Personalized insights by industry & stage',
+      'Smart tag folders — long-press a tag to auto-file past and future analyses',
       'Share analyses & folders with teammates and advisors',
       'Notes & comments on individual insights',
       'Tag teammates in insight discussions',
