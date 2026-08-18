@@ -399,10 +399,10 @@ const Discover = () => {
   const needsMoreContext = isPremium && profileNeedsMoreContext(feedProfile);
 
   return (
-    // h-screen + flex column, matching Home: PullToRefresh owns the single
+    // h-dvh + flex column, matching Home: PullToRefresh owns the single
     // scrolling element inside it (the Despia pattern), which needs a bounded
     // parent to size against.
-    <div className="app-ambient flex h-screen flex-col bg-gradient-to-b from-background to-muted/20">
+    <div className="app-ambient flex h-dvh flex-col bg-gradient-to-b from-background to-muted/20">
       <SecondaryPageHeader title="Briefing" onBack={() => navigate("/")} />
 
       <PullToRefresh

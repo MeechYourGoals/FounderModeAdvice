@@ -15,7 +15,7 @@ const NotFound = () => {
 
   return (
     <div
-      className="grain relative flex h-screen items-center justify-center overflow-hidden pb-nav"
+      className="grain relative flex h-dvh items-center justify-center overflow-hidden pb-nav"
       style={{ background: "var(--gradient-hero)", paddingTop: "var(--safe-area-top)" }}
     >
       <div className="pointer-events-none absolute inset-0" style={{ background: "var(--gradient-mesh)" }} />

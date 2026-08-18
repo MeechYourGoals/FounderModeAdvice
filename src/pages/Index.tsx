@@ -36,6 +36,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useNavigate, Navigate, useLocation } from "react-router-dom";
 import { triggerHapticFeedback } from "@/lib/capacitor";
+import { requestLibraryRefresh } from "@/lib/libraryRefresh";
 import { shouldShowAppAuthFirst } from "@/lib/appMode";
 import { homePanelFromLocationState, type HomePanel } from "@/lib/mobileNav";
 import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
@@ -178,7 +179,7 @@ const Index = () => {
     return shouldShowAppAuthFirst() ? (
       <Navigate to="/auth" replace />
     ) : (
-      <Suspense fallback={<div className="h-screen bg-background" />}>
+      <Suspense fallback={<div className="h-dvh bg-background" />}>
         <PublicLanding />
       </Suspense>
     );
@@ -198,7 +199,7 @@ const Index = () => {
   };
 
   return (
-    <div className="app-ambient h-screen flex flex-col bg-gradient-to-b from-background to-muted/20">
+    <div className="app-ambient h-dvh flex flex-col bg-gradient-to-b from-background to-muted/20">
       {/* First-run setup intake — shows once per user until restarted from Settings */}
       {user && !onboardingLoading && onboardingCompleted === false && (
         <OnboardingFlow
@@ -276,7 +277,7 @@ const Index = () => {
                   : "Manage your business profiles"}
               </SheetDescription>
             </SheetHeader>
-            <ScrollArea className="h-[calc(100vh-180px-var(--safe-area-top)-var(--safe-area-bottom))] pr-4 mt-4">
+            <ScrollArea className="h-[calc(100dvh-180px-var(--safe-area-top)-var(--safe-area-bottom))] pr-4 mt-4">
               {profileOpen && (
                 <ProfileSettings
                   view={activeTab}
@@ -295,12 +296,9 @@ const Index = () => {
       {/* Scrollable content area (Despia pattern: only this element scrolls),
           wrapped in native pull-to-refresh that re-syncs the library. */}
       <PullToRefresh
-        onRefresh={() => {
-          window.dispatchEvent(new Event("libraryRefresh"));
+        onRefresh={async () => {
+          await requestLibraryRefresh();
           window.dispatchEvent(new Event("profilesChanged"));
-          // Library refetch isn't awaitable from here; hold the indicator
-          // long enough to feel real without ever feeling stuck.
-          return new Promise((resolve) => setTimeout(resolve, 900));
         }}
       >
         <div className="container mx-auto px-4 py-8 sm:py-12 space-y-8 sm:space-y-12 max-w-6xl pb-24 md:pb-8" style={{ paddingBottom: isMobile ? 'calc(5rem + var(--safe-area-bottom))' : undefined }}>

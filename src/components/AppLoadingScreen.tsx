@@ -14,7 +14,7 @@ export const AppLoadingScreen = ({
   return (
     <div
       className={cn(
-        "relative min-h-screen flex items-center justify-center px-6 safe-area-inset overflow-hidden",
+        "relative min-h-dvh flex items-center justify-center px-6 safe-area-inset overflow-hidden",
         className,
       )}
       style={{ background: "var(--gradient-hero)" }}

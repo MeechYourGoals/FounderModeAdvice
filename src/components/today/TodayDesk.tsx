@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Compass, ListChecks, Sparkles } from "lucide-react";
+import { ArrowRight, Compass, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -79,8 +79,7 @@ export const TodayDesk = ({ onOpenEpisode, onPrepareMemo }: TodayDeskProps) => {
 
       <Card className="relative overflow-hidden p-4 sm:p-5 border-primary/15">
         <div aria-hidden className="absolute inset-x-0 top-0 h-[3px]" style={{ background: "var(--gradient-primary)" }} />
-        <p className="mb-1.5 flex items-center gap-1.5 text-caption-2 font-semibold uppercase tracking-wide text-primary">
-          <Sparkles className="h-3.5 w-3.5" />
+        <p className="mb-1.5 text-caption-2 font-semibold uppercase tracking-wide text-primary">
           Today's focus
         </p>
         <p className="text-body-lg leading-relaxed text-foreground">{todaysPrompt()}</p>

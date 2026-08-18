@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Loader2, ArrowLeft, FastForward, Building2, Check, ChevronDown, Globe, Sparkles } from "lucide-react";
+import { Loader2, ArrowLeft, FastForward, Building2, Check, ChevronDown, Globe } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -522,7 +522,6 @@ export const AnalysisForm = ({ variant = "default", inactive = false }: Analysis
               setComposerOpen(true);
             }}
           >
-            <Sparkles className="mr-1.5 h-4 w-4" />
             Bring a source
           </Button>
         </div>
@@ -695,14 +694,12 @@ export const AnalysisForm = ({ variant = "default", inactive = false }: Analysis
               disabled={isAnalyzing || uploadBusy}
               className="mx-auto flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground min-h-[44px] sm:min-h-0"
             >
-              <Sparkles className="h-3.5 w-3.5 text-primary" />
               Add custom instructions
               <span className="text-muted-foreground/70">(optional)</span>
             </button>
           ) : (
             <div className="space-y-1.5">
               <label htmlFor="customPrompt" className="flex items-center gap-1.5 text-sm font-medium">
-                <Sparkles className="h-3.5 w-3.5 text-primary" />
                 Custom instructions
                 <span className="font-normal text-muted-foreground">— optional</span>
               </label>

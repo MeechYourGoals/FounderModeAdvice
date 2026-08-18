@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useSearchParams, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useSearchParams, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider";
 import { THEME_DEFAULT, THEME_ENABLE_SYSTEM } from "@/lib/theme";
 import { AuthProvider } from "@/hooks/useAuth";
@@ -43,7 +43,7 @@ import { OfflineBadge } from "@/components/OfflineBadge";
 import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import { AppChrome } from "@/components/AppChrome";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
-import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
+import { AUTH_ALIASES, HOME_HASH_ALIASES } from "@/lib/homeAliases";
 
 const queryClient = new QueryClient();
 
@@ -117,6 +117,12 @@ const App = () => (
             <ScreenTransition>
             <Routes>
               <Route path="/" element={<Index />} />
+              {AUTH_ALIASES.map((path) => (
+                <Route key={path} path={path} element={<Navigate to="/auth" replace />} />
+              ))}
+              {Object.entries(HOME_HASH_ALIASES).map(([path, to]) => (
+                <Route key={path} path={path} element={<Navigate to={to} replace />} />
+              ))}
               <Route path="/auth" element={<Auth />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/account" element={<Account />} />
@@ -167,7 +173,6 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
             </ScreenTransition>
-            <PWAInstallPrompt />
           </BrowserRouter>
         </TooltipProvider>
         </ActiveProfileProvider>

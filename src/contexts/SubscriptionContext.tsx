@@ -35,7 +35,7 @@ interface SubscriptionContextType {
   trackAnalysis: () => Promise<void>;
   upgradeTo: (tier: SubscriptionTier) => Promise<void>;
   manageSubscription: () => Promise<void>;
-  restorePurchases: () => Promise<void>;
+  restorePurchases: () => Promise<boolean>;
   /** Present RevenueCat native paywall (only shows if user lacks the entitlement) */
   presentPaywall: () => Promise<PaywallResult>;
   /** Present RevenueCat native paywall unconditionally */
@@ -266,15 +266,16 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     }
   }, [isNative, isDespiaApp, isShellApp, refreshSubscription]);
 
-  const handleRestorePurchases = useCallback(async () => {
+  const handleRestorePurchases = useCallback(async (): Promise<boolean> => {
     if (isDespiaApp) {
        const tier = await getDespiaEntitlements();
        await syncSubscriptionToSupabase(tier);
        await refreshSubscription();
-    } else {
-       await restorePurchases();
-       await refreshSubscription();
+       return true;
     }
+    await restorePurchases();
+    await refreshSubscription();
+    return true;
   }, [isDespiaApp, refreshSubscription]);
 
   const handlePresentPaywall = useCallback(async (): Promise<PaywallResult> => {

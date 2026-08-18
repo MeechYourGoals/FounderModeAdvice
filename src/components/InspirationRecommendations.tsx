@@ -1,4 +1,4 @@
-import { ExternalLink, Sparkles } from "lucide-react";
+import { ExternalLink, Compass } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useInspirations } from "@/hooks/useInspirations";
 import { findInspirationOption, youtubeSearchUrl } from "@/lib/inspirations";
@@ -26,7 +26,7 @@ export const InspirationRecommendations = () => {
 
       <div className="space-y-1">
         <div className="mx-auto flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-          <Sparkles className="h-4 w-4" />
+          <Compass className="h-4 w-4" />
         </div>
         <h4 className="text-headline tracking-tight">Picked for you</h4>
         <p className="text-footnote text-foreground-tertiary max-w-md mx-auto">

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Bookmark, BookmarkCheck, Check, ExternalLink, Play, Sparkles, X } from "lucide-react";
+import { Bookmark, BookmarkCheck, Check, ExternalLink, Play, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -101,8 +101,7 @@ export const DiscoveryCard = ({
 
   const reasonBlock = reason ? (
     <div className={cn("rounded-xl border border-primary/20 bg-primary/5", featured ? "p-4" : "p-3")}>
-      <p className="mb-1 flex items-center gap-1.5 text-caption-2 font-semibold uppercase tracking-wide text-primary">
-        <Sparkles className="h-3 w-3" />
+      <p className="mb-1 text-caption-2 font-semibold uppercase tracking-wide text-primary">
         Why this matters to you
       </p>
       <p
@@ -126,7 +125,7 @@ export const DiscoveryCard = ({
         onClick={withHaptics(onAnalyze)}
         disabled={analyzeDisabled}
       >
-        {analyzed ? <Check className="mr-1.5 h-4 w-4" /> : <Sparkles className="mr-1.5 h-4 w-4" />}
+        {analyzed ? <Check className="mr-1.5 h-4 w-4" /> : <Play className="mr-1.5 h-4 w-4" />}
         {analyzed ? "Open memo" : analyzeLabel}
       </Button>
 

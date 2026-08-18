@@ -378,7 +378,7 @@ export async function restorePurchases(): Promise<SubscriptionTier> {
   }
 
   if (!Purchases || !Capacitor.isNativePlatform()) {
-    return 'free';
+    throw new Error('Restore is only available in the app');
   }
 
   try {
@@ -388,7 +388,7 @@ export async function restorePurchases(): Promise<SubscriptionTier> {
     return tier;
   } catch (error) {
     console.error('RevenueCat: Failed to restore purchases', error);
-    return 'free';
+    throw error instanceof Error ? error : new Error('Restore failed');
   }
 }
 

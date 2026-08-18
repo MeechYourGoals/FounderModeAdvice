@@ -11,7 +11,7 @@ export default function Founders() {
   const navigate = useNavigate();
 
   return (
-    <div className="h-screen flex flex-col bg-gradient-to-b from-background to-muted/20">
+    <div className="h-dvh flex flex-col bg-gradient-to-b from-background to-muted/20">
        {/* Top bar with safe area (Despia pattern) */}
        <div className="glass-nav relative z-50 border-b border-border" style={{ paddingTop: 'var(--safe-area-top)' }}>
          <div className="flex items-center justify-between px-4 py-3 max-w-6xl mx-auto">
@@ -27,7 +27,7 @@ export default function Founders() {
              </h1>
            </div>
            <div className="flex gap-2">
-             <Button variant="outline" onClick={() => navigate('/')} className="hidden md:flex">Back to Dashboard</Button>
+             <Button variant="outline" onClick={() => navigate('/')} className="hidden md:flex">Back</Button>
              <AppNavMenu triggerVariant="outline" />
            </div>
          </div>

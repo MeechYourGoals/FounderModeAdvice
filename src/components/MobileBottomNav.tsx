@@ -78,7 +78,7 @@ export const MobileBottomNav = () => {
       >
         <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
       </span>
-      <span className={cn("text-[10px] leading-tight tracking-wide", active ? "font-semibold" : "font-medium")}>
+      <span className={cn("text-[11px] leading-tight tracking-wide", active ? "font-semibold" : "font-medium")}>
         {label}
       </span>
     </button>

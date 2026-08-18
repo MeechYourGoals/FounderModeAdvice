@@ -16,6 +16,7 @@ import { AnalysisShareDialog } from "@/components/AnalysisShareDialog";
 import { InsightComments } from "@/components/InsightComments";
 import { useInsightComments } from "@/hooks/useInsightComments";
 import { hasSharing } from "@/types/subscription";
+import { triggerHapticFeedback } from "@/lib/capacitor";
 import { getAnalysisProfileLabel, getBoardMeetingMemoTitle, getViewerCompanyName, isUniversalAnalysis } from "@/lib/analysisProfile";
 import { toGenericInsightText } from "@/lib/genericLessons";
 import {
@@ -502,7 +503,7 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-slide-up">
-      <Button variant="ghost" onClick={onBack} className="mb-2 sm:mb-4 min-h-[44px] sm:min-h-0 -ml-2">
+      <Button variant="ghost" onClick={() => { triggerHapticFeedback("light"); onBack(); }} className="mb-2 sm:mb-4 min-h-[44px] sm:min-h-0 -ml-2">
         <ArrowLeft className="w-4 h-4 mr-2" />
         Back to All Episodes
       </Button>
@@ -546,13 +547,13 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
                   variant="secondary"
                   size="sm"
                   className="sm:size-default flex-1 sm:flex-initial"
-                  onClick={() => setExportOpen(true)}
+                  onClick={() => { triggerHapticFeedback("light"); setExportOpen(true); }}
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Export
                 </Button>
                 <Button asChild size="sm" className="sm:size-default flex-1 sm:flex-initial">
-                <a href={episode.url} target="_blank" rel="noopener noreferrer">
+                <a href={episode.url} target="_blank" rel="noopener noreferrer" onClick={() => triggerHapticFeedback("light")}>
                   <ExternalLink className="w-4 h-4 mr-2" />
                   {episode.url.includes('youtube.com') || episode.url.includes('youtu.be') 
                     ? 'Watch Episode' 
@@ -564,7 +565,7 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
                     variant="outline"
                     size="sm"
                     className="sm:size-default flex-1 sm:flex-initial"
-                    onClick={() => setShareOpen(true)}
+                    onClick={() => { triggerHapticFeedback("light"); setShareOpen(true); }}
                   >
                     <Share2 className="w-4 h-4 mr-2" />
                     Invite
