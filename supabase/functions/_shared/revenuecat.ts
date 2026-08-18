@@ -3,7 +3,7 @@
 // revenuecat-webhook (server-triggered re-verify). Both paths treat the
 // RevenueCat REST API as the source of truth and never trust caller input.
 
-import { isFounderUserId } from "./founders.ts";
+import { isProtectedAdmin } from "./adminRoles.ts";
 
 export type Tier = "free" | "seed" | "series_z";
 
@@ -137,7 +137,7 @@ export async function syncUserEntitlements(
 ): Promise<Tier> {
   // Permanent founder accounts are pinned to Boardroom — a restore/purchase
   // sync must never overwrite their row with a lower tier.
-  if (await isFounderUserId(admin, userId)) {
+  if (await isProtectedAdmin(admin, userId)) {
     await writeUserSubscriptionTier(admin, userId, "series_z", null);
     return "series_z";
   }

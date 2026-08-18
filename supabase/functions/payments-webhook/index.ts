@@ -1,6 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { verifyWebhook, EventName, gatewayFetch, type PaddleEnv } from '../_shared/paddle.ts';
-import { isFounderUserId } from '../_shared/founders.ts';
+import { isProtectedAdmin } from '../_shared/adminRoles.ts';
 
 type OwnershipResult = 'ok' | 'mismatch' | 'error';
 
@@ -165,7 +165,7 @@ async function upsertSubscription(data: any, env: PaddleEnv) {
 
   const isActive = status === 'active' || status === 'trialing';
   // Permanent founder accounts stay on Boardroom regardless of billing state.
-  const founder = await isFounderUserId(getSupabase(), userId);
+  const founder = await isProtectedAdmin(getSupabase(), userId);
   await getSupabase().from('user_subscriptions').upsert(
     {
       user_id: userId,
@@ -201,7 +201,7 @@ async function handleCanceled(data: any, env: PaddleEnv) {
     .eq('environment', env)
     .maybeSingle();
   const ownerUserId = (subRow as { user_id?: string } | null)?.user_id;
-  if (ownerUserId && !(await isFounderUserId(getSupabase(), ownerUserId))) {
+  if (ownerUserId && !(await isProtectedAdmin(getSupabase(), ownerUserId))) {
     await getSupabase()
       .from('user_subscriptions')
       .update({ tier: 'free', status: 'canceled', updated_at: new Date().toISOString() })
