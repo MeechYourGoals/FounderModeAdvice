@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import { isProtectedAdmin } from '../_shared/adminRoles.ts';
+import { protectAdminSubscriptionTier, type BillingTier } from '../_shared/admin.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -161,8 +161,11 @@ serve(async (req) => {
 
         const subscription = await subResponse.json();
         const priceId = subscription.items?.data?.[0]?.price?.id;
-        const protectedAdmin = await isProtectedAdmin(supabase, userId);
-        const tier = protectedAdmin ? 'series_z' : getTierFromPriceId(priceId);
+        const tier = await protectAdminSubscriptionTier(
+          supabase,
+          userId,
+          getTierFromPriceId(priceId) as BillingTier,
+        );
 
         // Update subscription in database
         const { error } = await supabase
@@ -208,9 +211,11 @@ serve(async (req) => {
         }
 
         const priceId = subscription.items?.data?.[0]?.price?.id;
-        const tier = (await isProtectedAdmin(supabase, userSub.user_id))
-          ? 'series_z'
-          : getTierFromPriceId(priceId);
+        const tier = await protectAdminSubscriptionTier(
+          supabase,
+          userSub.user_id,
+          getTierFromPriceId(priceId) as BillingTier,
+        );
 
         const { error } = await supabase
           .from('user_subscriptions')
@@ -236,21 +241,24 @@ serve(async (req) => {
         const subscription = event.data.object;
         const customerId = subscription.customer;
 
-        // Protected admin accounts are permanently on Boardroom — skip the downgrade.
-        const { data: ownerRow } = await supabase
+        const { data: userSub } = await supabase
           .from('user_subscriptions')
           .select('user_id')
           .eq('stripe_customer_id', customerId)
           .maybeSingle();
-        if (await isProtectedAdmin(supabase, ownerRow?.user_id)) {
-          console.log('Skipping cancel downgrade for protected admin account');
+
+        if (!userSub?.user_id) {
+          console.error('No user found for customer:', customerId);
           break;
         }
+
+        const tier = await protectAdminSubscriptionTier(supabase, userSub.user_id, 'free');
 
         const { error } = await supabase
           .from('user_subscriptions')
           .update({
-            tier: 'free',
+            tier,
+            status: tier === 'series_z' ? 'active' : 'canceled',
             cancel_at_period_end: false,
             updated_at: new Date().toISOString(),
           })

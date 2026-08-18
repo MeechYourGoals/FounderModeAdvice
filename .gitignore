@@ -16,6 +16,12 @@ dist-ssr
 test-results
 playwright-report
 
+# Local environment files. Do not commit secrets.
+# Keep .env.example as the documented public-key template.
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

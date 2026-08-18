@@ -3,9 +3,9 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import JSZip from "https://esm.sh/jszip@3.10.1";
 import * as XLSX from "https://esm.sh/xlsx@0.18.5";
+import { applyAdminTierFloor, userHasAdminRole } from "../_shared/admin.ts";
 import { getVideoContext, deriveChannelHandle } from "../_shared/transcript.ts";
 import { mentionsViewerCompany, sanitizeLessonText } from "../_shared/genericLessons.ts";
-import { isProtectedAdmin } from "../_shared/adminRoles.ts";
 
 // Canonical topic vocabulary (keep in sync with src/lib/topics.ts).
 const CANONICAL_TOPICS = [
@@ -436,60 +436,58 @@ serve(async (req) => {
     }
 
 
-    // Check subscription limits if we have a user. Admins (public.user_roles)
-    // bypass limits — entitlement is read from the database only.
+    // Check subscription limits from user_subscriptions. Admins (user_roles)
+    // are treated as series_z so a billing webhook cannot lock them out.
     if (authenticatedUserId) {
-      const isAdmin = await isProtectedAdmin(supabase, authenticatedUserId);
+      const monthYear = new Date().toISOString().slice(0, 7); // YYYY-MM
 
-      if (!isAdmin) {
-        const monthYear = new Date().toISOString().slice(0, 7); // YYYY-MM
+      const { data: subscription } = await supabase
+        .from('user_subscriptions')
+        .select('tier')
+        .eq('user_id', authenticatedUserId)
+        .single();
 
-        // Get user's subscription tier
-        const { data: subscription } = await supabase
-          .from('user_subscriptions')
-          .select('tier')
-          .eq('user_id', authenticatedUserId)
-          .single();
+      const isAdmin = await userHasAdminRole(supabase, authenticatedUserId);
+      const tier = applyAdminTierFloor(
+        isAdmin,
+        (subscription?.tier || 'free') as 'free' | 'seed' | 'series_z',
+      ) as keyof typeof TIER_LIMITS;
 
-        const tier = (subscription?.tier || 'free') as keyof typeof TIER_LIMITS;
+      // Document upload is a premium (paid-tier) feature. Enforce server-side —
+      // the client gate is UX only. Re-read tier from the DB; never trust the client.
+      // Re-analysis of an already-uploaded document skips the upload gate (the
+      // paywall was enforced on the original upload) but still counts as an analysis.
+      if (isUpload && !reanalyzeSource && tier !== 'seed' && tier !== 'series_z') {
+        return new Response(JSON.stringify({
+          error: 'Document upload is a premium feature. Upgrade to The C-Suite or The Boardroom to analyze private documents.',
+          upgradeRequired: true,
+        }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
 
-        // Document upload is a premium (paid-tier) feature. Enforce server-side —
-        // the client gate is UX only. Re-read tier from the DB; never trust the client.
-        // Re-analysis of an already-uploaded document skips the upload gate (the
-        // paywall was enforced on the original upload) but still counts as an analysis.
-        if (isUpload && !reanalyzeSource && tier !== 'seed' && tier !== 'series_z') {
-          return new Response(JSON.stringify({
-            error: 'Document upload is a premium feature. Upgrade to The C-Suite or The Boardroom to analyze private documents.',
-            upgradeRequired: true,
-          }), {
-            status: 403,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
+      const maxAnalyses = TIER_LIMITS[tier]?.analyses ?? TIER_LIMITS.free.analyses;
 
-        const maxAnalyses = TIER_LIMITS[tier]?.analyses ?? TIER_LIMITS.free.analyses;
+      const { data: usage } = await supabase
+        .from('user_monthly_usage')
+        .select('analyses_count')
+        .eq('user_id', authenticatedUserId)
+        .eq('month_year', monthYear)
+        .single();
 
-        // Get current month usage
-        const { data: usage } = await supabase
-          .from('user_monthly_usage')
-          .select('analyses_count')
-          .eq('user_id', authenticatedUserId)
-          .eq('month_year', monthYear)
-          .single();
+      const currentCount = usage?.analyses_count || 0;
 
-        const currentCount = usage?.analyses_count || 0;
-
-        if (currentCount >= maxAnalyses) {
-          return new Response(JSON.stringify({
-            error: `You've reached your limit of ${maxAnalyses} analyses this month. Upgrade your plan for more.`,
-            limitReached: true,
-            currentCount,
-            maxAnalyses,
-          }), {
-            status: 429,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
+      if (currentCount >= maxAnalyses) {
+        return new Response(JSON.stringify({
+          error: `You've reached your limit of ${maxAnalyses} analyses this month. Upgrade your plan for more.`,
+          limitReached: true,
+          currentCount,
+          maxAnalyses,
+        }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
     }
 

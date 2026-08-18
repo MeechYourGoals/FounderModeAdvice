@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { getVideoContext } from "../_shared/transcript.ts";
+import { userHasAdminRole } from "../_shared/admin.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,19 +18,22 @@ type ChatMessage = {
   created_at?: string;
 };
 
-import { isProtectedAdmin } from "../_shared/adminRoles.ts";
-
 const MAX_TRANSCRIPT_CHARS = 22000;
 const CHUNK_SIZE = 2200;
 const CHUNK_OVERLAP = 250;
 
 /**
- * Ask-the-video chat is gated to the Boardroom (series_z) plan.
- * Enforced here server-side so the entitlement can never be bypassed from the client.
+ * Ask-the-video chat is gated to the Boardroom (series_z) plan, or to an
+ * admin role stored in user_roles. Enforced here server-side so the
+ * entitlement can never be bypassed from the client.
  */
 const userCanChat = async (supabase: any, user: any): Promise<boolean> => {
   // Entitlement comes only from the database: admin role or Boardroom tier.
-  if (await isProtectedAdmin(supabase, user?.id)) return true;
+  if (user?.id && await userHasAdminRole(supabase, user.id)) return true;
+  const { data: hasBoardroom } = await supabase.rpc("user_has_boardroom_plan", {
+    _user_id: user.id,
+  });
+  if (typeof hasBoardroom === "boolean") return hasBoardroom;
   const { data: sub } = await supabase
     .from("user_subscriptions")
     .select("tier")

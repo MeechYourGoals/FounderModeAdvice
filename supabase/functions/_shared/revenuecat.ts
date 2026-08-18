@@ -2,10 +2,11 @@
 // Used by sync-revenuecat-subscription (client-triggered re-verify) and
 // revenuecat-webhook (server-triggered re-verify). Both paths treat the
 // RevenueCat REST API as the source of truth and never trust caller input.
+// Admin users (user_roles.role = admin) cannot be written below series_z.
 
-import { isProtectedAdmin } from "./adminRoles.ts";
+import { lookupAdminRole, protectAdminSubscriptionTier, type BillingTier } from "./admin.ts";
 
-export type Tier = "free" | "seed" | "series_z";
+export type Tier = BillingTier;
 
 // Map RevenueCat entitlement/product identifiers to internal tiers.
 // Keep in sync with src/types/subscription.ts and RevenueCat Offerings
@@ -109,9 +110,10 @@ export async function fetchActivePaddleTier(admin: any, userId: string): Promise
 export async function writeUserSubscriptionTier(
   admin: any,
   userId: string,
-  tier: Tier,
+  incomingTier: Tier,
   currentPeriodEnd: string | null,
-): Promise<void> {
+): Promise<Tier> {
+  const tier = await protectAdminSubscriptionTier(admin, userId, incomingTier);
   const { error } = await admin.from("user_subscriptions").upsert(
     {
       user_id: userId,
@@ -123,6 +125,7 @@ export async function writeUserSubscriptionTier(
     { onConflict: "user_id" },
   );
   if (error) throw new Error(`Failed to upsert subscription: ${error.message}`);
+  return tier;
 }
 
 /**
@@ -135,9 +138,10 @@ export async function syncUserEntitlements(
   userId: string,
   rcKey: string,
 ): Promise<Tier> {
-  // Protected admin accounts are pinned to Boardroom — a restore/purchase
-  // sync must never overwrite their row with a lower tier.
-  if (await isProtectedAdmin(admin, userId)) {
+  // Protected admin accounts are pinned to Boardroom. lookupAdminRole throws
+  // if user_roles is unavailable so this sync returns non-2xx and retries
+  // instead of writing a lower tier.
+  if (await lookupAdminRole(admin, userId)) {
     await writeUserSubscriptionTier(admin, userId, "series_z", null);
     return "series_z";
   }
@@ -147,6 +151,5 @@ export async function syncUserEntitlements(
   // Only carry RevenueCat's period end when RevenueCat is the winning rail —
   // Paddle's own webhook maintains period data for web-billed users.
   const periodEnd = rc.tier === tier && rc.tier !== "free" ? rc.currentPeriodEnd : null;
-  await writeUserSubscriptionTier(admin, userId, tier, periodEnd);
-  return tier;
+  return await writeUserSubscriptionTier(admin, userId, tier, periodEnd);
 }
