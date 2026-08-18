@@ -58,7 +58,7 @@ Changes marked ✅ were applied to the live legal pages in this release branch
    whether to introduce support@foundermodeadvice.com everywhere instead
    (the one stray reference to it in the error boundary was aligned to
    CA@saintmarlolabs.com in this branch).
-5. **Founder bypass.** `FOUNDER_EMAILS = ['ccamechi@gmail.com']` grants
+   Founder bypass is now role-based (public.user_roles) with no emails in source.
    unlimited paid features in two edge functions, keyed to a personal Gmail.
    Consider migrating to the existing `user_roles`/`has_role` mechanism.
    (Left unchanged — behavior/revenue decision.)
