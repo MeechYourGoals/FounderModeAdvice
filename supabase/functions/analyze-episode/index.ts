@@ -103,7 +103,7 @@ const TIER_LIMITS = {
 } as const;
 
 /** Founder/Super Admin emails with unlimited access - no feature limits */
-const FOUNDER_EMAILS = ['ccamechi@gmail.com'];
+const FOUNDER_EMAILS = ['ccamechi@gmail.com', 'chrisatown@gmail.com', 'ca@saintmarlolabs.com'];
 
 // ---- Premium document upload support ----
 // Uploaded private documents are analyzed through the SAME pipeline as URLs:
