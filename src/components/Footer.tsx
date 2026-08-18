@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { BrandLogo } from "@/components/BrandLogo";
+import { AppStoreComingSoonBadge } from "@/components/marketing/AppStoreComingSoonBadge";
 
 const LINK_GROUPS: { heading: string; links: { to: string; label: string }[] }[] = [
   {
@@ -32,7 +33,7 @@ const LINK_GROUPS: { heading: string; links: { to: string; label: string }[] }[]
   },
 ];
 
-export const Footer = () => {
+export const Footer = ({ showAppStoreBadge = false }: { showAppStoreBadge?: boolean }) => {
   return (
     <footer
       className="border-t border-border/60 pt-10 pb-6 sm:pt-14 sm:pb-8"
@@ -46,6 +47,7 @@ export const Footer = () => {
               Transcript-grounded founder intelligence. Turn the best founder and operator content into company-specific
               operating memos, risks, and action plans.
             </p>
+            {showAppStoreBadge && <AppStoreComingSoonBadge />}
           </div>
           {LINK_GROUPS.map((group) => (
             <nav key={group.heading} aria-label={group.heading} className="space-y-3">
