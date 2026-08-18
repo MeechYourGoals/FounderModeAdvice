@@ -160,7 +160,8 @@ serve(async (req) => {
 
         const subscription = await subResponse.json();
         const priceId = subscription.items?.data?.[0]?.price?.id;
-        const tier = getTierFromPriceId(priceId);
+        const founder = await isFounderUserId(supabase, userId);
+        const tier = founder ? 'series_z' : getTierFromPriceId(priceId);
 
         // Update subscription in database
         const { error } = await supabase
