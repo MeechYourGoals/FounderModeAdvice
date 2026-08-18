@@ -6,7 +6,7 @@ import { TIER_PRICING, tierPriceLabel } from '@/types/subscription';
 
 interface UpgradePromptProps {
   message: string;
-  feature?: 'profile' | 'bookmark' | 'analysis' | 'videoChat' | 'export' | 'sharing' | 'upload' | 'discovery';
+  feature?: 'profile' | 'bookmark' | 'analysis' | 'videoChat' | 'export' | 'sharing' | 'upload' | 'discovery' | 'autoFolder';
   onUpgrade?: () => void;
   compact?: boolean;
 }
@@ -18,7 +18,7 @@ export function UpgradePrompt({ message, feature, onUpgrade, compact = false }: 
   // discovery are Boardroom-only (enforced server-side via
   // user_has_boardroom_plan); everything else upgrades to The C-Suite first.
   const targetTier: 'seed' | 'series_z' =
-    feature === 'videoChat' || feature === 'export' || feature === 'sharing' || feature === 'discovery'
+    feature === 'videoChat' || feature === 'export' || feature === 'sharing' || feature === 'discovery' || feature === 'autoFolder'
       ? 'series_z'
       : 'seed';
 

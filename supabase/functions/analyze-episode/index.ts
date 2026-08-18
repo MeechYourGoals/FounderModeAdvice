@@ -4,6 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import JSZip from "https://esm.sh/jszip@3.10.1";
 import * as XLSX from "https://esm.sh/xlsx@0.18.5";
 import { applyAdminTierFloor, userHasAdminRole } from "../_shared/admin.ts";
+import { applyFolderTagRules } from "../_shared/folderTagRules.ts";
 import { getVideoContext, deriveChannelHandle } from "../_shared/transcript.ts";
 import { mentionsViewerCompany, sanitizeLessonText } from "../_shared/genericLessons.ts";
 
@@ -939,6 +940,7 @@ INSTRUCTIONS:
       }
 
       // Process tags for each lesson
+      const appliedTags = new Set<string>();
       if (insertedLessons && insertedLessons.length > 0) {
         for (let i = 0; i < insertedLessons.length; i++) {
           const lessonId = insertedLessons[i].id;
@@ -950,6 +952,7 @@ INSTRUCTIONS:
               const cleanTag = tagName.replace(/^#/, '').toLowerCase();
 
               if (!cleanTag) continue;
+              appliedTags.add(cleanTag);
 
               // 1. Get or create tag
               let tagId;
@@ -997,6 +1000,9 @@ INSTRUCTIONS:
               }
             }
           }
+        }
+        if (authenticatedUserId && appliedTags.size > 0) {
+          await applyFolderTagRules(supabase, authenticatedUserId, episode.id, Array.from(appliedTags));
         }
       }
     }

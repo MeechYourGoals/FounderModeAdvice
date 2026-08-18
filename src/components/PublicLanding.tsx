@@ -2,6 +2,7 @@ import { useRef } from "react";
 import {
   ArrowRight,
   Check,
+  FolderOpen,
   Layers,
   MessageSquare,
   ScrollText,
@@ -165,7 +166,7 @@ export const PublicLanding = () => {
                     <ValueCard
                       icon={<Layers className="w-4 h-4" />}
                       title="Organized into folders"
-                      description="Build a folder for each company or function — Fundraising, GTM, Hiring, Product, Pricing — and file every analysis where it belongs."
+                      description="Build a folder for each company or function — Fundraising, GTM, Hiring, Product, Pricing — and file analyses by hand on Free and The C-Suite."
                     />
                   </m.div>
                   <m.div variants={cardChild}>
@@ -188,6 +189,14 @@ export const PublicLanding = () => {
                       title="Collaborate with your team"
                       badge="Boardroom"
                       description="Invite teammates or advisors to a single analysis or a whole folder. They can add notes, comment on individual insights, and tag each other — without seeing the rest of your workspace."
+                    />
+                  </m.div>
+                  <m.div variants={cardChild} className="sm:col-span-2">
+                    <ValueCard
+                      icon={<FolderOpen className="w-4 h-4" />}
+                      title="Smart tag folders"
+                      badge="Boardroom"
+                      description="Dozens of analyses, zero drag-and-drop. Long-press a Marketing or Operations tag to create a folder, file every matching memo you already have, and auto-file new videos, articles, and uploads that get that tag."
                     />
                   </m.div>
                 </m.div>

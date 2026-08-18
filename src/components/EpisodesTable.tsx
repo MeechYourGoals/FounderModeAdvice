@@ -8,9 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   ExternalLink, TrendingUp, MoreVertical, Eye, Bookmark, Download, Copy,
-  Youtube, Headphones, FileText, Trash2, X, ArrowUpDown, ArrowUp, ArrowDown,
+  Headphones, FileText, File, Trash2, X, ArrowUpDown, ArrowUp, ArrowDown,
   FolderPlus, Folder, ChevronLeft, ChevronRight, Filter, Search,
-  Tag, LayoutList, Plus, Share2
+  Tag, LayoutList, Plus, Share2, Video, Newspaper, Image
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -39,7 +39,21 @@ import { triggerHapticFeedback } from "@/lib/capacitor";
 import { LibraryEmptyState } from "@/components/LibraryEmptyState";
 import { getLibraryPrefs, setLibraryPrefs } from "@/lib/libraryPrefs";
 import { getAnalysisProfileLabel, isUniversalAnalysis } from "@/lib/analysisProfile";
+import {
+  getAnalysisSourceActionLabel,
+  getAnalysisSourceKind,
+  getAnalysisSourceLabel,
+  isUploadedDocumentUrl,
+  type AnalysisSourceKind,
+} from "@/lib/analysisSource";
+import { folderNameFromTag } from "@/lib/folderTagRules";
 import { signalLibraryRefreshDone } from "@/lib/libraryRefresh";
+import { TagPill } from "@/components/library/TagPill";
+import { SwipeToDelete } from "@/components/library/SwipeToDelete";
+import { UpgradePrompt } from "@/components/subscription/UpgradePrompt";
+import { useSubscription } from "@/contexts/SubscriptionContext";
+import { hasAutoFolderRules } from "@/types/subscription";
+import { createSmartFolderFromTag, SmartFolderError } from "@/services/folderTagRules";
 
 const MAX_VISIBLE_TAGS = 3;
 
@@ -100,6 +114,26 @@ const SORT_LABELS: Record<SortColumn, string> = {
 
 const PAGE_SIZE = 15;
 
+const SOURCE_ICONS: Record<AnalysisSourceKind, typeof Video> = {
+  video: Video,
+  article: Newspaper,
+  podcast: Headphones,
+  pdf: FileText,
+  screenshot: Image,
+  document: File,
+};
+
+function AnalysisSourceChip({ url }: { url: string }) {
+  const kind = getAnalysisSourceKind(url);
+  const Icon = SOURCE_ICONS[kind];
+  return (
+    <Badge variant="outline" className="text-[10px] px-1.5 py-0 flex items-center gap-0.5">
+      <Icon className="w-2.5 h-2.5" />
+      {getAnalysisSourceLabel(kind)}
+    </Badge>
+  );
+}
+
 export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [allEpisodes, setAllEpisodes] = useState<Episode[]>([]);
@@ -108,7 +142,11 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [selectedExportId, setSelectedExportId] = useState<string | undefined>();
   const [deleteCandidateId, setDeleteCandidateId] = useState<string | null>(null);
+  const [smartFolderTag, setSmartFolderTag] = useState<string | null>(null);
+  const [creatingSmartFolder, setCreatingSmartFolder] = useState(false);
+  const [autoFolderUpgradeOpen, setAutoFolderUpgradeOpen] = useState(false);
   const { toast } = useToast();
+  const { subscription } = useSubscription();
   const isMobile = useMediaQuery("(max-width: 767px)");
 
   // Sorting (defaults come from persisted Library preferences)
@@ -531,10 +569,58 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
   // Two-step delete: the menu action arms the styled AlertDialog (native
   // window.confirm looks broken inside WebView wrappers), confirm performs
   // the optimistic delete.
-  const handleDelete = (episodeId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const requestDelete = (episodeId: string) => {
     triggerHapticFeedback('medium');
     setDeleteCandidateId(episodeId);
+  };
+
+  const handleDelete = (episodeId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    requestDelete(episodeId);
+  };
+
+  const requestSmartFolder = (tagName: string) => {
+    triggerHapticFeedback('medium');
+    if (subscription && hasAutoFolderRules(subscription.tier)) {
+      setSmartFolderTag(tagName);
+      return;
+    }
+    setAutoFolderUpgradeOpen(true);
+  };
+
+  const confirmSmartFolder = async () => {
+    const tagName = smartFolderTag;
+    if (!tagName || creatingSmartFolder) return;
+    setCreatingSmartFolder(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({ title: "Sign in required", description: "Please sign in to create smart folders.", variant: "destructive" });
+        return;
+      }
+      const matchingEpisodeIds = allEpisodes
+        .filter((episode) => getEpisodeTags(episode).some((tag) => tag.toLowerCase() === tagName.toLowerCase()))
+        .map((episode) => episode.id);
+      const result = await createSmartFolderFromTag({
+        userId: user.id,
+        tagName,
+        matchingEpisodeIds,
+        existingFolders: folders,
+      });
+      await fetchFolders();
+      setSmartFolderTag(null);
+      toast({
+        title: `Filing into ${result.folderName}`,
+        description: result.assigned === 1
+          ? "1 matching analysis was filed. New ones tagged this way will follow."
+          : `${result.assigned} matching analyses were filed. New ones tagged this way will follow.`,
+      });
+    } catch (error) {
+      const message = error instanceof SmartFolderError ? error.message : "Please try again.";
+      toast({ title: "Could not create smart folder", description: message, variant: "destructive" });
+    } finally {
+      setCreatingSmartFolder(false);
+    }
   };
 
   const confirmDeleteEpisode = async () => {
@@ -636,20 +722,16 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
     );
   }
 
-  // Uploaded documents use a synthetic, non-navigable "document://" url.
-  const isUploadedDocument = (url: string) => url.startsWith("document://");
-  const getPlatformIcon = (url: string) =>
-    isUploadedDocument(url) ? <FileText className="w-4 h-4" />
-      : (url.includes("youtube.com") || url.includes("youtu.be")) ? <Youtube className="w-4 h-4" />
-      : <Headphones className="w-4 h-4" />;
+  const getPlatformIcon = (url: string) => {
+    const Icon = SOURCE_ICONS[getAnalysisSourceKind(url)];
+    return <Icon className="w-4 h-4" />;
+  };
   const getPlatformLabel = (url: string) =>
-    isUploadedDocument(url) ? "View Details"
-      : (url.includes("youtube.com") || url.includes("youtu.be")) ? "Watch Now"
-      : "Listen Now";
+    getAnalysisSourceActionLabel(getAnalysisSourceKind(url));
   // Open the source (or, for uploaded documents which have no navigable URL, open details).
   const openSource = (episode: Episode, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isUploadedDocument(episode.url)) {
+    if (isUploadedDocumentUrl(episode.url)) {
       onSelectEpisode(episode.id);
     } else {
       window.open(episode.url, "_blank");
@@ -689,6 +771,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
 
     return (
       <div className="px-3 py-1.5">
+      <SwipeToDelete onDelete={() => requestDelete(episode.id)}>
       <div
         style={{ "--stagger-i": index } as React.CSSProperties}
         className="stagger-item cv-row group rounded-2xl border border-border bg-card px-4 py-4 min-h-[72px] transition-all hover:bg-primary/[0.03] active:bg-primary/5 active:scale-[0.995] cursor-pointer touch-manipulation"
@@ -700,28 +783,34 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0 space-y-2">
             <p className="font-medium text-[15px] leading-snug line-clamp-2">{episode.title}</p>
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              {getAnalysisProfileLabel(episode)}
-              {episode.companies?.name ? ` · ${episode.companies.name}` : ""}
-              {episode.founder_names ? ` · ${episode.founder_names}` : ""}
-            </p>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <AnalysisSourceChip url={episode.url} />
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                {getAnalysisProfileLabel(episode)}
+                {episode.companies?.name ? ` · ${episode.companies.name}` : ""}
+                {episode.founder_names ? ` · ${episode.founder_names}` : ""}
+              </p>
+            </div>
             {(visibleTags.length > 0 || episodeFolders.length > 0) && (
               <div className="flex flex-wrap items-center gap-1.5">
                 {visibleTags.map(tagName => (
-                  <Badge
+                  <TagPill
                     key={tagName}
-                    variant={selectedTags.has(tagName) ? "default" : "outline"}
-                    className="cursor-pointer text-xs px-2 py-0.5"
-                    onClick={(e) => { e.stopPropagation(); toggleTag(tagName); }}
-                  >
-                    {tagName}
-                  </Badge>
+                    name={tagName}
+                    selected={selectedTags.has(tagName)}
+                    onSelect={() => toggleTag(tagName)}
+                    onSmartFolder={requestSmartFolder}
+                  />
                 ))}
                 {extraTagCount > 0 && (
                   <span className="text-xs text-muted-foreground">+{extraTagCount}</span>
                 )}
                 {episodeFolders.map(f => (
-                  <span key={f!.id} className="text-xs px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: f!.color }}>
+                  <span
+                    key={f!.id}
+                    className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium text-white"
+                    style={{ backgroundColor: f!.color || undefined }}
+                  >
                     {f!.name}
                   </span>
                 ))}
@@ -733,7 +822,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
               </p>
             )}
           </div>
-          <div className="flex items-center gap-0.5 flex-shrink-0">
+          <div className="flex items-center gap-0.5 flex-shrink-0" onPointerDown={(e) => e.stopPropagation()}>
             <BookmarkButton episodeId={episode.id} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -787,6 +876,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
           </div>
         </div>
       </div>
+      </SwipeToDelete>
       </div>
     );
   };
@@ -1086,27 +1176,31 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                       <TableCell className="font-medium max-w-md">
                         <div className="space-y-1">
                           <div className="line-clamp-2">{episode.title}</div>
-                        <div className="mt-1">
+                        <div className="mt-1 flex flex-wrap items-center gap-1">
+                          <AnalysisSourceChip url={episode.url} />
                           <Badge variant={isUniversalAnalysis(episode) ? "outline" : "secondary"} className="text-[10px]">
                             {getAnalysisProfileLabel(episode)}
                           </Badge>
                         </div>
                           <div className="flex gap-1 flex-wrap">
                             {getEpisodeTags(episode).slice(0, MAX_VISIBLE_TAGS).map(tagName => (
-                              <Badge
+                              <TagPill
                                 key={tagName}
-                                variant={selectedTags.has(tagName) ? "default" : "outline"}
-                                className="cursor-pointer text-xs px-2 py-0.5"
-                                onClick={(e) => { e.stopPropagation(); toggleTag(tagName); }}
-                              >
-                                {tagName}
-                              </Badge>
+                                name={tagName}
+                                selected={selectedTags.has(tagName)}
+                                onSelect={() => toggleTag(tagName)}
+                                onSmartFolder={requestSmartFolder}
+                              />
                             ))}
                             {getEpisodeTags(episode).length > MAX_VISIBLE_TAGS && (
                               <span className="text-xs text-muted-foreground">+{getEpisodeTags(episode).length - MAX_VISIBLE_TAGS}</span>
                             )}
                             {episodeFolders.map(f => (
-                              <span key={f!.id} className="text-[10px] px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: f!.color }}>
+                              <span
+                                key={f!.id}
+                                className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium text-white"
+                                style={{ backgroundColor: f!.color || undefined }}
+                              >
                                 {f!.name}
                               </span>
                             ))}
@@ -1475,6 +1569,47 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
         open={!!shareFolder}
         onOpenChange={(open) => { if (!open) setShareFolder(null); }}
       />
+
+      <AlertDialog
+        open={!!smartFolderTag}
+        onOpenChange={(open) => {
+          if (!open && !creatingSmartFolder) setSmartFolderTag(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Create a {smartFolderTag ? folderNameFromTag(smartFolderTag) : "tag"} folder?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              We’ll file every analysis already tagged “{smartFolderTag}”, and any new
+              video, article, or upload that gets that tag will go into this folder
+              automatically.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={creatingSmartFolder}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmSmartFolder} disabled={creatingSmartFolder}>
+              {creatingSmartFolder ? "Creating…" : "Create smart folder"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={autoFolderUpgradeOpen} onOpenChange={setAutoFolderUpgradeOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Smart folders</DialogTitle>
+            <DialogDescription>
+              Free and C-Suite accounts file analyses by hand. The Boardroom turns a tag into a living folder.
+            </DialogDescription>
+          </DialogHeader>
+          <UpgradePrompt
+            feature="autoFolder"
+            message="Long-press any tag to create a folder, file every matching analysis, and auto-file new ones going forward."
+          />
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
