@@ -102,9 +102,6 @@ const TIER_LIMITS = {
   series_z: { analyses: 999999 },
 } as const;
 
-/** Founder/Super Admin emails with unlimited access - no feature limits */
-const FOUNDER_EMAILS = ['ccamechi@gmail.com', 'chrisatown@gmail.com', 'ca@saintmarlolabs.com'];
-
 // ---- Premium document upload support ----
 // Uploaded private documents are analyzed through the SAME pipeline as URLs:
 // we extract plain text from the file and feed it to the analysis prompt as the
@@ -438,12 +435,12 @@ serve(async (req) => {
     }
 
 
-    // Check subscription limits if we have a user (skip for Founder/Super Admin)
+    // Check subscription limits if we have a user. Admins (public.user_roles)
+    // bypass limits — entitlement is read from the database only.
     if (authenticatedUserId) {
-      const { data: { user: authUser } } = await supabase.auth.admin.getUserById(authenticatedUserId);
-      const isFounder = authUser?.email && FOUNDER_EMAILS.includes(authUser.email.toLowerCase());
+      const isAdmin = await isProtectedAdmin(supabase, authenticatedUserId);
 
-      if (!isFounder) {
+      if (!isAdmin) {
         const monthYear = new Date().toISOString().slice(0, 7); // YYYY-MM
 
         // Get user's subscription tier
