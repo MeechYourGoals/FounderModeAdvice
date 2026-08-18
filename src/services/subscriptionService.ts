@@ -16,9 +16,6 @@ import {
   restoreShellPurchasesAndWait,
 } from './expoShellService';
 
-
-
-
 /** RevenueCat API key — platform-specific and mandatory for native builds. */
 function getRevenueCatApiKey(): string {
   const platform = Capacitor.getPlatform();
@@ -427,9 +424,8 @@ export async function getSubscriptionInfo(
       null;
     if (!user) return null;
 
-
-
-    // Get subscription tier
+    // Entitlement is the user_subscriptions row only. The client is untrusted
+    // in a public repo — emails are not authorization.
     const { data: subscription } = await supabase
       .from('user_subscriptions' as any)
       .select('*')

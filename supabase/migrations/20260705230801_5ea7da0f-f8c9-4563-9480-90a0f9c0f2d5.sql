@@ -9,8 +9,9 @@ AS $$
 DECLARE
   v_tier text;
 BEGIN
-  -- Admin role (public.user_roles): unlimited.
-  IF EXISTS (SELECT 1 FROM public.user_roles r WHERE r.user_id = _user_id AND r.role = 'admin') THEN
+  -- Operators with user_roles.role = admin keep unlimited allowances.
+  -- Privilege is the database role, never an email allowlist.
+  IF public.has_role(_user_id, 'admin') THEN
     RETURN 2147483647;
   END IF;
 

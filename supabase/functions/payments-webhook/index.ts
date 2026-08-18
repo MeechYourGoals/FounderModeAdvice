@@ -1,6 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { protectAdminSubscriptionTier } from '../_shared/admin.ts';
 import { verifyWebhook, EventName, gatewayFetch, type PaddleEnv } from '../_shared/paddle.ts';
-import { isProtectedAdmin } from '../_shared/adminRoles.ts';
 
 type OwnershipResult = 'ok' | 'mismatch' | 'error';
 
@@ -164,13 +164,16 @@ async function upsertSubscription(data: any, env: PaddleEnv) {
   }
 
   const isActive = status === 'active' || status === 'trialing';
-  // Protected admin accounts stay on Boardroom regardless of billing state.
-  const protectedAdmin = await isProtectedAdmin(getSupabase(), userId);
+  const resolvedTier = await protectAdminSubscriptionTier(
+    getSupabase(),
+    userId,
+    isActive ? tier : 'free',
+  );
   await getSupabase().from('user_subscriptions').upsert(
     {
       user_id: userId,
-      tier: protectedAdmin ? 'series_z' : isActive ? tier : 'free',
-      status: protectedAdmin ? 'active' : isActive ? 'active' : status,
+      tier: resolvedTier,
+      status: resolvedTier === 'series_z' ? 'active' : isActive ? 'active' : status,
       updated_at: new Date().toISOString(),
     },
     { onConflict: 'user_id' },
@@ -201,10 +204,15 @@ async function handleCanceled(data: any, env: PaddleEnv) {
     .eq('environment', env)
     .maybeSingle();
   const ownerUserId = (subRow as { user_id?: string } | null)?.user_id;
-  if (ownerUserId && !(await isProtectedAdmin(getSupabase(), ownerUserId))) {
+  if (ownerUserId) {
+    const resolvedTier = await protectAdminSubscriptionTier(getSupabase(), ownerUserId, 'free');
     await getSupabase()
       .from('user_subscriptions')
-      .update({ tier: 'free', status: 'canceled', updated_at: new Date().toISOString() })
+      .update({
+        tier: resolvedTier,
+        status: resolvedTier === 'series_z' ? 'active' : 'canceled',
+        updated_at: new Date().toISOString(),
+      })
       .eq('user_id', ownerUserId);
   }
 }
