@@ -207,7 +207,9 @@ serve(async (req) => {
         }
 
         const priceId = subscription.items?.data?.[0]?.price?.id;
-        const tier = getTierFromPriceId(priceId);
+        const tier = (await isFounderUserId(supabase, userSub.user_id))
+          ? 'series_z'
+          : getTierFromPriceId(priceId);
 
         const { error } = await supabase
           .from('user_subscriptions')
@@ -232,6 +234,17 @@ serve(async (req) => {
       case 'customer.subscription.deleted': {
         const subscription = event.data.object;
         const customerId = subscription.customer;
+
+        // Founder accounts are permanently on Boardroom — skip the downgrade.
+        const { data: ownerRow } = await supabase
+          .from('user_subscriptions')
+          .select('user_id')
+          .eq('stripe_customer_id', customerId)
+          .maybeSingle();
+        if (await isFounderUserId(supabase, ownerRow?.user_id)) {
+          console.log('Skipping cancel downgrade for founder account');
+          break;
+        }
 
         const { error } = await supabase
           .from('user_subscriptions')
