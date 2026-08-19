@@ -1,6 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { protectAdminSubscriptionTier } from '../_shared/admin.ts';
 import { verifyWebhook, EventName, gatewayFetch, type PaddleEnv } from '../_shared/paddle.ts';
+import { verifyCheckoutRef } from '../_shared/checkoutRef.ts';
 
 type OwnershipResult = 'ok' | 'mismatch' | 'error';
 
@@ -96,9 +97,11 @@ function productIdToTier(productId: string): 'free' | 'seed' | 'series_z' {
 
 async function upsertSubscription(data: any, env: PaddleEnv) {
   const { id, customerId, items, status, currentBillingPeriod, customData, scheduledChange } = data;
-  let userId: string | undefined = customData?.userId;
+  // Only a server-signed reference is trusted here. A raw customData.userId is
+  // client-controlled and must never decide whose entitlements change.
+  let userId: string | undefined = (await verifyCheckoutRef(customData?.ref)) ?? undefined;
   if (!userId) {
-    // Renewals/updates can arrive without customData. Fall back to the owner
+    // Renewals/updates arrive without customData. Fall back to the owner
     // already recorded for this Paddle subscription instead of dropping it.
     const { data: existing } = await getSupabase()
       .from('subscriptions')
@@ -109,9 +112,10 @@ async function upsertSubscription(data: any, env: PaddleEnv) {
     userId = (existing as { user_id?: string } | null)?.user_id;
   }
   if (!userId) {
-    console.warn(`Subscription event ${id} without customData.userId and no known owner — skipping`);
+    console.warn(`Subscription event ${id} without a verified checkout reference and no known owner — skipping`);
     return;
   }
+
 
   const item = items?.[0];
   const priceId = item?.price?.importMeta?.externalId;
@@ -121,8 +125,8 @@ async function upsertSubscription(data: any, env: PaddleEnv) {
     return;
   }
 
-  // Anti-spoof: customData.userId is client-supplied. Verify the Paddle
-  // customer actually belongs to the claimed user before granting.
+  // Defense in depth on top of the signed reference: verify the Paddle
+  // customer actually belongs to the resolved user before granting.
   const owns = await verifyUserOwnsCustomer(userId, customerId, id, env);
   if (owns === 'error') {
     // Transient failure — throw so the handler returns non-2xx and Paddle retries.
