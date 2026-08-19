@@ -39,12 +39,24 @@ export async function initializePaddle(): Promise<void> {
 }
 
 export async function getPaddlePriceId(priceId: string): Promise<string> {
+  return (await getPaddleCheckoutConfig(priceId)).paddleId;
+}
+
+/**
+ * Resolves the Paddle price plus a server-signed reference bound to the
+ * authenticated user. The reference (not a client-supplied user id) is what the
+ * webhook trusts when granting entitlements.
+ */
+export async function getPaddleCheckoutConfig(
+  priceId: string,
+): Promise<{ paddleId: string; checkoutRef: string }> {
   const environment = getPaddleEnvironment();
   const { data, error } = await supabase.functions.invoke('get-paddle-price', {
     body: { priceId, environment },
   });
-  if (error || !data?.paddleId) {
+  if (error || !data?.paddleId || !data?.checkoutRef) {
     throw new Error(`Failed to resolve price: ${priceId}`);
   }
-  return data.paddleId as string;
+  return { paddleId: data.paddleId as string, checkoutRef: data.checkoutRef as string };
 }
+
