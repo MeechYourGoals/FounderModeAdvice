@@ -227,14 +227,15 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         }
       } else {
         // Web: Paddle overlay checkout.
-        const { initializePaddle, getPaddlePriceId } = await import('@/lib/paddle');
+        const { initializePaddle, getPaddleCheckoutConfig } = await import('@/lib/paddle');
         await initializePaddle();
         const priceId = tier === 'seed' ? 'c_suite_monthly' : 'boardroom_monthly';
-        const paddlePriceId = await getPaddlePriceId(priceId);
+        const { paddleId: paddlePriceId, checkoutRef } = await getPaddleCheckoutConfig(priceId);
         window.Paddle.Checkout.open({
           items: [{ priceId: paddlePriceId, quantity: 1 }],
           customer: user?.email ? { email: user.email } : undefined,
-          customData: { userId: user?.id ?? '' },
+          customData: { ref: checkoutRef },
+
           settings: {
             displayMode: 'overlay',
             successUrl: `${window.location.origin}/?checkout=success`,
