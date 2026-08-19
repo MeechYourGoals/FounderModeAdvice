@@ -125,8 +125,8 @@ async function upsertSubscription(data: any, env: PaddleEnv) {
     return;
   }
 
-  // Anti-spoof: customData.userId is client-supplied. Verify the Paddle
-  // customer actually belongs to the claimed user before granting.
+  // Defense in depth on top of the signed reference: verify the Paddle
+  // customer actually belongs to the resolved user before granting.
   const owns = await verifyUserOwnsCustomer(userId, customerId, id, env);
   if (owns === 'error') {
     // Transient failure — throw so the handler returns non-2xx and Paddle retries.
