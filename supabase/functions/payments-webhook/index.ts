@@ -1,6 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { protectAdminSubscriptionTier } from '../_shared/admin.ts';
 import { verifyWebhook, EventName, gatewayFetch, type PaddleEnv } from '../_shared/paddle.ts';
+import { verifyCheckoutRef } from '../_shared/checkoutRef.ts';
 
 type OwnershipResult = 'ok' | 'mismatch' | 'error';
 
