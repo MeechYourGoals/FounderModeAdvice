@@ -96,9 +96,11 @@ function productIdToTier(productId: string): 'free' | 'seed' | 'series_z' {
 
 async function upsertSubscription(data: any, env: PaddleEnv) {
   const { id, customerId, items, status, currentBillingPeriod, customData, scheduledChange } = data;
-  let userId: string | undefined = customData?.userId;
+  // Only a server-signed reference is trusted here. A raw customData.userId is
+  // client-controlled and must never decide whose entitlements change.
+  let userId: string | undefined = (await verifyCheckoutRef(customData?.ref)) ?? undefined;
   if (!userId) {
-    // Renewals/updates can arrive without customData. Fall back to the owner
+    // Renewals/updates arrive without customData. Fall back to the owner
     // already recorded for this Paddle subscription instead of dropping it.
     const { data: existing } = await getSupabase()
       .from('subscriptions')
@@ -109,9 +111,10 @@ async function upsertSubscription(data: any, env: PaddleEnv) {
     userId = (existing as { user_id?: string } | null)?.user_id;
   }
   if (!userId) {
-    console.warn(`Subscription event ${id} without customData.userId and no known owner — skipping`);
+    console.warn(`Subscription event ${id} without a verified checkout reference and no known owner — skipping`);
     return;
   }
+
 
   const item = items?.[0];
   const priceId = item?.price?.importMeta?.externalId;
