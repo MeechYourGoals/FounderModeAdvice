@@ -25,6 +25,7 @@
         ],
         "NSCameraUsageDescription": "Founder Mode Advice uses the camera when you choose “Take Photo” to capture a document, whiteboard, or notes you want analyzed into an operating memo.",
         "NSPhotoLibraryUsageDescription": "Founder Mode Advice accesses photos you select (for example screenshots of notes or documents) so they can be analyzed into an operating memo.",
+        "NSLocationWhenInUseUsageDescription": "Founder Mode Advice may use your location only for optional location-based notifications from the push notification SDK. Location is not used for advertising or background tracking.",
         "UISupportedInterfaceOrientations~ipad": [
           "UIInterfaceOrientationPortrait",
           "UIInterfaceOrientationPortraitUpsideDown",
