@@ -20,6 +20,7 @@ import {
   formatPlanPrice,
   matchOfferingPackage,
   planById,
+  restoreUnlocksAccess,
   type IapPlanId,
   type OfferingPackageLike,
 } from "./iapPaywallCatalog";
@@ -30,6 +31,7 @@ type PurchasesLike = {
   }>;
   purchasePackage: (pkg: OfferingPackageLike) => Promise<unknown>;
   restorePurchases: () => Promise<unknown>;
+  getCustomerInfo?: () => Promise<unknown>;
 };
 
 type PaywallProps = {
@@ -121,7 +123,14 @@ export function Paywall({ purchases, onDismiss, onSuccess }: PaywallProps) {
     }
     setBusy("restore");
     try {
-      await purchases.restorePurchases();
+      // Empty RevenueCat history still resolves; only an active entitlement is a restore.
+      if (!(await restoreUnlocksAccess(purchases))) {
+        Alert.alert(
+          "No purchases to restore",
+          "We couldn't find an active subscription on this store account.",
+        );
+        return;
+      }
       onSuccess();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Could not restore purchases.";

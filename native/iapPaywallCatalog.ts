@@ -120,6 +120,63 @@ export function planById(id: IapPlanId): IapPlanCopy {
   return plan;
 }
 
+/** RevenueCat CustomerInfo subset used after restore / getCustomerInfo. */
+export type CustomerInfoLike = {
+  entitlements?: { active?: Record<string, unknown> | null } | null;
+};
+
+/**
+ * react-native-purchases returns CustomerInfo; some wrappers nest it.
+ */
+export function customerInfoFromRestoreResult(result: unknown): CustomerInfoLike | null {
+  if (!result || typeof result !== "object") return null;
+  const record = result as { entitlements?: unknown; customerInfo?: unknown };
+  if (record.entitlements && typeof record.entitlements === "object") {
+    return record as CustomerInfoLike;
+  }
+  if (record.customerInfo && typeof record.customerInfo === "object") {
+    return record.customerInfo as CustomerInfoLike;
+  }
+  return null;
+}
+
+export function activeEntitlementIdsFromCustomerInfo(
+  customerInfo: CustomerInfoLike | null | undefined,
+): string[] {
+  return Object.keys(customerInfo?.entitlements?.active ?? {});
+}
+
+export function customerHasAnyActiveEntitlement(
+  activeEntitlementIds: readonly string[],
+): boolean {
+  return activeEntitlementIds.length > 0;
+}
+
+/** Restore success only when RevenueCat reports at least one live entitlement. */
+export function restoreFoundActiveEntitlement(
+  customerInfo: CustomerInfoLike | null | undefined,
+): boolean {
+  return customerHasAnyActiveEntitlement(activeEntitlementIdsFromCustomerInfo(customerInfo));
+}
+
+type RestorePurchasesLike = {
+  restorePurchases: () => Promise<unknown>;
+  getCustomerInfo?: () => Promise<unknown>;
+};
+
+/**
+ * True only when restore (or a getCustomerInfo fallback) shows a live entitlement.
+ * Empty RevenueCat history still resolves — that must not unlock the paywall.
+ */
+export async function restoreUnlocksAccess(purchases: RestorePurchasesLike): Promise<boolean> {
+  const restored = await purchases.restorePurchases();
+  let customerInfo = customerInfoFromRestoreResult(restored);
+  if (!customerInfo && purchases.getCustomerInfo) {
+    customerInfo = customerInfoFromRestoreResult(await purchases.getCustomerInfo());
+  }
+  return restoreFoundActiveEntitlement(customerInfo);
+}
+
 /** Entitlement ids that mean "already subscribed to the requested plan". */
 export function customerHasEntitlement(
   activeEntitlementIds: readonly string[],
