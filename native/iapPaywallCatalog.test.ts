@@ -11,6 +11,7 @@ import {
   matchOfferingPackage,
   planById,
   restoreFoundActiveEntitlement,
+  restoreUnlocksAccess,
 } from "./iapPaywallCatalog.ts";
 
 Deno.test("IAP catalog covers both live monthly products with required disclosures", () => {
@@ -92,4 +93,42 @@ Deno.test("restore reads CustomerInfo from restore() or a nested wrapper", () =>
   assert.equal(restoreFoundActiveEntitlement(customerInfoFromRestoreResult(direct)), true);
   assert.equal(restoreFoundActiveEntitlement(customerInfoFromRestoreResult(nested)), true);
   assert.equal(restoreFoundActiveEntitlement(customerInfoFromRestoreResult({ ok: true })), false);
+});
+
+Deno.test("restoreUnlocksAccess keeps an empty restore from succeeding", async () => {
+  assert.equal(
+    await restoreUnlocksAccess({
+      restorePurchases: async () => ({ entitlements: { active: {} } }),
+    }),
+    false,
+  );
+  assert.equal(
+    await restoreUnlocksAccess({
+      restorePurchases: async () => ({ entitlements: { active: { seed_subscription: {} } } }),
+    }),
+    true,
+  );
+  assert.equal(
+    await restoreUnlocksAccess({
+      restorePurchases: async () => ({ ok: true }),
+      getCustomerInfo: async () => ({ entitlements: { active: { series_z_subscription: {} } } }),
+    }),
+    true,
+  );
+  assert.equal(
+    await restoreUnlocksAccess({
+      restorePurchases: async () => ({ ok: true }),
+      getCustomerInfo: async () => ({ entitlements: { active: {} } }),
+    }),
+    false,
+  );
+  await assert.rejects(
+    () =>
+      restoreUnlocksAccess({
+        restorePurchases: async () => {
+          throw new Error("store unavailable");
+        },
+      }),
+    /store unavailable/,
+  );
 });

@@ -159,6 +159,24 @@ export function restoreFoundActiveEntitlement(
   return customerHasAnyActiveEntitlement(activeEntitlementIdsFromCustomerInfo(customerInfo));
 }
 
+type RestorePurchasesLike = {
+  restorePurchases: () => Promise<unknown>;
+  getCustomerInfo?: () => Promise<unknown>;
+};
+
+/**
+ * True only when restore (or a getCustomerInfo fallback) shows a live entitlement.
+ * Empty RevenueCat history still resolves — that must not unlock the paywall.
+ */
+export async function restoreUnlocksAccess(purchases: RestorePurchasesLike): Promise<boolean> {
+  const restored = await purchases.restorePurchases();
+  let customerInfo = customerInfoFromRestoreResult(restored);
+  if (!customerInfo && purchases.getCustomerInfo) {
+    customerInfo = customerInfoFromRestoreResult(await purchases.getCustomerInfo());
+  }
+  return restoreFoundActiveEntitlement(customerInfo);
+}
+
 /** Entitlement ids that mean "already subscribed to the requested plan". */
 export function customerHasEntitlement(
   activeEntitlementIds: readonly string[],

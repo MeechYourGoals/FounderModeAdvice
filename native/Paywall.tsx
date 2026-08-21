@@ -17,11 +17,10 @@ import {
   IAP_DISCLOSURE,
   IAP_LEGAL_URLS,
   IAP_PLANS,
-  customerInfoFromRestoreResult,
   formatPlanPrice,
   matchOfferingPackage,
   planById,
-  restoreFoundActiveEntitlement,
+  restoreUnlocksAccess,
   type IapPlanId,
   type OfferingPackageLike,
 } from "./iapPaywallCatalog";
@@ -124,13 +123,8 @@ export function Paywall({ purchases, onDismiss, onSuccess }: PaywallProps) {
     }
     setBusy("restore");
     try {
-      const restored = await purchases.restorePurchases();
-      let customerInfo = customerInfoFromRestoreResult(restored);
-      if (!customerInfo && purchases.getCustomerInfo) {
-        customerInfo = customerInfoFromRestoreResult(await purchases.getCustomerInfo());
-      }
       // Empty RevenueCat history still resolves; only an active entitlement is a restore.
-      if (!restoreFoundActiveEntitlement(customerInfo)) {
+      if (!(await restoreUnlocksAccess(purchases))) {
         Alert.alert(
           "No purchases to restore",
           "We couldn't find an active subscription on this store account.",
