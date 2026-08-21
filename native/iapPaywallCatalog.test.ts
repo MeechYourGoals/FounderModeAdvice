@@ -4,10 +4,13 @@ import {
   IAP_DISCLOSURE,
   IAP_LEGAL_URLS,
   IAP_PLANS,
+  customerHasAnyActiveEntitlement,
   customerHasEntitlement,
+  customerInfoFromRestoreResult,
   formatPlanPrice,
   matchOfferingPackage,
   planById,
+  restoreFoundActiveEntitlement,
 } from "./iapPaywallCatalog.ts";
 
 Deno.test("IAP catalog covers both live monthly products with required disclosures", () => {
@@ -69,4 +72,24 @@ Deno.test("customerHasEntitlement treats Boardroom aliases as the same plan", ()
   assert.equal(customerHasEntitlement(["seed_subscription"], "Founder Mode Advisor Pro"), false);
   assert.equal(customerHasEntitlement([], "Founder Mode Advisor Pro"), false);
   assert.equal(customerHasEntitlement(["series_z_subscription"]), false);
+});
+
+Deno.test("empty RevenueCat restore is not a successful restore", () => {
+  assert.equal(customerHasAnyActiveEntitlement([]), false);
+  assert.equal(restoreFoundActiveEntitlement(null), false);
+  assert.equal(restoreFoundActiveEntitlement({ entitlements: { active: {} } }), false);
+  assert.equal(restoreFoundActiveEntitlement({ entitlements: { active: undefined } }), false);
+  assert.equal(restoreFoundActiveEntitlement(customerInfoFromRestoreResult(undefined)), false);
+  assert.equal(restoreFoundActiveEntitlement(customerInfoFromRestoreResult({})), false);
+});
+
+Deno.test("restore reads CustomerInfo from restore() or a nested wrapper", () => {
+  const direct = { entitlements: { active: { seed_subscription: {} } } };
+  const nested = { customerInfo: { entitlements: { active: { series_z_subscription: {} } } } };
+  assert.equal(customerHasAnyActiveEntitlement(["seed_subscription"]), true);
+  assert.deepEqual(customerInfoFromRestoreResult(direct), direct);
+  assert.deepEqual(customerInfoFromRestoreResult(nested), nested.customerInfo);
+  assert.equal(restoreFoundActiveEntitlement(customerInfoFromRestoreResult(direct)), true);
+  assert.equal(restoreFoundActiveEntitlement(customerInfoFromRestoreResult(nested)), true);
+  assert.equal(restoreFoundActiveEntitlement(customerInfoFromRestoreResult({ ok: true })), false);
 });
