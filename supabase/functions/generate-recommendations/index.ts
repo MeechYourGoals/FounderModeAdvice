@@ -37,6 +37,7 @@ import {
   type DiscoveryProvider,
   type DiscoveryResult,
 } from "../_shared/discovery/providers.ts";
+import { filterRecentResults, publishedAfterIso } from "../_shared/discovery/recency.ts";
 import {
   contextTerms,
   scoreCandidate,
@@ -142,7 +143,7 @@ async function gatherCandidates(
       stats.providerCalls += 1;
       try {
         const results = await provider.search(query, { limit: RESULTS_PER_QUERY });
-        candidates.push(...results);
+        candidates.push(...filterRecentResults(results));
       } catch (error) {
         console.warn(`[discovery] provider ${provider.id} failed:`, error);
       }
@@ -158,12 +159,14 @@ function curatedLoader(supabase: ReturnType<typeof createClient>, ctx: Recommend
     // the highest-priority curated items so the list is never empty.
     const select =
       "url, canonical_url, content_key, title, description, image_url, publisher, author, published_at, content_type, duration_seconds, language, categories";
+    const since = publishedAfterIso();
     const [tagged, general] = await Promise.all([
       supabase
         .from("discovery_content")
         .select(select)
         .eq("active", true)
         .eq("is_curated", true)
+        .gte("published_at", since)
         .overlaps("categories", ctx.categories.length > 0 ? ctx.categories : ["Startups"])
         .order("priority", { ascending: false })
         .limit(limit),
@@ -172,6 +175,7 @@ function curatedLoader(supabase: ReturnType<typeof createClient>, ctx: Recommend
         .select(select)
         .eq("active", true)
         .eq("is_curated", true)
+        .gte("published_at", since)
         .order("priority", { ascending: false })
         .limit(limit),
     ]);
@@ -196,7 +200,6 @@ function curatedLoader(supabase: ReturnType<typeof createClient>, ctx: Recommend
         language: row.language,
         providerId: "curated",
         rank: out.length,
-        // Curated material is timeless by construction — never age-penalized.
         intent: "evergreen",
         label: Array.isArray(row.categories) ? (row.categories[0] as string) : undefined,
       });
@@ -329,7 +332,7 @@ async function generateForProfile(
       curatedLoader(supabase, context),
     );
 
-    const candidates = await gatherCandidates(providers, plan, stats);
+    const candidates = filterRecentResults(await gatherCandidates(providers, plan, stats));
 
     // Novelty: what this profile has already been shown, so a repeat is pushed
     // far down rather than filling the new edition. Bounded and ordered newest

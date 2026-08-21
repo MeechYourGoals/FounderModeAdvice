@@ -3,7 +3,8 @@
 // One generic search ("rocket startup news") produces a generic feed. Instead
 // we fan out into a handful of distinct *intents* built from the profile
 // context, mixing timely and evergreen angles so the weekly edition is not ten
-// takes on the same news story.
+// takes on the same news story. Evergreen here means the *angle* (lessons,
+// interviews, playbooks) — provider date windows still keep results to 30 days.
 //
 // Deterministic templates run first and always work offline. One optional,
 // cheap LLM call then adds sharper domain-specific themes; if it fails, the
@@ -143,7 +144,9 @@ export async function expandQueries(
               "Return ONLY a JSON array of objects: " +
               '[{"query": string, "intent": "timely"|"evergreen"}]. ' +
               "6 items max. Each query is 3-10 words, specific enough that a generic startup " +
-              "article would not match. Cover different angles, not rephrasings of one angle.",
+              "article would not match. Cover different angles, not rephrasings of one angle. " +
+              "Queries may be lesson- or interview-shaped, but they must target recent material " +
+              "from the last month, not foundational classics or evergreen essays from years ago.",
           },
           {
             role: "user",
