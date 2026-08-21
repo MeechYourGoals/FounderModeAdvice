@@ -80,9 +80,10 @@ export const logoutShellUser = (): void => {
 };
 
 /**
- * Present the native RevenueCat paywall in the shell. Success is reported
- * asynchronously through window.onRevenueCatPurchase / window.iapSuccess —
- * the same callbacks SubscriptionContext already listens on for Despia.
+ * Present the in-shell IAP paywall (Guideline 3.1.2(c) disclosures + StoreKit
+ * via RevenueCat). Success is reported asynchronously through
+ * window.onRevenueCatPurchase / window.iapSuccess — the same callbacks
+ * SubscriptionContext already listens on for Despia.
  */
 export const launchShellPaywall = (
   userId: string,

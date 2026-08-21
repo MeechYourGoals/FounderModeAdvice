@@ -18,11 +18,9 @@ export function SubscriptionDisclosure() {
             Paid plans are auto-renewing monthly subscriptions. Payment is charged to your
             Apple Account (or Google Play account) when you confirm the purchase, and the
             exact localized price is always shown on the checkout screen before you pay.
-            Your subscription renews automatically each month at that price unless you
-            cancel at least 24 hours before the end of the current period. Manage or cancel
-            anytime via Manage Subscription in your Account settings, or in your device's
-            subscription settings. Already subscribed on another device? Use Restore
-            Purchases.
+            Subscriptions auto-renew until canceled. Cancel anytime in Settings →
+            Subscriptions, or with one tap in in-app Settings. You keep access until the
+            period ends. Already subscribed on another device? Use Restore Purchases.
           </>
         ) : (
           <>
@@ -38,7 +36,7 @@ export function SubscriptionDisclosure() {
           Privacy Policy
         </Link>
         <Link to="/terms-of-service" className="underline hover:text-foreground">
-          Terms of Use
+          Terms of Use (EULA)
         </Link>
         {!isNative && (
           <Link to="/refund-policy" className="underline hover:text-foreground">

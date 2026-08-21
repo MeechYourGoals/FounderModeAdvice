@@ -91,9 +91,12 @@ review notes) lives in `docs/store-readiness.md`.
 - Deep links (`com.foundermodeadvice.app://…` and
   `https://foundermodeadvice.com/…` app links) route into the WebView.
 - Purchases: web sends `paywall` / `restorePurchases` / `customerCenter`
-  bridge messages → shell presents RevenueCat native UI → shell calls
+  bridge messages → shell presents the in-app paywall (`Paywall.tsx`) with
+  monthly length, per-plan features, auto-renew/cancel copy, and Privacy /
+  Terms links, then purchases via RevenueCat/StoreKit → shell calls
   `window.iapSuccess()` → web re-verifies the entitlement server-side.
-  Restore explicitly acks success/failure back to the web layer.
+  Restore explicitly acks success/failure back to the web layer. Customer
+  Center remains the RevenueCat management UI.
 - Bridge security: only pages on the app's own origin can send bridge
   messages; allow-listed third-party hosts (auth, storage) render in the
   WebView but cannot drive native actions.

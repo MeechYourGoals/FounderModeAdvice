@@ -14,8 +14,10 @@ RevenueCat project → Apple app (bundle com.foundermodeadvice.app)   🔧
  ├─ Offering "default"                                              🔧
  │   ├─ package $rc_monthly        → series_z_monthly
  │   └─ package c_suite_monthly    → seed_monthly
- └─ Paywall (v2 template) on "default" — localized prices, terms,
-    privacy links, restore                                          🔧
+ └─ Offering packages only — the iOS binary no longer presents the
+    dashboard RevenueCat paywall template. The Expo shell shows
+    native/Paywall.tsx (length, features, auto-renew, cancel path,
+    Privacy/Terms, Restore) and purchases via StoreKit.             ✅
         │
 Expo shell (native/App.tsx)                                         ✅
  ├─ Purchases.configure(apiKey=appl_…, appUserID=<supabase uuid>)   ✅

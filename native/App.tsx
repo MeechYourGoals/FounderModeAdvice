@@ -21,6 +21,8 @@ import {
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 import type { WebViewMessageEvent, WebViewNavigation } from "react-native-webview";
+import { Paywall } from "./Paywall";
+import { customerHasEntitlement } from "./iapPaywallCatalog";
 
 /**
  * Founder Mode Advice — Expo shell.
@@ -28,8 +30,9 @@ import type { WebViewMessageEvent, WebViewNavigation } from "react-native-webvie
  * A thin native wrapper around the production web app. The web app detects
  * this runtime via the `FMAShell/<version>` user-agent token
  * (src/services/expoShellService.ts in the repo root) and talks to it over
- * the react-native-webview postMessage bridge for haptics, RevenueCat
- * paywalls, OneSignal push, sharing, and theming. The shell reports purchase
+ * the react-native-webview postMessage bridge for haptics, the in-shell IAP
+ * paywall (Guideline 3.1.2(c) disclosures + StoreKit via RevenueCat),
+ * OneSignal push, sharing, and theming. The shell reports purchase
  * results back through the same `window.iapSuccess` /
  * `window.onRevenueCatPurchase` globals the Despia wrapper uses.
  *
@@ -305,6 +308,7 @@ function Shell() {
   const [dark, setDark] = useState(true);
   const [background, setBackground] = useState("#0c0e15");
   const [webViewKey, setWebViewKey] = useState(0);
+  const [paywallOpen, setPaywallOpen] = useState(false);
   const incomingUrl = ExpoLinking.useURL();
   const authSessionActiveRef = useRef(false);
 
@@ -412,6 +416,17 @@ function Shell() {
   // up — a double-tap in the web layer must never stack two StoreKit flows.
   const purchaseUIActiveRef = useRef(false);
 
+  const closePaywall = useCallback(() => {
+    purchaseUIActiveRef.current = false;
+    setPaywallOpen(false);
+  }, []);
+
+  const finishPaywallSuccess = useCallback(() => {
+    void triggerHaptic("success");
+    notifyPurchaseSuccess();
+    closePaywall();
+  }, [closePaywall, notifyPurchaseSuccess]);
+
   const handleMessage = useCallback(
     async (event: WebViewMessageEvent) => {
       // The bridge is app-origin-only: pages from allow-listed third-party
@@ -464,28 +479,23 @@ function Shell() {
         case "paywall": {
           if (purchaseUIActiveRef.current) break;
           const Purchases = await configureRevenueCat(message.userId);
-          const RevenueCatUI = loadPurchasesUI();
-          if (!Purchases || !RevenueCatUI) {
+          if (!Purchases) {
             console.warn("Paywall unavailable (Expo Go or missing RevenueCat key)");
-            break;
+            // Still present the disclosure wall so review/QA can read 3.1.2(c)
+            // copy; Purchase is disabled until a store build has the SDK.
+          } else if (!message.always && message.requiredEntitlement) {
+            try {
+              const info = await Purchases.getCustomerInfo();
+              const active = Object.keys(info.entitlements?.active ?? {});
+              if (customerHasEntitlement(active, message.requiredEntitlement)) {
+                break;
+              }
+            } catch (err) {
+              console.warn("Paywall entitlement check failed", err);
+            }
           }
           purchaseUIActiveRef.current = true;
-          try {
-            const result =
-              !message.always && message.requiredEntitlement
-                ? await RevenueCatUI.presentPaywallIfNeeded({
-                    requiredEntitlementIdentifier: message.requiredEntitlement,
-                  })
-                : await RevenueCatUI.presentPaywall();
-            if (result === "PURCHASED" || result === "RESTORED") {
-              void triggerHaptic("success");
-              notifyPurchaseSuccess();
-            }
-          } catch (err) {
-            console.warn("Paywall failed", err);
-          } finally {
-            purchaseUIActiveRef.current = false;
-          }
+          setPaywallOpen(true);
           break;
         }
 
@@ -723,7 +733,7 @@ function Shell() {
 
   return (
     <View style={[styles.root, { backgroundColor: background }]}>
-      <StatusBar style={dark ? "light" : "dark"} animated />
+      <StatusBar style={paywallOpen || !dark ? "dark" : "light"} animated />
       {loadError ? (
         <View style={[styles.errorContainer, { paddingTop: insets.top + 48 }]}>
           <Text style={[styles.errorTitle, { color: dark ? "#fbfcfe" : "#0c0e15" }]}>
@@ -785,6 +795,13 @@ function Shell() {
           textZoom={100}
         />
       )}
+      {paywallOpen ? (
+        <Paywall
+          purchases={loadPurchases()}
+          onDismiss={closePaywall}
+          onSuccess={finishPaywallSuccess}
+        />
+      ) : null}
     </View>
   );
 }

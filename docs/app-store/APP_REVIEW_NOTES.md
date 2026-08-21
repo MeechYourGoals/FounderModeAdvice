@@ -41,11 +41,14 @@ processors (Google Gemini via our gateway; Supadata for transcripts). This is
 also covered in Privacy Policy §6/§10.
 
 SUBSCRIPTIONS (RevenueCat + StoreKit): Account tab → "Upgrade Your Plan" →
-selecting a plan opens the native paywall with localized StoreKit pricing.
-Two auto-renewing monthly products: The C-Suite (seed_monthly, $9.99) and
-The Boardroom (series_z_monthly, $19.99). Restore Purchases is on the same
-screen. Manage Subscription opens the native subscription-management surface.
-Server-side entitlement verification gates paid AI features.
+selecting a plan opens the native paywall. Each plan shows its name, Monthly
+length, localized StoreKit price, the features it unlocks, “Auto-renews until
+canceled,” how to cancel (Settings → Subscriptions, or one tap in in-app
+Settings), and Privacy Policy + Terms of Use (EULA) links — all before
+Purchase. Two auto-renewing monthly products: The C-Suite (seed_monthly,
+$9.99) and The Boardroom (series_z_monthly, $19.99). Restore Purchases is on
+the same screen. Manage Subscription opens the native subscription-management
+surface. Server-side entitlement verification gates paid AI features.
 
 ACCOUNT DELETION: Account tab → Delete Account (confirmation dialog includes
 a Manage Subscription shortcut and explains Apple billing is cancelled
@@ -80,9 +83,10 @@ Support: CA@saintmarlolabs.com
    analysis.
 4. Open analysis → lessons/risks/actions; try follow-up Q&A on a Boardroom
    feature to see the upsell path (free account → paywall).
-5. Account → Upgrade Your Plan → native paywall shows both plans with
-   localized prices → sandbox-purchase The C-Suite → tier badge updates,
-   document upload unlocks.
+5. Account → Upgrade Your Plan → native paywall shows both monthly plans
+   with localized prices, per-plan features, auto-renew/cancel copy, and
+   Privacy/Terms links above Purchase → sandbox-purchase The C-Suite →
+   tier badge updates, document upload unlocks.
 6. Account → Restore Purchases (idempotent, reports success).
 7. Account → Manage Subscription → native management surface opens.
 8. Account → Delete Account → confirmation (Manage Subscription shortcut) →
