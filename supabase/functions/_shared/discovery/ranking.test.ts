@@ -64,33 +64,71 @@ Deno.test("relevance — profile vocabulary beats generic startup content", () =
   assert.ok(relevanceScore(onTopic, terms) > relevanceScore(offTopic, terms));
 });
 
-Deno.test("freshness — evergreen is never penalized for age, timely decays", () => {
-  const oldEvergreen = candidate({
-    url: "https://paulgraham.com/ds.html",
-    title: "Do Things that Don't Scale",
+Deno.test("freshness — age is scored the same for timely and evergreen", () => {
+  const tenDayLesson = candidate({
+    url: "https://example.com/lesson",
+    title: "Launch industry manufacturing lessons",
     intent: "evergreen",
-    publishedAt: daysAgo(4000),
+    publishedAt: daysAgo(10),
   });
-  const oldNews = candidate({
-    url: "https://example.com/news",
-    title: "Launch industry weekly roundup",
-    intent: "timely",
-    publishedAt: daysAgo(200),
-  });
-  const freshNews = candidate({
+  const twoDayNews = candidate({
     url: "https://example.com/news2",
     title: "Launch industry weekly roundup",
     intent: "timely",
     publishedAt: daysAgo(2),
   });
+  const twentyFiveDayNews = candidate({
+    url: "https://example.com/news",
+    title: "Launch industry weekly roundup",
+    intent: "timely",
+    publishedAt: daysAgo(25),
+  });
+  const staleEssay = candidate({
+    url: "https://paulgraham.com/ds.html",
+    title: "Do Things that Don't Scale",
+    intent: "evergreen",
+    publishedAt: daysAgo(4000),
+  });
 
-  assert.equal(freshnessScore(oldEvergreen, NOW), 0.5);
-  assert.ok(freshnessScore(freshNews, NOW) > freshnessScore(oldNews, NOW));
-  assert.ok(freshnessScore(oldEvergreen, NOW) > freshnessScore(oldNews, NOW));
+  assert.equal(freshnessScore(tenDayLesson, NOW), freshnessScore({ ...tenDayLesson, intent: "timely" }, NOW));
+  assert.ok(freshnessScore(twoDayNews, NOW) > freshnessScore(twentyFiveDayNews, NOW));
+  assert.ok(freshnessScore(tenDayLesson, NOW) > 0);
+  assert.equal(freshnessScore(staleEssay, NOW), 0);
+  assert.equal(freshnessScore(candidate({
+    url: "https://example.com/undated",
+    title: "Launch industry weekly roundup",
+    publishedAt: null,
+  }), NOW), 0);
 });
 
-Deno.test("a decade-old foundational essay outranks today's generic filler", () => {
-  const essay = score(
+Deno.test("freshness — items older than 30 days score zero", () => {
+  const atWindow = candidate({
+    url: "https://example.com/edge",
+    title: "Launch industry weekly roundup",
+    intent: "timely",
+    publishedAt: daysAgo(30),
+  });
+  const pastWindow = candidate({
+    url: "https://example.com/old",
+    title: "Launch industry weekly roundup",
+    intent: "timely",
+    publishedAt: daysAgo(31),
+  });
+  assert.ok(freshnessScore(atWindow, NOW) > 0);
+  assert.equal(freshnessScore(pastWindow, NOW), 0);
+});
+
+Deno.test("a recent lesson outranks stale classics and same-week filler", () => {
+  const recentLesson = score(
+    candidate({
+      url: "https://example.com/manufacturing-lessons",
+      title: "Additive manufacturing lessons on early propulsion and users",
+      contentType: "essay",
+      intent: "evergreen",
+      publishedAt: daysAgo(10),
+    }),
+  );
+  const staleClassic = score(
     candidate({
       url: "https://paulgraham.com/ds.html",
       title: "Do Things that Don't Scale: lessons on early manufacturing and users",
@@ -108,7 +146,8 @@ Deno.test("a decade-old foundational essay outranks today's generic filler", () 
       description: "Short.",
     }),
   );
-  assert.ok(essay.breakdown.total > filler.breakdown.total);
+  assert.ok(recentLesson.breakdown.total > staleClassic.breakdown.total);
+  assert.ok(recentLesson.breakdown.total > filler.breakdown.total);
 });
 
 Deno.test("source quality — original publishers beat aggregators, niche is not excluded", () => {

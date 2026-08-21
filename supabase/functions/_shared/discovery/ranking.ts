@@ -11,6 +11,7 @@
 
 import type { RecommendationContext } from "./context.ts";
 import type { DiscoveryResult } from "./providers.ts";
+import { MAX_CONTENT_AGE_DAYS, contentAgeDays } from "./recency.ts";
 import { hostOf, titleSimilarity, titleTokens } from "./url.ts";
 
 export interface ScoreBreakdown {
@@ -123,18 +124,18 @@ export function relevanceScore(result: DiscoveryResult, terms: string[]): number
 }
 
 /**
- * Recency, but only where recency means anything. Timely intents decay over a
- * quarter; evergreen material sits at a flat neutral score so a 2013 essay is
- * never beaten by today's filler.
+ * Recency inside the 30-day briefing window. Age is scored the same for timely
+ * and evergreen intents — a lesson from last week still outranks one from day 28.
+ * Items older than the window (or undated) score 0; they should already have
+ * been filtered out before ranking.
  */
 export function freshnessScore(result: DiscoveryResult, now: number): number {
-  if (result.intent === "evergreen") return 0.5;
-  if (!result.publishedAt) return 0.35;
-  const ageDays = (now - new Date(result.publishedAt).getTime()) / 86_400_000;
+  if (!result.publishedAt) return 0;
+  const ageDays = contentAgeDays(result.publishedAt, now);
   if (ageDays < 0) return 0.5;
+  if (ageDays > MAX_CONTENT_AGE_DAYS) return 0;
   if (ageDays <= 7) return 1;
-  if (ageDays >= 180) return 0.15;
-  return clamp01(1 - (ageDays - 7) / 173 * 0.85);
+  return clamp01(1 - ((ageDays - 7) / (MAX_CONTENT_AGE_DAYS - 7)) * 0.85);
 }
 
 export function sourceQualityScore(result: DiscoveryResult): number {

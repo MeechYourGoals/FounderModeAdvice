@@ -12,6 +12,7 @@
 // which has its own SSRF guard).
 
 import type { DiscoveryQuery, QueryIntent } from "./queries.ts";
+import { publishedAfterIso } from "./recency.ts";
 import { cleanText, looksLowQuality } from "./sanitize.ts";
 import { canonicalizeUrl, contentKey, hostOf } from "./url.ts";
 
@@ -239,21 +240,24 @@ function braveResults(
   return out;
 }
 
+/** Brave Web params. `freshness=pm` is the past-month window for every intent. */
+export function braveWebQueryParams(query: string, limit: number): URLSearchParams {
+  return new URLSearchParams({
+    q: query,
+    count: String(Math.min(20, Math.max(1, limit))),
+    result_filter: "web",
+    safesearch: "moderate",
+    freshness: "pm",
+  });
+}
+
 export function createBraveWebProvider(apiKey: string): DiscoveryProvider {
   return {
     id: "brave_web",
     supports: () => true,
     maxQueriesPerRun: 8,
     async search(query, options) {
-      const params = new URLSearchParams({
-        q: query.query,
-        count: String(Math.min(20, Math.max(1, options.limit))),
-        result_filter: "web",
-        safesearch: "moderate",
-      });
-      // Timely intents ask for the last month; evergreen deliberately does not
-      // filter, so a foundational essay from 2013 can still surface.
-      if (query.intent === "timely") params.set("freshness", "pm");
+      const params = braveWebQueryParams(query.query, options.limit);
       const payload = await fetchJson(
         `https://api.search.brave.com/res/v1/web/search?${params}`,
         { headers: { Accept: "application/json", "X-Subscription-Token": apiKey } },
@@ -313,6 +317,26 @@ interface YouTubeSearchItem {
   };
 }
 
+/** YouTube search params. `publishedAfter` is always the last 30 days. */
+export function youTubeQueryParams(
+  query: string,
+  limit: number,
+  apiKey: string,
+  now = Date.now(),
+): URLSearchParams {
+  return new URLSearchParams({
+    part: "snippet",
+    type: "video",
+    q: query,
+    maxResults: String(Math.min(15, Math.max(1, limit))),
+    relevanceLanguage: "en",
+    videoEmbeddable: "true",
+    safeSearch: "moderate",
+    key: apiKey,
+    publishedAfter: publishedAfterIso(now),
+  });
+}
+
 /**
  * YouTube search costs 100 quota units per call (default project quota is
  * 10,000/day), so maxQueriesPerRun is deliberately small. The follow-up
@@ -325,20 +349,7 @@ export function createYouTubeProvider(apiKey: string): DiscoveryProvider {
     maxQueriesPerRun: 3,
     async search(query, options) {
       const timeout = options.timeoutMs ?? 12000;
-      const params = new URLSearchParams({
-        part: "snippet",
-        type: "video",
-        q: query.query,
-        maxResults: String(Math.min(15, Math.max(1, options.limit))),
-        relevanceLanguage: "en",
-        videoEmbeddable: "true",
-        safeSearch: "moderate",
-        key: apiKey,
-      });
-      if (query.intent === "timely") {
-        const since = new Date(Date.now() - 45 * 86_400_000).toISOString();
-        params.set("publishedAfter", since);
-      }
+      const params = youTubeQueryParams(query.query, options.limit, apiKey);
       const payload = await fetchJson(
         `https://www.googleapis.com/youtube/v3/search?${params}`,
         { headers: { Accept: "application/json" } },

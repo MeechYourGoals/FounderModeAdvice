@@ -1,12 +1,15 @@
 import assert from "node:assert/strict";
 import {
+  braveWebQueryParams,
   createCuratedProvider,
   inferContentType,
   parseIsoDuration,
   resolveProviders,
   toResult,
+  youTubeQueryParams,
   type DiscoveryResult,
 } from "./providers.ts";
+import { publishedAfterIso } from "./recency.ts";
 
 const base = {
   providerId: "test",
@@ -116,4 +119,19 @@ Deno.test("curated provider — a throwing loader yields no candidates, not a cr
     { limit: 5 },
   );
   assert.deepEqual(results, []);
+});
+
+Deno.test("Brave Web always asks for the past month", () => {
+  const timely = braveWebQueryParams("rocket startup news", 10);
+  const evergreen = braveWebQueryParams("founder interview lessons", 10);
+  assert.equal(timely.get("freshness"), "pm");
+  assert.equal(evergreen.get("freshness"), "pm");
+});
+
+Deno.test("YouTube always sets publishedAfter to the last 30 days", () => {
+  const now = Date.parse("2026-08-21T12:00:00Z");
+  const timely = youTubeQueryParams("launch industry developments", 8, "key", now);
+  const evergreen = youTubeQueryParams("founder interview lessons", 8, "key", now);
+  assert.equal(timely.get("publishedAfter"), publishedAfterIso(now));
+  assert.equal(evergreen.get("publishedAfter"), publishedAfterIso(now));
 });
