@@ -134,13 +134,14 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-apple-authentication",
       [
         "onesignal-expo-plugin",
         {
-          "mode": "production"
+          "mode": "production",
+          "disableLocation": true
         }
       ],
+      "expo-apple-authentication",
       [
         "expo-splash-screen",
         {
