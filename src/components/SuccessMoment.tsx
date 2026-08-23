@@ -16,7 +16,7 @@ interface SuccessMomentProps {
   show: boolean;
   title: string;
   subtitle?: string;
-  /** Called when the moment has played out (~1.8s). */
+  /** Called when the moment has played out (~2.6s). */
   onDone: () => void;
 }
 
@@ -28,7 +28,7 @@ interface SuccessMomentProps {
 export const SuccessMoment = ({ show, title, subtitle, onDone }: SuccessMomentProps) => {
   useEffect(() => {
     if (!show) return;
-    const timer = window.setTimeout(onDone, 1800);
+    const timer = window.setTimeout(onDone, 2600);
     return () => window.clearTimeout(timer);
   }, [show, onDone]);
 

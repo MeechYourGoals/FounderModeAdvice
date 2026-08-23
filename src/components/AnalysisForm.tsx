@@ -352,16 +352,18 @@ export const AnalysisForm = ({ variant = "default", inactive = false }: Analysis
 
       if (manageState) {
         // First-ever memo gets a one-time celebration; later ones keep the
-        // quieter toast so the payoff never turns into noise.
+        // quieter toast so the payoff never turns into noise. Never both —
+        // the toast repeats what the celebration already says.
         const firstMemoKey = "fma_first_memo_celebrated";
         if (!localStorage.getItem(firstMemoKey)) {
           localStorage.setItem(firstMemoKey, "true");
           setCelebrating(true);
+        } else {
+          toast({
+            title: "Memo ready",
+            description: "I added it to today's desk.",
+          });
         }
-        toast({
-          title: "Memo ready",
-          description: "I added it to today's desk.",
-        });
 
         setEpisodeUrl("");
         setPodcastName("");
