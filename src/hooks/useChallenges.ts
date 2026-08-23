@@ -57,9 +57,8 @@ export function useChallenges() {
     setLoading(false);
 
     try {
-      // Cast: generated types lag the challenges column (same convention as
-      // the inspirations column).
-      const { data, error } = await (supabase.from("user_onboarding") as any)
+      const { data, error } = await supabase
+        .from("user_onboarding")
         .select("challenges")
         .eq("user_id", user.id)
         .maybeSingle();
@@ -96,7 +95,7 @@ export function useChallenges() {
       localStorage.setItem(cacheKey(user.id), JSON.stringify(cleaned));
       window.dispatchEvent(new Event(CHANGE_EVENT));
       try {
-        await (supabase.from("user_onboarding") as any).upsert(
+        await supabase.from("user_onboarding").upsert(
           {
             user_id: user.id,
             challenges: cleaned,
