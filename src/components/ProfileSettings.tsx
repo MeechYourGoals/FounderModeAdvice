@@ -298,7 +298,8 @@ export const ProfileSettings = ({
             title,
             founder_names,
             release_date,
-            platform
+            platform,
+            url
           )
         `)
         .eq('user_id', user.id)
