@@ -1,10 +1,11 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Bookmark, BookmarkCheck, Check, ExternalLink, Play, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { triggerHapticFeedback } from "@/lib/capacitor";
+import { getSourceThumbnailUrl } from "@/lib/thumbnails";
 import {
   contentTypeLabel,
   formatDuration,
@@ -80,7 +81,16 @@ export const DiscoveryCard = ({
   const analyzed = state === "analyzed";
   const compact = variant === "compact";
   const featured = variant === "featured";
-  const showThumbnail = Boolean(content.image_url) && variant !== "compact";
+  // Stored artwork first, else YouTube artwork derived from the URL.
+  // Cards without either stay text-only.
+  const heroThumbUrl =
+    content.image_url ??
+    getSourceThumbnailUrl(content.canonical_url || content.url, "hq");
+  const showThumbnail = Boolean(heroThumbUrl) && variant !== "compact";
+  const compactThumbUrl =
+    content.image_url ??
+    getSourceThumbnailUrl(content.canonical_url || content.url);
+  const [compactThumbFailed, setCompactThumbFailed] = useState(false);
 
   const withHaptics = (handler?: () => void) => () => {
     if (!handler) return;
@@ -173,10 +183,38 @@ export const DiscoveryCard = ({
     return (
       <Card ref={cardRef} className="overflow-hidden p-4 transition-shadow duration-300 hover:shadow-elegant">
         <div className="flex flex-col gap-3">
-          {meta}
-          <button type="button" onClick={withHaptics(onOpenSource)} className="text-left">
-            <h3 className="text-headline line-clamp-2 transition-colors hover:text-primary">{content.title}</h3>
-          </button>
+          <div className="flex items-start gap-3">
+            {compactThumbUrl && !compactThumbFailed && (
+              <button
+                type="button"
+                onClick={withHaptics(onOpenSource)}
+                className="relative mt-0.5 block h-14 w-[5.5rem] shrink-0 overflow-hidden rounded-lg border border-border/60 bg-muted transition-transform duration-200 active:scale-[0.97]"
+                aria-label={`Open ${content.title}`}
+              >
+                <img
+                  src={compactThumbUrl}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  className="h-full w-full object-cover"
+                  onError={() => setCompactThumbFailed(true)}
+                />
+                {content.content_type === "video" && (
+                  <span className="absolute inset-0 flex items-center justify-center">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-background/80 text-foreground shadow-sm backdrop-blur-sm">
+                      <Play className="ml-px h-3.5 w-3.5" />
+                    </span>
+                  </span>
+                )}
+              </button>
+            )}
+            <div className="min-w-0 flex-1 space-y-1.5">
+              {meta}
+              <button type="button" onClick={withHaptics(onOpenSource)} className="text-left">
+                <h3 className="text-headline line-clamp-2 transition-colors hover:text-primary">{content.title}</h3>
+              </button>
+            </div>
+          </div>
           {reasonBlock}
           {actions}
         </div>
@@ -197,13 +235,13 @@ export const DiscoveryCard = ({
           type="button"
           onClick={withHaptics(onOpenSource)}
           className={cn(
-            "relative block overflow-hidden bg-muted",
+            "relative block overflow-hidden bg-muted transition-opacity duration-200 active:opacity-80",
             featured ? "aspect-[16/9] w-full sm:aspect-auto sm:w-[42%] sm:min-h-[220px]" : "aspect-[16/9] w-full",
           )}
           aria-label={`Open ${content.title}`}
         >
           <img
-            src={content.image_url ?? undefined}
+            src={heroThumbUrl ?? undefined}
             alt=""
             loading="lazy"
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"

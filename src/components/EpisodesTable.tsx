@@ -50,6 +50,7 @@ import { folderNameFromTag } from "@/lib/folderTagRules";
 import { signalLibraryRefreshDone } from "@/lib/libraryRefresh";
 import { TagPill } from "@/components/library/TagPill";
 import { SwipeToDelete } from "@/components/library/SwipeToDelete";
+import { SourceThumbnail } from "@/components/SourceThumbnail";
 import { UpgradePrompt } from "@/components/subscription/UpgradePrompt";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { hasAutoFolderRules } from "@/types/subscription";
@@ -781,18 +782,28 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
         onKeyDown={(e) => e.key === "Enter" && onSelectEpisode(episode.id)}
       >
         <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0 space-y-2">
+          <SourceThumbnail
+            url={episode.url}
+            className="mt-0.5 h-12 w-[4.75rem] rounded-lg"
+            showPlayBadge
+          />
+          <div className="flex-1 min-w-0 space-y-1.5">
             <p className="font-medium text-[15px] leading-snug line-clamp-2">{episode.title}</p>
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
               <AnalysisSourceChip url={episode.url} />
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                {getAnalysisProfileLabel(episode)}
-                {episode.companies?.name ? ` · ${episode.companies.name}` : ""}
-                {episode.founder_names ? ` · ${episode.founder_names}` : ""}
-              </p>
+              {episode.created_at && (
+                <span className="text-caption-1 text-foreground-tertiary">
+                  {new Date(episode.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                </span>
+              )}
             </div>
+            <p className="truncate text-caption-1 text-foreground-tertiary">
+              {getAnalysisProfileLabel(episode)}
+              {episode.companies?.name ? ` · ${episode.companies.name}` : ""}
+              {episode.founder_names ? ` · ${episode.founder_names}` : ""}
+            </p>
             {(visibleTags.length > 0 || episodeFolders.length > 0) && (
-              <div className="flex flex-wrap items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                 {visibleTags.map(tagName => (
                   <TagPill
                     key={tagName}
@@ -815,11 +826,6 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                   </span>
                 ))}
               </div>
-            )}
-            {episode.created_at && (
-              <p className="text-xs text-muted-foreground">
-                {new Date(episode.created_at).toLocaleDateString()}
-              </p>
             )}
           </div>
           <div className="flex items-center gap-0.5 flex-shrink-0" onPointerDown={(e) => e.stopPropagation()}>
@@ -1174,7 +1180,13 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                       onClick={() => onSelectEpisode(episode.id)}
                     >
                       <TableCell className="font-medium max-w-md">
-                        <div className="space-y-1">
+                        <div className="flex items-start gap-3">
+                          <SourceThumbnail
+                            url={episode.url}
+                            className="mt-0.5 h-11 w-[4.4rem] rounded-lg"
+                            showPlayBadge
+                          />
+                          <div className="min-w-0 flex-1 space-y-1">
                           <div className="line-clamp-2">{episode.title}</div>
                         <div className="mt-1 flex flex-wrap items-center gap-1">
                           <AnalysisSourceChip url={episode.url} />
@@ -1204,6 +1216,7 @@ export const EpisodesTable = ({ onSelectEpisode }: EpisodesTableProps) => {
                                 {f!.name}
                               </span>
                             ))}
+                          </div>
                           </div>
                         </div>
                       </TableCell>

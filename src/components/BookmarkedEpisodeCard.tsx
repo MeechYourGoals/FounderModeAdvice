@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ShareButton } from "@/components/ShareButton";
+import { SourceThumbnail } from "@/components/SourceThumbnail";
 import {
   Select,
   SelectContent,
@@ -26,6 +27,7 @@ interface BookmarkedEpisodeCardProps {
       founder_names: string | null;
       release_date: string | null;
       platform: string | null;
+      url?: string | null;
     };
   };
   folders: Array<{ id: string; name: string; color: string }>;
@@ -91,27 +93,31 @@ export const BookmarkedEpisodeCard = ({
     <Card>
       <CardContent className="pt-4">
         <div className="space-y-3">
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3">
+            {bookmark.episodes?.url && (
+              <SourceThumbnail
+                url={bookmark.episodes.url}
+                className="mt-0.5 h-12 w-[4.75rem] rounded-lg"
+                showPlayBadge
+              />
+            )}
             <div className="flex-1 min-w-0">
-              <h4 className="font-medium line-clamp-2">
+              <h4 className="font-medium leading-snug line-clamp-2">
                 {bookmark.episodes?.title || "Untitled Episode"}
               </h4>
-              <div className="flex items-center gap-2 mt-1 text-footnote text-foreground-tertiary">
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-caption-1 text-foreground-tertiary">
+                {bookmark.episodes?.platform && (
+                  <Badge variant="outline" className="rounded-full px-2 py-0 text-caption-2 font-medium">
+                    {bookmark.episodes.platform}
+                  </Badge>
+                )}
                 {bookmark.episodes?.founder_names && (
-                  <span>{bookmark.episodes.founder_names}</span>
+                  <span className="truncate max-w-[50%]">{bookmark.episodes.founder_names}</span>
                 )}
                 {bookmark.episodes?.release_date && (
-                  <span>·</span>
-                )}
-                {bookmark.episodes?.release_date && (
-                  <span>{new Date(bookmark.episodes.release_date).toLocaleDateString()}</span>
+                  <span>{new Date(bookmark.episodes.release_date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</span>
                 )}
               </div>
-              {bookmark.episodes?.platform && (
-                <Badge variant="outline" className="mt-2">
-                  {bookmark.episodes.platform}
-                </Badge>
-              )}
             </div>
           </div>
 

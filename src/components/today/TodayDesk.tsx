@@ -5,11 +5,14 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UpgradePrompt } from "@/components/subscription";
 import { DiscoveryCard } from "@/components/discover/DiscoveryCard";
+import { ProfileNudgeCard } from "@/components/today/ProfileNudgeCard";
 import { useActiveProfile } from "@/contexts/ActiveProfileContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useChallenges } from "@/hooks/useChallenges";
 import { useOpenActionItems } from "@/hooks/useOpenActionItems";
 import { useRecommendations } from "@/hooks/useRecommendations";
+import { challengeLabels } from "@/lib/challenges";
 import { firstNameFromUser, timeOfDayGreeting } from "@/lib/companion";
 import { todaysPrompt } from "@/lib/dailyPrompt";
 import { hasDiscoveryAccess } from "@/lib/discovery";
@@ -36,6 +39,8 @@ export const TodayDesk = ({ onOpenEpisode, onPrepareMemo }: TodayDeskProps) => {
   const feedProfileId = activeProfileId ?? profiles[0]?.id ?? null;
   const { recommendations, loading: briefingLoading } = useRecommendations(isPremium ? feedProfileId : null);
   const { items: actionItems, loading: actionsLoading } = useOpenActionItems(activeProfileId);
+  const { challenges } = useChallenges();
+  const focusLabels = challengeLabels(challenges);
   const briefingPicks = recommendations.slice(0, 3);
 
   const firstName = firstNameFromUser(user);
@@ -75,7 +80,27 @@ export const TodayDesk = ({ onOpenEpisode, onPrepareMemo }: TodayDeskProps) => {
             so every memo and briefing is written for you.
           </p>
         )}
+        {focusLabels.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 pt-1" aria-label="Your current focus areas">
+            <span className="text-caption-1 font-medium text-foreground-tertiary">Your focus</span>
+            {focusLabels.slice(0, 4).map((label) => (
+              <button
+                key={label}
+                type="button"
+                onClick={openBriefing}
+                className="pressable rounded-full border border-primary/25 bg-primary/5 px-2.5 py-1 text-caption-1 font-medium text-primary transition-colors hover:bg-primary/10"
+              >
+                {label}
+              </button>
+            ))}
+            {focusLabels.length > 4 && (
+              <span className="text-caption-1 text-foreground-quaternary">+{focusLabels.length - 4}</span>
+            )}
+          </div>
+        )}
       </header>
+
+      {profiles.length === 0 && <ProfileNudgeCard />}
 
       <Card className="relative overflow-hidden p-4 sm:p-5 border-primary/15">
         <div aria-hidden className="absolute inset-x-0 top-0 h-[3px]" style={{ background: "var(--gradient-primary)" }} />

@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, ExternalLink, TrendingUp, Target, Lightbulb, RefreshCw, Loader2, Plus, X, Download, Share2 } from "lucide-react";
+import { ArrowLeft, ExternalLink, TrendingUp, Target, Lightbulb, Play, RefreshCw, Loader2, Plus, X, Download, Share2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useSubscription } from "@/contexts/SubscriptionContext";
@@ -19,6 +19,8 @@ import { hasSharing } from "@/types/subscription";
 import { applyRulesForEpisodeTags } from "@/services/folderTagRules";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 import { getAnalysisProfileLabel, getBoardMeetingMemoTitle, getViewerCompanyName, isUniversalAnalysis } from "@/lib/analysisProfile";
+import { getAnalysisSourceKind, getAnalysisSourceLabel } from "@/lib/analysisSource";
+import { getSourceThumbnailUrl } from "@/lib/thumbnails";
 import { toGenericInsightText } from "@/lib/genericLessons";
 import {
   AlertDialog,
@@ -222,6 +224,7 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
   const [exportOpen, setExportOpen] = useState(false);
   const [mobileInsightTab, setMobileInsightTab] = useState<"lessons" | "personalized">("lessons");
   const [shareOpen, setShareOpen] = useState(false);
+  const [bannerFailed, setBannerFailed] = useState(false);
   const { toast } = useToast();
   const { canAnalyzeVideo, refreshSubscription, subscription } = useSubscription();
   const commentsApi = useInsightComments(episodeId);
@@ -524,25 +527,61 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
         Back to All Episodes
       </Button>
 
-      <Card className="relative overflow-hidden p-4 sm:p-8">
-        <div aria-hidden className="absolute inset-x-0 top-0 h-[3px]" style={{ background: 'var(--gradient-primary)' }} />
-        <div className="space-y-4 sm:space-y-6">
+      <Card className="relative overflow-hidden">
+        {(() => {
+          const bannerUrl = getSourceThumbnailUrl(episode.url, "hq");
+          if (!bannerUrl || bannerFailed) {
+            return <div aria-hidden className="absolute inset-x-0 top-0 h-[3px]" style={{ background: 'var(--gradient-primary)' }} />;
+          }
+          return (
+            <a
+              href={episode.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => triggerHapticFeedback("light")}
+              className="group relative block max-h-52 overflow-hidden sm:max-h-64"
+              aria-label={`Watch ${episode.title}`}
+            >
+              <img
+                src={bannerUrl}
+                alt=""
+                decoding="async"
+                className="aspect-[16/9] w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                onError={() => setBannerFailed(true)}
+              />
+              <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+              <span className="absolute inset-0 flex items-center justify-center">
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-background/85 text-foreground shadow-md backdrop-blur transition-transform duration-300 group-hover:scale-110">
+                  <Play className="ml-0.5 h-5 w-5" />
+                </span>
+              </span>
+              <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-1 text-caption-1 font-medium text-white backdrop-blur-sm">
+                <ExternalLink className="h-3 w-3" />
+                Watch the source
+              </span>
+            </a>
+          );
+        })()}
+        <div className="space-y-4 p-4 sm:space-y-6 sm:p-8">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div className="flex-1 min-w-0">
               <h1 className="text-title-2 sm:text-title-1 mb-2 sm:mb-3">{episode.title}</h1>
               <div className="mb-2 flex flex-wrap items-center gap-2">
-                <Badge variant={isUniversalAnalysis(episode) ? "outline" : "secondary"} className="text-[11px]">
+                <Badge variant={isUniversalAnalysis(episode) ? "outline" : "secondary"} className="rounded-full text-[11px]">
                   Analyzed for {getAnalysisProfileLabel(episode)}
                 </Badge>
+                <Badge variant="outline" className="rounded-full text-[11px]">
+                  {getAnalysisSourceLabel(getAnalysisSourceKind(episode.url))}
+                </Badge>
+                {episode.release_date && (
+                  <span className="text-caption-1 text-foreground-tertiary">
+                    {new Date(episode.release_date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                  </span>
+                )}
               </div>
               {episode.founder_names && (
-                <p className="text-base sm:text-lg text-muted-foreground mb-1 sm:mb-2">
+                <p className="text-base sm:text-lg text-muted-foreground">
                   with <span className="font-display font-medium italic text-foreground/90">{episode.founder_names}</span>
-                </p>
-              )}
-              {episode.release_date && (
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  Released: {new Date(episode.release_date).toLocaleDateString()}
                 </p>
               )}
             </div>
@@ -675,7 +714,8 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
               <span className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                 <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
               </span>
-              Lessons from the source <span className="text-muted-foreground font-normal">({lessons.length})</span>
+              Lessons from the source
+              <Badge variant="secondary" className="rounded-full px-2 py-0 text-caption-1 font-semibold">{lessons.length}</Badge>
             </h2>
             <p className="text-sm text-muted-foreground mb-4 sm:mb-6 ml-10 sm:ml-11">
               What the source actually said — not yet tailored to your company
@@ -736,8 +776,8 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
               <span className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                 <Target className="w-4 h-4 sm:w-5 sm:h-5" />
               </span>
-              {getBoardMeetingMemoTitle(episode)}{" "}
-              <span className="text-muted-foreground font-normal">({personalizedInsights.length})</span>
+              {getBoardMeetingMemoTitle(episode)}
+              <Badge variant="secondary" className="rounded-full px-2 py-0 text-caption-1 font-semibold">{personalizedInsights.length}</Badge>
             </h2>
             <p className="text-sm text-muted-foreground mb-4 sm:mb-6 ml-10 sm:ml-11">
               {isUniversalAnalysis(episode)
@@ -819,7 +859,8 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
             <span className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
               <Target className="w-4 h-4 sm:w-5 sm:h-5" />
             </span>
-            Called out for you <span className="text-muted-foreground font-normal">({callouts.length})</span>
+            Called out for you
+            <Badge variant="secondary" className="rounded-full px-2 py-0 text-caption-1 font-semibold">{callouts.length}</Badge>
           </h2>
           <div className="space-y-3 sm:space-y-4">
             {callouts.map((callout, index) => (

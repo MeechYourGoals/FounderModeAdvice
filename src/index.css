@@ -488,6 +488,113 @@ All colors MUST be HSL.
     content-visibility: auto;
     contain-intrinsic-size: auto 72px;
   }
+
+  /* Ungated staggered rise — like .stagger-item but for elements that should
+     animate on every viewport (upgrade CTA feature lists, onboarding rows).
+     Set --stagger-i per item. */
+  .stagger-rise {
+    animation: stagger-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+    animation-delay: calc(min(var(--stagger-i, 0), 8) * 60ms);
+  }
+
+  /* Recurring light sweep across upgrade CTAs — draws the eye without motion
+     on the label itself. Apply to a positioned, overflow-hidden element. */
+  .cta-shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(105deg, transparent 30%, hsl(0 0% 100% / 0.35) 50%, transparent 70%);
+    transform: translateX(-150%);
+    animation: cta-shimmer-sweep 3.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+  @keyframes cta-shimmer-sweep {
+    0% { transform: translateX(-150%); }
+    45%, 100% { transform: translateX(150%); }
+  }
+
+  /* Animated gradient hairline border for upgrade cards: apply to a p-px
+     wrapper; the moving amber-gold gradient reads as a living frame. */
+  .upgrade-border {
+    background: linear-gradient(
+      100deg,
+      hsl(38 92% 50% / 0.5),
+      hsl(25 95% 53% / 0.18) 30%,
+      hsl(38 92% 50% / 0.5) 55%,
+      hsl(45 93% 47% / 0.2) 80%,
+      hsl(38 92% 50% / 0.5)
+    );
+    background-size: 250% 100%;
+    animation: border-flow 5s linear infinite;
+  }
+  @keyframes border-flow {
+    from { background-position: 0% 50%; }
+    to { background-position: 250% 50%; }
+  }
+
+  /* Brand-blue sibling of .upgrade-border for first-run nudges. */
+  .nudge-border {
+    background: linear-gradient(
+      100deg,
+      hsl(var(--primary) / 0.55),
+      hsl(199 90% 55% / 0.18) 30%,
+      hsl(var(--primary) / 0.55) 55%,
+      hsl(224 90% 60% / 0.2) 80%,
+      hsl(var(--primary) / 0.55)
+    );
+    background-size: 250% 100%;
+    animation: border-flow 5s linear infinite;
+  }
+
+  /* Crown micro-wiggle — a brief tilt every few seconds, mostly idle. */
+  .crown-wiggle {
+    animation: crown-wiggle 3.4s ease-in-out infinite;
+    transform-origin: 50% 80%;
+  }
+  @keyframes crown-wiggle {
+    0%, 8%, 100% { transform: rotate(0deg) scale(1); }
+    2% { transform: rotate(-9deg) scale(1.08); }
+    5% { transform: rotate(7deg) scale(1.05); }
+  }
+
+  /* Success moment: check pops in with a spring, ring expands + fades. */
+  .success-pop {
+    animation: success-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+  }
+  @keyframes success-pop {
+    from { opacity: 0; transform: scale(0.3); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  .success-ring::after {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border-radius: 9999px;
+    border: 2px solid hsl(var(--success) / 0.5);
+    animation: success-ring 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+    pointer-events: none;
+  }
+  @keyframes success-ring {
+    from { opacity: 1; transform: scale(0.6); }
+    to { opacity: 0; transform: scale(1.6); }
+  }
+
+  /* Confetti-lite: small dots radiating from a center. Each dot sets
+     --dx/--dy (px offsets) and an optional delay. Runs once. */
+  .confetti-dot {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    animation: confetti-out 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+    pointer-events: none;
+  }
+  @keyframes confetti-out {
+    from { opacity: 1; transform: translate(-50%, -50%) scale(0.4); }
+    to { opacity: 0; transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, 0px))) scale(1); }
+  }
 }
 
 /* iOS navigation-push feel on route changes: the incoming screen slides in
@@ -832,7 +939,15 @@ body.keyboard-open .mobile-bottom-nav {
   .cta-aurora,
   .route-screen,
   .stagger-item,
+  .stagger-rise,
   .message-in,
+  .cta-shimmer::after,
+  .upgrade-border,
+  .nudge-border,
+  .crown-wiggle,
+  .success-pop,
+  .success-ring::after,
+  .confetti-dot,
   .animate-slide-up,
   .animate-scale-in,
   .animate-fade-in,
@@ -841,5 +956,10 @@ body.keyboard-open .mobile-bottom-nav {
   .animate-tab-pop,
   .animate-float-soft {
     animation: none !important;
+  }
+  /* Decor that only exists to animate disappears entirely without motion. */
+  .confetti-dot,
+  .success-ring::after {
+    display: none !important;
   }
 }

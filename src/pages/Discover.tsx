@@ -358,13 +358,14 @@ const Discover = () => {
   const inspirationGrid = useMemo(
     () => (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {libraryItems.map((content) => (
-          <DiscoveryCard
-            key={content.id}
-            content={content}
-            onAnalyze={() => analyzeContent(content, undefined, "inspiration")}
-            onOpenSource={() => openSource(content, undefined, "inspiration")}
-          />
+        {libraryItems.map((content, index) => (
+          <div key={content.id} style={{ "--stagger-i": index } as React.CSSProperties} className="stagger-item">
+            <DiscoveryCard
+              content={content}
+              onAnalyze={() => analyzeContent(content, undefined, "inspiration")}
+              onOpenSource={() => openSource(content, undefined, "inspiration")}
+            />
+          </div>
         ))}
       </div>
     ),
@@ -576,18 +577,23 @@ const Discover = () => {
                   ) : recommendations.length > 0 ? (
                     <div className="space-y-4">
                       {recommendations.map((recommendation, index) => (
-                        <DiscoveryCard
+                        <div
                           key={recommendation.id}
-                          content={recommendation.content}
-                          reason={recommendation.reason}
-                          state={recommendation.state}
-                          variant={index === 0 ? "featured" : "compact"}
-                          onImpression={() => recordImpression(recommendation, "for_you")}
-                          onAnalyze={() => analyzeContent(recommendation.content, recommendation, "for_you")}
-                          onOpenSource={() => openSource(recommendation.content, recommendation, "for_you")}
-                          onToggleSave={() => void toggleSave(recommendation, "for_you")}
-                          onDismiss={() => void dismiss(recommendation)}
-                        />
+                          style={{ "--stagger-i": index } as React.CSSProperties}
+                          className="stagger-item"
+                        >
+                          <DiscoveryCard
+                            content={recommendation.content}
+                            reason={recommendation.reason}
+                            state={recommendation.state}
+                            variant={index === 0 ? "featured" : "compact"}
+                            onImpression={() => recordImpression(recommendation, "for_you")}
+                            onAnalyze={() => analyzeContent(recommendation.content, recommendation, "for_you")}
+                            onOpenSource={() => openSource(recommendation.content, recommendation, "for_you")}
+                            onToggleSave={() => void toggleSave(recommendation, "for_you")}
+                            onDismiss={() => void dismiss(recommendation)}
+                          />
+                        </div>
                       ))}
                     </div>
                   ) : (
@@ -677,16 +683,21 @@ const Discover = () => {
                 />
               ) : (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {saved.map((recommendation) => (
-                    <DiscoveryCard
+                  {saved.map((recommendation, index) => (
+                    <div
                       key={recommendation.id}
-                      content={recommendation.content}
-                      reason={recommendation.reason}
-                      state={recommendation.state}
-                      onAnalyze={() => analyzeContent(recommendation.content, recommendation, "saved")}
-                      onOpenSource={() => openSource(recommendation.content, recommendation, "saved")}
-                      onToggleSave={() => void toggleSave(recommendation, "saved")}
-                    />
+                      style={{ "--stagger-i": index } as React.CSSProperties}
+                      className="stagger-item"
+                    >
+                      <DiscoveryCard
+                        content={recommendation.content}
+                        reason={recommendation.reason}
+                        state={recommendation.state}
+                        onAnalyze={() => analyzeContent(recommendation.content, recommendation, "saved")}
+                        onOpenSource={() => openSource(recommendation.content, recommendation, "saved")}
+                        onToggleSave={() => void toggleSave(recommendation, "saved")}
+                      />
+                    </div>
                   ))}
                 </div>
               )}

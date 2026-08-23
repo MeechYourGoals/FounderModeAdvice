@@ -14,12 +14,13 @@ import { FavoriteStar } from "@/components/library/FavoriteStar";
 import { PinChips, type Pin } from "@/components/favorites/PinChips";
 import { FavoritesDrawer } from "@/components/favorites/FavoritesDrawer";
 import { CollectionsSidebar } from "@/components/favorites/CollectionsSidebar";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AppLoadingScreen } from "@/components/AppLoadingScreen";
 import { Star, Tv, User as UserIcon, Tag, ExternalLink } from "lucide-react";
 import { SecondaryPageHeader } from "@/components/SecondaryPageHeader";
+import { SourceThumbnail } from "@/components/SourceThumbnail";
+import { UpgradePill } from "@/components/subscription";
 import { SHORTCUT_TOPICS, normalizeTopics } from "@/lib/topics";
 import { useToast } from "@/hooks/use-toast";
 
@@ -270,19 +271,10 @@ const Favorites = () => {
 
         <div className="space-y-6">
           {!paid && (
-            <Card className="p-5 border-primary/40 bg-primary/5">
-              <div className="flex items-start gap-3">
-                <Star className="h-5 w-5 text-primary mt-0.5" />
-                <div className="flex-1">
-                  <h2 className="font-semibold">Pin favorites with Pro</h2>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Free accounts can browse facets below. Upgrade to pin Y&nbsp;Combinator + Elon Musk together, save
-                    reusable collections, and rename / reorder pins.
-                  </p>
-                </div>
-                <Button onClick={() => navigate("/account")}>Upgrade</Button>
-              </div>
-            </Card>
+            <UpgradePill
+              message="Pin favorites together, save reusable collections, and share views with Pro."
+              onUpgrade={() => navigate("/account")}
+            />
           )}
 
           {/* Topic shortcut tabs */}
@@ -371,9 +363,10 @@ const Favorites = () => {
                   <ul className="divide-y divide-border">
                     {filteredEpisodes.slice(0, 100).map((ep) => (
                       <li key={ep.id} className="py-3 flex items-start gap-3">
+                        <SourceThumbnail url={ep.url} className="mt-0.5 h-10 w-16 rounded-lg" showPlayBadge />
                         <button
                           onClick={() => navigate(`/?episode=${ep.id}`)}
-                          className="flex-1 text-left min-w-0"
+                          className="flex-1 text-left min-w-0 transition-transform duration-200 active:scale-[0.99]"
                         >
                           <div className="font-medium truncate">{ep.title}</div>
                           <div className="text-xs text-muted-foreground mt-0.5 flex flex-wrap gap-x-2">
