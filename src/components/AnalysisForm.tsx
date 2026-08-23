@@ -14,6 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { StartupProfileForm } from "./StartupProfileForm";
 import { AnalyzingScene } from "./AnalyzingScene";
 import { SourceUploadZone } from "./SourceUploadZone";
+import { SuccessMoment } from "./SuccessMoment";
 import { UpgradePrompt } from "./subscription";
 import { markRecommendationAnalyzed } from "@/services/discovery";
 import { triggerHapticFeedback } from "@/lib/capacitor";
@@ -71,6 +72,7 @@ export const AnalysisForm = ({ variant = "default", inactive = false }: Analysis
   // True while an upload is uploading/analyzing so the shared instructions lock.
   const [uploadBusy, setUploadBusy] = useState(false);
   const [step, setStep] = useState<"episode" | "profile">("episode");
+  const [celebrating, setCelebrating] = useState(false);
   const [savedProfiles, setSavedProfiles] = useState<SavedProfile[]>([]);
   const [startupContext, setStartupContext] = useState<any>(null);
   const [selectedProfileIds, setSelectedProfileIds] = useState<string[]>([]);
@@ -81,6 +83,16 @@ export const AnalysisForm = ({ variant = "default", inactive = false }: Analysis
   const profileLimit = subscription?.limits.profiles.max || 1;
   const canBatchProfiles = subscription ? canBatchAnalyzeProfiles(subscription.tier) : false;
   const isPremium = subscription ? subscription.tier !== "free" : false;
+
+  // One-time payoff for the user's very first memo (portal — renders anywhere).
+  const successMoment = (
+    <SuccessMoment
+      show={celebrating}
+      title="First memo ready"
+      subtitle="I added it to today's desk."
+      onDone={() => setCelebrating(false)}
+    />
+  );
 
   // Depend on the derived limit, not the subscription object — refreshSubscription()
   // creates a new object after every analysis, which would re-fetch profiles each time.
@@ -339,6 +351,13 @@ export const AnalysisForm = ({ variant = "default", inactive = false }: Analysis
       await refreshSubscription();
 
       if (manageState) {
+        // First-ever memo gets a one-time celebration; later ones keep the
+        // quieter toast so the payoff never turns into noise.
+        const firstMemoKey = "fma_first_memo_celebrated";
+        if (!localStorage.getItem(firstMemoKey)) {
+          localStorage.setItem(firstMemoKey, "true");
+          setCelebrating(true);
+        }
         toast({
           title: "Memo ready",
           description: "I added it to today's desk.",
@@ -488,6 +507,7 @@ export const AnalysisForm = ({ variant = "default", inactive = false }: Analysis
           isAnalyzing={isAnalyzing}
         />
         {aiConsentDialog}
+        {successMoment}
       </div>
     );
   }
@@ -496,7 +516,12 @@ export const AnalysisForm = ({ variant = "default", inactive = false }: Analysis
   const collapsedComposer = variant === "composer" && !composerOpen && !isAnalyzing;
 
   if (inactive && collapsedComposer) {
-    return aiConsentDialog;
+    return (
+      <>
+        {aiConsentDialog}
+        {successMoment}
+      </>
+    );
   }
 
   if (collapsedComposer) {
@@ -526,6 +551,7 @@ export const AnalysisForm = ({ variant = "default", inactive = false }: Analysis
           </Button>
         </div>
         {aiConsentDialog}
+        {successMoment}
       </Card>
     );
   }
@@ -847,6 +873,7 @@ export const AnalysisForm = ({ variant = "default", inactive = false }: Analysis
       </form>
       )}
       {aiConsentDialog}
+      {successMoment}
     </Card>
   );
 };
