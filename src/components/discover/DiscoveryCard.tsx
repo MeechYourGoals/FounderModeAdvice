@@ -188,7 +188,7 @@ export const DiscoveryCard = ({
               <button
                 type="button"
                 onClick={withHaptics(onOpenSource)}
-                className="relative mt-0.5 block h-14 w-[5.5rem] shrink-0 overflow-hidden rounded-lg border border-border/60 bg-muted"
+                className="relative mt-0.5 block h-14 w-[5.5rem] shrink-0 overflow-hidden rounded-lg border border-border/60 bg-muted transition-transform duration-200 active:scale-[0.97]"
                 aria-label={`Open ${content.title}`}
               >
                 <img
@@ -235,7 +235,7 @@ export const DiscoveryCard = ({
           type="button"
           onClick={withHaptics(onOpenSource)}
           className={cn(
-            "relative block overflow-hidden bg-muted",
+            "relative block overflow-hidden bg-muted transition-opacity duration-200 active:opacity-80",
             featured ? "aspect-[16/9] w-full sm:aspect-auto sm:w-[42%] sm:min-h-[220px]" : "aspect-[16/9] w-full",
           )}
           aria-label={`Open ${content.title}`}

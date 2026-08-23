@@ -366,7 +366,7 @@ const Favorites = () => {
                         <SourceThumbnail url={ep.url} className="mt-0.5 h-10 w-16 rounded-lg" showPlayBadge />
                         <button
                           onClick={() => navigate(`/?episode=${ep.id}`)}
-                          className="flex-1 text-left min-w-0"
+                          className="flex-1 text-left min-w-0 transition-transform duration-200 active:scale-[0.99]"
                         >
                           <div className="font-medium truncate">{ep.title}</div>
                           <div className="text-xs text-muted-foreground mt-0.5 flex flex-wrap gap-x-2">
