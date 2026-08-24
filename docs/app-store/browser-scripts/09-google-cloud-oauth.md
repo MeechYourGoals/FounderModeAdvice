@@ -73,8 +73,19 @@ see.
   there and ask before removing it. An unowned domain in this list is what makes the consent
   screen display a raw backend URL instead of the app name.
 
-**Do NOT upload a logo.** A logo triggers Google brand verification, which takes business
-days and is not needed to get the name right. Confirm no logo is set.
+**Logo — upload it.** The asset is in this repo at `src/assets/fma-google-auth-1024.png`
+(same file also at `app-store-assets/brand/fma-google-auth-1024.png`).
+
+Google requires **brand verification** before an External app's consent screen will display
+your chosen app name *or* your logo. The name alone already puts us on that path, so adding
+the logo rides the same review instead of starting a second one — there is no reason to
+withhold it. Google documents brand verification as typically 2-3 business days, with a
+manual review in some cases.
+
+After saving, report whether the console shows a verification prompt or banner, and quote its
+wording exactly. **Do not click "Submit for verification" without my explicit OK** — but tell
+me clearly if you see it, because until that review passes the consent screen will keep
+showing something other than "Founder Mode Advice".
 
 ## STEP 3 — Audience
 
@@ -146,8 +157,10 @@ Stop, and report the exact error text to me — that trade-off is my call, not y
 5. Publishing status, verbatim.
 6. The exact list of scopes now configured.
 7. The redirect URIs saved on the client, read back after saving.
-8. Anything Google warned about, quoted word for word.
-9. Anything you could not complete, and why.
+8. Whether a brand-verification prompt appeared, quoted word for word, and confirmation
+   that you did NOT submit it.
+9. Anything else Google warned about, quoted word for word.
+10. Anything you could not complete, and why.
 
 ## CAPTURE
 
@@ -159,7 +172,9 @@ AUTHORIZED_DOMAINS=[read back verbatim]
 PUBLISHING_STATUS=
 SCOPES=[read back verbatim]
 REDIRECT_URIS=[read back verbatim]
-LOGO_SET=no
+LOGO_UPLOADED=yes/no
+BRAND_VERIFICATION_PROMPT=[quote verbatim, or none]
+BRAND_VERIFICATION_SUBMITTED=no  (needs my OK)
 ```
 
 ## Ledger
@@ -178,3 +193,9 @@ LOGO_SET=no
 - Publishing status reading **In production** — in Testing, sign-in caps at 100 users and
   refresh tokens die after 7 days.
 - Authorized domains containing `foundermodeadvice.com` and nothing you do not own.
+- The logo uploaded, and a clear answer on whether brand verification is pending.
+
+**The rename is not instant.** Google gates the display of both the app name and the logo on
+brand verification for External apps. Everything else in this runbook takes effect
+immediately; the consent screen wording is the one part that waits on Google's review, so
+start it early rather than saving it for launch week.

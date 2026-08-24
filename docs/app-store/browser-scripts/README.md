@@ -72,7 +72,13 @@ redirect URI.
 | 11 §2+ | Lovable (the switch) | https://lovable.dev/projects/3d30aa39-abcb-406b-9441-e7a7f14b5734 | `11-provider-switch.md` §2–§4 |
 | 12 | App Store Connect | https://appstoreconnect.apple.com | `12-app-store-connect-audit.md` |
 
-### Two things that will bite you
+### Three things that will bite you
+
+- **The rename waits on Google.** Brand verification gates the display of an External app's
+  name *and* logo on the consent screen — typically 2-3 business days. Everything else in
+  scripts 09-12 takes effect on save; the consent-screen wording does not. Start script 09
+  early. Because the name is on that path anyway, upload the logo
+  (`src/assets/fma-google-auth-1024.png`) in the same pass — it rides the same review.
 
 - **The Apple Client IDs field must contain both** `com.foundermodeadvice.app.auth` **and**
   `com.foundermodeadvice.app`. The Services ID serves web sign-in; the bundle ID serves the

@@ -139,7 +139,8 @@
       "homePage": "https://foundermodeadvice.com",
       "privacyPolicy": "https://foundermodeadvice.com/privacy-policy",
       "termsOfService": "https://foundermodeadvice.com/terms-of-service",
-      "logo": "DO NOT UPLOAD — a logo triggers Google brand verification (business days) and is not needed to rename the consent screen"
+      "logo": "src/assets/fma-google-auth-1024.png (also app-store-assets/brand/). UPLOAD IT — Google gates display of the app NAME as well as the logo behind brand verification for External apps, so the logo rides the same review rather than adding one. Typically 2-3 business days.",
+      "brandVerification": "CAPTURE — required before the consent screen displays 'Founder Mode Advice'. Submit only with owner OK; record submission date and outcome here."
     },
     "authorizedDomains": ["foundermodeadvice.com"],
     "authorizedDomainsWarning": "This list must contain ONLY domains we own. Adding supabase.co or lovable.app is what makes the consent screen fall back to displaying a raw backend URL instead of the app name.",
