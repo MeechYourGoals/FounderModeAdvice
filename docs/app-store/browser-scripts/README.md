@@ -35,3 +35,54 @@ Lovable (Team ID for AASA can be done anytime after Apple Developer).
 | 9 | Lovable (web env) | https://lovable.dev/projects/3d30aa39-abcb-406b-9441-e7a7f14b5734 | `08-lovable-web-env.md` |
 
 CLI you still run locally after #8 (the browser cannot): `cd native && eas init`, `eas build`, `eas submit`. The Expo script tells you exactly when.
+
+---
+
+## OAuth ownership (scripts 09–12) — separate track
+
+Scripts 01–08 get the **iOS build** to the App Store. Scripts 09–12 fix a different
+problem: today Google's consent screen names **Lovable**, not Founder Mode Advice, because
+the app signs in through Lovable Cloud's *managed* OAuth client
+(`src/pages/Auth.tsx` calls `lovable.auth.signInWithOAuth`, and the broker holds the secret).
+
+These four move Google and Apple sign-in onto OAuth clients we own. The broker stays in the
+request path — it just presents *our* client, so the consent screen renames. **No code
+change, no redeploy, no new binary**, and rollback is one dashboard toggle.
+
+### Run order — recon first
+
+The redirect URI Google and Apple need is whatever the auth dashboard displays, so a
+read-only pass runs before the credential-creating scripts:
+
+```
+11 §1 RECON  →  09 Google Cloud  →  10 Apple Developer  →  11 §2+ SWITCH  →  12 ASC audit
+(read-only;     (uses the           (uses the              (enters the        (read-only)
+ captures the    captured             captured               credentials)
+ callback URL)   callback)            callback)
+```
+
+Run 09 before 11 §1 and you will have to return to Google Cloud a second time to add a
+redirect URI.
+
+| # | Website | Start signed-in at | Script |
+| --- | --- | --- | --- |
+| 11 §1 | Lovable (recon only) | https://lovable.dev/projects/3d30aa39-abcb-406b-9441-e7a7f14b5734 | `11-provider-switch.md` §1 |
+| 9 | Google Cloud Console | https://console.cloud.google.com | `09-google-cloud-oauth.md` |
+| 10 | Apple Developer | https://developer.apple.com/account | `10-apple-oauth.md` |
+| 11 §2+ | Lovable (the switch) | https://lovable.dev/projects/3d30aa39-abcb-406b-9441-e7a7f14b5734 | `11-provider-switch.md` §2–§4 |
+| 12 | App Store Connect | https://appstoreconnect.apple.com | `12-app-store-connect-audit.md` |
+
+### Two things that will bite you
+
+- **The Apple Client IDs field must contain both** `com.foundermodeadvice.app.auth` **and**
+  `com.foundermodeadvice.app`. The Services ID serves web sign-in; the bundle ID serves the
+  native AuthenticationServices sheet, whose identity token carries the bundle ID as its
+  audience. Drop the bundle ID and native Apple sign-in breaks in the shipped app.
+- **There is no feature flag.** Some Lovable projects gate a Supabase-direct auth path behind
+  a `VITE_FEATURE_*` variable. This repo has none and needs none — nothing in scripts 09–12
+  is build-time. If a script tells you to set an env var and redeploy, it is not this one.
+
+### Overlap with script 01
+
+`01-apple-developer.md` already creates the App ID, Services ID and SIWA key. If you ran it,
+`10-apple-oauth.md` is mostly a verify-and-read-back pass; it only creates what 01 skipped.
