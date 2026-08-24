@@ -1355,7 +1355,6 @@ export type Database = {
       }
       user_onboarding: {
         Row: {
-          challenges: Json
           completed: boolean
           completed_at: string | null
           created_at: string
@@ -1364,7 +1363,6 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          challenges?: Json
           completed?: boolean
           completed_at?: string | null
           created_at?: string
@@ -1373,7 +1371,6 @@ export type Database = {
           user_id: string
         }
         Update: {
-          challenges?: Json
           completed?: boolean
           completed_at?: string | null
           created_at?: string
