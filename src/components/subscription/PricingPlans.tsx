@@ -13,7 +13,7 @@ interface PricingPlansProps {
 }
 
 export function PricingPlans({ onSelect, showCurrentPlan = true }: PricingPlansProps) {
-  const { subscription, upgradeTo, loading, isNative } = useSubscription();
+  const { subscription, upgradeTo, loading } = useSubscription();
 
   const tiers = Object.entries(TIER_PRICING) as [SubscriptionTier, TierPricing][];
 
@@ -43,13 +43,9 @@ export function PricingPlans({ onSelect, showCurrentPlan = true }: PricingPlansP
           const isCurrentPlan = subscription?.tier === tierKey;
           const isUpgrade = subscription?.tier === 'free' ||
             (subscription?.tier === 'seed' && tierKey === 'series_z');
-          // Native app contexts never show a fixed USD amount — the App Store
-          // checkout (RevenueCat paywall) presents the exact localized price.
           const { price, suffix } = tierKey === 'free'
             ? { price: 'Free', suffix: '' }
-            : isNative
-              ? { price: 'Monthly', suffix: ' · price shown at checkout' }
-              : { price: `$${tier.price}`, suffix: '/month' };
+            : { price: `$${tier.price}`, suffix: '/month' };
 
           return (
             <Card

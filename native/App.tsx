@@ -22,7 +22,11 @@ import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-cont
 import { WebView } from "react-native-webview";
 import type { WebViewMessageEvent, WebViewNavigation } from "react-native-webview";
 import { Paywall } from "./Paywall";
-import { customerHasEntitlement } from "./iapPaywallCatalog";
+import {
+  DEFAULT_IAP_PLAN_ID,
+  customerHasEntitlement,
+  type IapPlanId,
+} from "./iapPaywallCatalog";
 
 /**
  * Founder Mode Advice — Expo shell.
@@ -183,7 +187,13 @@ type BridgeMessage =
   | { type: "haptic"; style?: string }
   | { type: "identify"; userId: string }
   | { type: "logout" }
-  | { type: "paywall"; userId: string; requiredEntitlement?: string; always?: boolean }
+  | {
+      type: "paywall";
+      userId: string;
+      planId?: IapPlanId;
+      requiredEntitlement?: string;
+      always?: boolean;
+    }
   | { type: "customerCenter" }
   | { type: "restorePurchases"; userId?: string }
   | { type: "pushRegister"; userId: string }
@@ -309,6 +319,7 @@ function Shell() {
   const [background, setBackground] = useState("#0c0e15");
   const [webViewKey, setWebViewKey] = useState(0);
   const [paywallOpen, setPaywallOpen] = useState(false);
+  const [paywallPlanId, setPaywallPlanId] = useState<IapPlanId>(DEFAULT_IAP_PLAN_ID);
   const incomingUrl = ExpoLinking.useURL();
   const authSessionActiveRef = useRef(false);
 
@@ -412,6 +423,13 @@ function Shell() {
     );
   }, []);
 
+  const acknowledgePaywall = useCallback((ok: boolean, error?: string) => {
+    const result = JSON.stringify(error ? { ok, error } : { ok });
+    webViewRef.current?.injectJavaScript(
+      `window.__fmaShellPaywallResult&&window.__fmaShellPaywallResult(${result});true;`,
+    );
+  }, []);
+
   // Drop repeat paywall/customer-center requests while native purchase UI is
   // up — a double-tap in the web layer must never stack two StoreKit flows.
   const purchaseUIActiveRef = useRef(false);
@@ -477,7 +495,10 @@ function Shell() {
         }
 
         case "paywall": {
-          if (purchaseUIActiveRef.current) break;
+          if (purchaseUIActiveRef.current) {
+            acknowledgePaywall(true);
+            break;
+          }
           const Purchases = await configureRevenueCat(message.userId);
           if (!Purchases) {
             console.warn("Paywall unavailable (Expo Go or missing RevenueCat key)");
@@ -488,14 +509,17 @@ function Shell() {
               const info = await Purchases.getCustomerInfo();
               const active = Object.keys(info.entitlements?.active ?? {});
               if (customerHasEntitlement(active, message.requiredEntitlement)) {
+                acknowledgePaywall(true);
                 break;
               }
             } catch (err) {
               console.warn("Paywall entitlement check failed", err);
             }
           }
+          setPaywallPlanId(message.planId ?? DEFAULT_IAP_PLAN_ID);
           purchaseUIActiveRef.current = true;
           setPaywallOpen(true);
+          acknowledgePaywall(true);
           break;
         }
 
@@ -599,7 +623,7 @@ function Shell() {
           break;
       }
     },
-    [notifyPurchaseSuccess],
+    [acknowledgePaywall, notifyPurchaseSuccess],
   );
 
   // OneSignal boots app-wide (before login) so permission prompts and device
@@ -798,6 +822,7 @@ function Shell() {
       {paywallOpen ? (
         <Paywall
           purchases={loadPurchases()}
+          initialPlanId={paywallPlanId}
           onDismiss={closePaywall}
           onSuccess={finishPaywallSuccess}
         />

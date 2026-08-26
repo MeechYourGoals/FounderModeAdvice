@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as WebBrowser from "expo-web-browser";
+import type { PurchasesOfferings, PurchasesPackage } from "react-native-purchases";
 import {
   DEFAULT_IAP_PLAN_ID,
   IAP_DISCLOSURE,
@@ -22,20 +23,18 @@ import {
   planById,
   restoreUnlocksAccess,
   type IapPlanId,
-  type OfferingPackageLike,
 } from "./iapPaywallCatalog";
 
 type PurchasesLike = {
-  getOfferings: () => Promise<{
-    current?: { availablePackages?: OfferingPackageLike[] } | null;
-  }>;
-  purchasePackage: (pkg: OfferingPackageLike) => Promise<unknown>;
+  getOfferings: () => Promise<PurchasesOfferings>;
+  purchasePackage: (pkg: PurchasesPackage) => Promise<unknown>;
   restorePurchases: () => Promise<unknown>;
   getCustomerInfo?: () => Promise<unknown>;
 };
 
 type PaywallProps = {
   purchases: PurchasesLike | null;
+  initialPlanId?: IapPlanId;
   onDismiss: () => void;
   onSuccess: () => void;
 };
@@ -49,10 +48,15 @@ function isUserCancelled(error: unknown): boolean {
   return /cancel/i.test(record.message ?? "");
 }
 
-export function Paywall({ purchases, onDismiss, onSuccess }: PaywallProps) {
+export function Paywall({
+  purchases,
+  initialPlanId = DEFAULT_IAP_PLAN_ID,
+  onDismiss,
+  onSuccess,
+}: PaywallProps) {
   const insets = useSafeAreaInsets();
-  const [selectedId, setSelectedId] = useState<IapPlanId>(DEFAULT_IAP_PLAN_ID);
-  const [packages, setPackages] = useState<OfferingPackageLike[]>([]);
+  const [selectedId, setSelectedId] = useState<IapPlanId>(initialPlanId);
+  const [packages, setPackages] = useState<PurchasesPackage[]>([]);
   const [busy, setBusy] = useState<"purchase" | "restore" | null>(null);
 
   useEffect(() => {
@@ -192,6 +196,7 @@ export function Paywall({ purchases, onDismiss, onSuccess }: PaywallProps) {
                   accessibilityRole="radio"
                   accessibilityState={{ selected: selectedPlan }}
                   accessibilityLabel={`${plan.displayName}, ${plan.length}, ${price}`}
+                  accessibilityHint="Select this subscription, then use the Continue button"
                   testID={`iap-paywall-plan-${plan.id}`}
                   style={({ pressed }) => [
                     styles.planRow,
@@ -228,7 +233,7 @@ export function Paywall({ purchases, onDismiss, onSuccess }: PaywallProps) {
               {selected.displayName} — {selected.length} —{" "}
               {formatPlanPrice(selectedPackage?.product?.priceString, selected)}
             </Text>
-            {selected.features.map((feature) => (
+            {selected.features.slice(0, 4).map((feature) => (
               <Text key={feature} style={styles.featureLine}>
                 {`•  ${feature}`}
               </Text>
@@ -268,7 +273,7 @@ export function Paywall({ purchases, onDismiss, onSuccess }: PaywallProps) {
             onPress={() => void handlePurchase()}
             disabled={busy !== null}
             accessibilityRole="button"
-            accessibilityLabel="Purchase"
+            accessibilityLabel={`Continue with ${selected.displayName} for ${formatPlanPrice(selectedPackage?.product?.priceString, selected)}`}
             testID="iap-paywall-purchase"
             style={({ pressed }) => [
               styles.purchaseButton,
@@ -279,7 +284,10 @@ export function Paywall({ purchases, onDismiss, onSuccess }: PaywallProps) {
             {busy === "purchase" ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
-              <Text style={styles.purchaseLabel}>Purchase</Text>
+              <Text style={styles.purchaseLabel} numberOfLines={2}>
+                Continue with {selected.displayName} —{"\n"}
+                {formatPlanPrice(selectedPackage?.product?.priceString, selected)}
+              </Text>
             )}
           </Pressable>
 
@@ -308,7 +316,11 @@ const PINK_BG = "#F8E4E6";
 
 const styles = StyleSheet.create({
   root: {
-    ...StyleSheet.absoluteFillObject,
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
     backgroundColor: "rgba(20, 16, 18, 0.28)",
     justifyContent: "center",
     alignItems: "center",

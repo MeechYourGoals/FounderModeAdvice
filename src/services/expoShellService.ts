@@ -19,7 +19,13 @@ type ShellMessage =
   | { type: "haptic"; style: "light" | "medium" | "heavy" | "success" | "warning" | "error" }
   | { type: "identify"; userId: string }
   | { type: "logout" }
-  | { type: "paywall"; userId: string; requiredEntitlement?: string; always?: boolean }
+  | {
+      type: "paywall";
+      userId: string;
+      planId?: ShellPaywallPlanId;
+      requiredEntitlement?: string;
+      always?: boolean;
+    }
   | { type: "customerCenter" }
   | { type: "restorePurchases"; userId: string }
   | { type: "pushRegister"; userId: string }
@@ -39,11 +45,19 @@ export type ShellAppleSignInResult =
     }
   | { ok: false; fallback: "web" | "none"; error?: string };
 
+export type ShellPaywallPlanId = "seed" | "series_z";
+
+export type ShellPaywallLaunchResult =
+  | { ok: true }
+  | { ok: false; error?: string };
+
 declare global {
   interface Window {
     ReactNativeWebView?: { postMessage: (data: string) => void };
     /** One-shot ack injected by the shell when a native restore settles. */
     __fmaShellRestoreResult?: (ok: boolean) => void;
+    /** One-shot ack injected after the native subscription sheet is visible. */
+    __fmaShellPaywallResult?: (result: ShellPaywallLaunchResult) => void;
     /** One-shot ack injected by the shell when native Sign in with Apple settles. */
     __fmaAppleSignInResult?: (result: ShellAppleSignInResult) => void;
   }
@@ -56,7 +70,9 @@ export const isExpoShell = (): boolean =>
 export function postToShell(message: ShellMessage): boolean {
   if (!isExpoShell()) return false;
   try {
-    window.ReactNativeWebView?.postMessage(JSON.stringify(message));
+    const bridge = window.ReactNativeWebView;
+    if (!bridge || typeof bridge.postMessage !== "function") return false;
+    bridge.postMessage(JSON.stringify(message));
     return true;
   } catch (err) {
     if (import.meta.env.DEV) console.warn("Expo shell bridge failed", message.type, err);
@@ -89,7 +105,47 @@ export const launchShellPaywall = (
   userId: string,
   requiredEntitlement?: string,
   always = false,
-): boolean => postToShell({ type: "paywall", userId, requiredEntitlement, always });
+  planId?: ShellPaywallPlanId,
+): boolean => postToShell({ type: "paywall", userId, requiredEntitlement, always, planId });
+
+/**
+ * Open the native subscription sheet and wait for the shell to confirm that it
+ * is actually visible. A successful postMessage alone is not sufficient: an
+ * unavailable or stale bridge must surface an error instead of looking like a
+ * dead subscription button to the user (and to App Review).
+ */
+export const launchShellPaywallAndWait = (
+  userId: string,
+  options: {
+    planId?: ShellPaywallPlanId;
+    requiredEntitlement?: string;
+    always?: boolean;
+  } = {},
+  timeoutMs = 8_000,
+): Promise<boolean> => {
+  if (!isExpoShell()) return Promise.resolve(false);
+
+  return new Promise((resolve) => {
+    const settle = (ok: boolean) => {
+      window.clearTimeout(timer);
+      window.__fmaShellPaywallResult = undefined;
+      resolve(ok);
+    };
+    const timer = window.setTimeout(() => settle(false), timeoutMs);
+    window.__fmaShellPaywallResult = (result) => settle(Boolean(result?.ok));
+
+    if (
+      !launchShellPaywall(
+        userId,
+        options.requiredEntitlement,
+        options.always,
+        options.planId,
+      )
+    ) {
+      settle(false);
+    }
+  });
+};
 
 export const openShellCustomerCenter = (): boolean => postToShell({ type: "customerCenter" });
 

@@ -53,6 +53,8 @@ assertContains(webhookSource, '_shared/revenuecat.ts', 'webhook function import'
 const paywallCatalog = readFileSync(new URL('../native/iapPaywallCatalog.ts', import.meta.url), 'utf8');
 const paywallUi = readFileSync(new URL('../native/Paywall.tsx', import.meta.url), 'utf8');
 const nativeApp = readFileSync(new URL('../native/App.tsx', import.meta.url), 'utf8');
+const shellBridge = readFileSync(new URL('../src/services/expoShellService.ts', import.meta.url), 'utf8');
+const subscriptionService = readFileSync(new URL('../src/services/subscriptionService.ts', import.meta.url), 'utf8');
 
 assertContains(paywallCatalog, "productId: \"seed_monthly\"", 'native IAP catalog C-Suite SKU');
 assertContains(paywallCatalog, "productId: \"series_z_monthly\"", 'native IAP catalog Boardroom SKU');
@@ -85,6 +87,7 @@ for (const displayName of ['The C-Suite', 'The Boardroom']) {
 }
 
 assertContains(paywallUi, "iap-paywall-purchase", 'native paywall Purchase control');
+assertContains(paywallUi, "Continue with {selected.displayName}", 'native paywall visible plan-specific CTA');
 assertContains(paywallUi, "iap-paywall-restore", 'native paywall Restore control');
 assertContains(paywallUi, "Terms of Use (EULA)", 'native paywall EULA link');
 assertContains(paywallUi, "Privacy Policy", 'native paywall privacy link');
@@ -102,6 +105,13 @@ if (disclosureIndexes.some((index) => index < 0) || disclosureIndexes.some((inde
   throw new Error('Guideline 3.1.2(c) disclosures must appear in the paywall before Purchase');
 }
 assertContains(nativeApp, 'from "./Paywall"', 'Expo shell presents the in-app paywall');
+assertContains(nativeApp, '__fmaShellPaywallResult', 'Expo shell acknowledges a visible paywall');
+assertContains(nativeApp, 'initialPlanId={paywallPlanId}', 'Expo shell opens the selected plan');
+assertContains(shellBridge, 'launchShellPaywallAndWait', 'web waits for native paywall acknowledgement');
+assertContains(shellBridge, 'if (!bridge || typeof bridge.postMessage !== "function") return false;', 'web rejects a missing native bridge');
+assertContains(subscriptionService, 'presentPaywallForTier', 'upgrade buttons route the selected tier');
+assertContains(subscriptionService, 'REVENUECAT_ENTITLEMENTS.SEED', 'C-Suite uses the live entitlement');
+assertContains(subscriptionService, 'REVENUECAT_ENTITLEMENTS.SERIES_Z', 'Boardroom uses the live entitlement');
 if (nativeApp.includes("RevenueCatUI.presentPaywall")) {
   throw new Error("Expo shell still presents the default RevenueCat paywall picker");
 }

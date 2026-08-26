@@ -11,9 +11,10 @@ import {
 import { isDespia, launchDespiaPaywall } from './despiaService';
 import {
   isExpoShell,
-  launchShellPaywall,
+  launchShellPaywallAndWait,
   openShellCustomerCenter,
   restoreShellPurchasesAndWait,
+  type ShellPaywallPlanId,
 } from './expoShellService';
 
 /** RevenueCat API key — platform-specific and mandatory for native builds. */
@@ -187,7 +188,10 @@ export async function purchasePackage(packageId: string): Promise<boolean> {
     // success arrives asynchronously via the iapSuccess callback.
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return false;
-    return launchShellPaywall(user.id, undefined, true);
+    const planId: ShellPaywallPlanId = /seed|c_suite/i.test(packageId)
+      ? 'seed'
+      : 'series_z';
+    return launchShellPaywallAndWait(user.id, { planId, always: true });
   }
 
   if (!Purchases || !Capacitor.isNativePlatform()) {
@@ -230,7 +234,8 @@ export type PaywallResult = 'PURCHASED' | 'RESTORED' | 'CANCELLED' | 'OPENED' | 
  * which auto-dismisses if the user already has the entitlement.
  */
 export async function presentPaywall(
-  requiredEntitlement: string = REVENUECAT_ENTITLEMENTS.PRO
+  requiredEntitlement: string = REVENUECAT_ENTITLEMENTS.SERIES_Z,
+  planId: ShellPaywallPlanId = 'series_z',
 ): Promise<PaywallResult> {
   // Despia: use native bridge paywall
   if (isDespia()) {
@@ -248,7 +253,10 @@ export async function presentPaywall(
   if (isExpoShell()) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return 'ERROR';
-    return launchShellPaywall(user.id, requiredEntitlement) ? 'OPENED' : 'ERROR';
+    return await launchShellPaywallAndWait(user.id, {
+      planId,
+      requiredEntitlement,
+    }) ? 'OPENED' : 'ERROR';
   }
 
   if (!RevenueCatUI || !Capacitor.isNativePlatform()) {
@@ -279,7 +287,9 @@ export async function presentPaywall(
 /**
  * Present the RevenueCat native paywall unconditionally (always shows).
  */
-export async function presentPaywallAlways(): Promise<PaywallResult> {
+export async function presentPaywallAlways(
+  planId: ShellPaywallPlanId = 'series_z',
+): Promise<PaywallResult> {
   if (isDespia()) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -294,7 +304,10 @@ export async function presentPaywallAlways(): Promise<PaywallResult> {
   if (isExpoShell()) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return 'ERROR';
-    return launchShellPaywall(user.id, undefined, true) ? 'OPENED' : 'ERROR';
+    return await launchShellPaywallAndWait(user.id, {
+      planId,
+      always: true,
+    }) ? 'OPENED' : 'ERROR';
   }
 
   if (!RevenueCatUI || !Capacitor.isNativePlatform()) {
@@ -315,6 +328,16 @@ export async function presentPaywallAlways(): Promise<PaywallResult> {
     console.error('RevenueCat UI: Paywall error', error);
     return 'ERROR';
   }
+}
+
+/** Present the exact paid plan the user selected. */
+export async function presentPaywallForTier(
+  tier: Exclude<SubscriptionTier, 'free'>,
+): Promise<PaywallResult> {
+  const entitlement = tier === 'seed'
+    ? REVENUECAT_ENTITLEMENTS.SEED
+    : REVENUECAT_ENTITLEMENTS.SERIES_Z;
+  return presentPaywall(entitlement, tier);
 }
 
 // ─── RevenueCat Customer Center ────────────────────────────────────

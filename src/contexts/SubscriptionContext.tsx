@@ -16,6 +16,7 @@ import {
   syncSubscriptionToSupabase,
   presentPaywall as presentPaywallService,
   presentPaywallAlways as presentPaywallAlwaysService,
+  presentPaywallForTier as presentPaywallForTierService,
   presentCustomerCenter as presentCustomerCenterService,
 } from '@/services/subscriptionService';
 import { isExpoShell, identifyShellUser } from '@/services/expoShellService';
@@ -23,6 +24,7 @@ import type { SubscriptionInfo, SubscriptionTier } from '@/types/subscription';
 import { STRIPE_PRICE_IDS, REVENUECAT_ENTITLEMENTS, TIER_LIMITS } from '@/types/subscription';
 import type { PaywallResult } from '@/services/subscriptionService';
 import { isTimeoutError, withTimeout } from '@/lib/asyncTimeout';
+import { toast } from 'sonner';
 
 interface SubscriptionContextType {
   subscription: SubscriptionInfo | null;
@@ -220,10 +222,14 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     upgradeInFlightRef.current = true;
     try {
       if (isDespiaApp || isNative || isShellApp) {
-        // Native: RevenueCat paywall.
-        const result = await presentPaywallService(REVENUECAT_ENTITLEMENTS.PRO);
+        // Native: open the exact RevenueCat product the user selected.
+        const result = await presentPaywallForTierService(tier);
         if (result === 'PURCHASED' || result === 'RESTORED') {
           await refreshSubscription();
+        } else if (result === 'ERROR') {
+          toast.error('Purchase sheet unavailable', {
+            description: 'The App Store purchase sheet could not be opened. Please try again.',
+          });
         }
       } else {
         // Web: Paddle overlay checkout.
@@ -280,7 +286,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   }, [isDespiaApp, refreshSubscription]);
 
   const handlePresentPaywall = useCallback(async (): Promise<PaywallResult> => {
-    const result = await presentPaywallService(REVENUECAT_ENTITLEMENTS.PRO);
+    const result = await presentPaywallService(REVENUECAT_ENTITLEMENTS.SERIES_Z, 'series_z');
     if (result === 'PURCHASED' || result === 'RESTORED') {
       await refreshSubscription();
     }

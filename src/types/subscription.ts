@@ -197,16 +197,13 @@ export const TIER_PRICING: Record<SubscriptionTier, TierPricing> = {
 };
 
 /**
- * Price label for a tier. In native app contexts (App Store / Play billing)
- * fixed USD amounts are suppressed — the store checkout (RevenueCat paywall)
- * is the only source of the exact localized price, so the UI never shows a
- * number that can disagree with what Apple/Google actually charge.
+ * Price label for a tier. The in-app plan screens state the configured monthly
+ * price explicitly, while the native StoreKit sheet still supplies the final
+ * localized amount before purchase.
  */
-export function tierPriceLabel(tier: SubscriptionTier, opts: { native: boolean }): string {
+export function tierPriceLabel(tier: SubscriptionTier, _opts: { native: boolean }): string {
   if (tier === 'free') return 'Free';
-  return opts.native
-    ? 'Monthly · price shown at checkout'
-    : TIER_PRICING[tier].priceDisplay;
+  return TIER_PRICING[tier].priceDisplay;
 }
 
 /** RevenueCat entitlement identifiers — must match your RevenueCat dashboard */
