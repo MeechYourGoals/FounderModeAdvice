@@ -1656,6 +1656,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_daily_brief_content_fresh: {
+        Args: { _at?: string; _published_at: string }
+        Returns: boolean
+      }
       is_episode_owner: {
         Args: { _episode_id: string; _user_id: string }
         Returns: boolean
