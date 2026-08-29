@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.17"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -1654,6 +1654,10 @@ export type Database = {
           _insight_id: string
           _insight_type: string
         }
+        Returns: boolean
+      }
+      is_daily_brief_content_fresh: {
+        Args: { _at?: string; _published_at: string }
         Returns: boolean
       }
       is_episode_owner: {
