@@ -12,6 +12,11 @@
 import { supabase } from "@/integrations/supabase/client";
 import { captureEvent } from "@/services/analytics";
 import type { DiscoveryContentType, RecommendationState } from "@/lib/discovery";
+import {
+  dailyBriefPublishedAfterIso,
+  filterFreshDailyBriefContent,
+  isDailyBriefContentFresh,
+} from "@/lib/dailyBriefFreshness";
 
 export interface DiscoveryContent {
   id: string;
@@ -67,6 +72,7 @@ interface Query extends PromiseLike<Result> {
   insert(rows: Row): PromiseLike<Result>;
   delete(): Query;
   eq(column: string, value: unknown): Query;
+  gte(column: string, value: unknown): Query;
   neq(column: string, value: unknown): Query;
   in(column: string, values: readonly unknown[]): Query;
   overlaps(column: string, values: readonly unknown[]): Query;
@@ -91,6 +97,9 @@ const mapRecommendation = (row: Row): ProfileRecommendation => ({
   content: row.discovery_content as DiscoveryContent,
 });
 
+const freshRecommendations = (rows: Row[]): ProfileRecommendation[] =>
+  rows.map(mapRecommendation).filter((item) => isDailyBriefContentFresh(item.content.published_at));
+
 /** Weekly editions for a profile, newest first. Powers the archive selector. */
 export async function fetchBatches(profileId: string, limit = 8): Promise<RecommendationBatch[]> {
   const { data, error } = await db
@@ -111,10 +120,11 @@ export async function fetchRecommendations(batchId: string): Promise<ProfileReco
       `id, batch_id, profile_id, position, reason, state, analyzed_episode_id, discovery_content!inner(${CONTENT_COLUMNS})`,
     )
     .eq("batch_id", batchId)
+    .gte("discovery_content.published_at", dailyBriefPublishedAfterIso())
     .neq("state", "dismissed")
     .order("position", { ascending: true });
   if (error) throw error;
-  return (data ?? []).map(mapRecommendation);
+  return freshRecommendations(data ?? []);
 }
 
 /** Everything the user saved, across profiles and editions. */
@@ -125,10 +135,11 @@ export async function fetchSavedRecommendations(limit = 50): Promise<ProfileReco
       `id, batch_id, profile_id, position, reason, state, analyzed_episode_id, discovery_content!inner(${CONTENT_COLUMNS})`,
     )
     .eq("state", "saved")
+    .gte("discovery_content.published_at", dailyBriefPublishedAfterIso())
     .order("saved_at", { ascending: false })
     .limit(limit);
   if (error) throw error;
-  return (data ?? []).map(mapRecommendation);
+  return freshRecommendations(data ?? []);
 }
 
 export interface LibraryQuery {
@@ -150,6 +161,7 @@ export async function fetchInspirationLibrary(query: LibraryQuery = {}): Promise
     .select(CONTENT_COLUMNS)
     .eq("active", true)
     .eq("is_curated", true);
+  request = request.gte("published_at", dailyBriefPublishedAfterIso());
 
   if (query.categories?.length) request = request.overlaps("categories", query.categories);
   if (query.contentTypes?.length) request = request.in("content_type", query.contentTypes);
@@ -159,7 +171,7 @@ export async function fetchInspirationLibrary(query: LibraryQuery = {}): Promise
     .order("priority", { ascending: false })
     .range(offset, offset + limit - 1);
   if (error) throw error;
-  return (data ?? []) as unknown as DiscoveryContent[];
+  return filterFreshDailyBriefContent((data ?? []) as unknown as DiscoveryContent[]);
 }
 
 /**
