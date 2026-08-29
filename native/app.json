@@ -11,8 +11,15 @@
     "ios": {
       "icon": "./assets/icon.png",
       "bundleIdentifier": "com.foundermodeadvice.app",
+      "buildNumber": "13",
       "supportsTablet": true,
       "usesAppleSignIn": true,
+      "entitlements": {
+        "aps-environment": "production",
+        "com.apple.security.application-groups": [
+          "group.com.foundermodeadvice.app.onesignal"
+        ]
+      },
       "associatedDomains": [
         "applinks:foundermodeadvice.com",
         "webcredentials:foundermodeadvice.com"
@@ -134,13 +141,13 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-apple-authentication",
       [
         "onesignal-expo-plugin",
         {
           "mode": "production"
         }
       ],
+      "expo-apple-authentication",
       [
         "expo-splash-screen",
         {

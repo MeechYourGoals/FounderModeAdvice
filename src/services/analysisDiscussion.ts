@@ -7,6 +7,13 @@ import { supabase as supabaseTyped } from "@/integrations/supabase/client";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const supabase = supabaseTyped as any;
 
+async function notifyDiscussionReply(recordId: string): Promise<void> {
+  const { error } = await supabaseTyped.functions.invoke("send-collaboration-notification", {
+    body: { kind: "discussion", recordId },
+  });
+  if (error && import.meta.env.DEV) console.warn("Discussion push notification failed", error);
+}
+
 export interface DiscussionMessage {
   id: string;
   episode_id: string;
@@ -42,7 +49,11 @@ export async function createDiscussionMessage(episodeId: string, body: string): 
     .select()
     .single();
   if (error) throw error;
-  return data as DiscussionMessage;
+  const message = data as DiscussionMessage;
+  // Posting the reply is authoritative; push is a best-effort side effect and
+  // must never make an already-saved message look failed to the author.
+  void notifyDiscussionReply(message.id);
+  return message;
 }
 
 export async function updateDiscussionMessage(messageId: string, body: string): Promise<DiscussionMessage> {

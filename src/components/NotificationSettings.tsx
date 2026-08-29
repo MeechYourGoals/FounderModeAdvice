@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,12 +14,14 @@ import { Capacitor } from "@capacitor/core";
 
 interface Prefs {
   daily_prompt: boolean;
+  collaboration_replies: boolean;
   plan_reminders: boolean;
   marketing: boolean;
 }
 
 const DEFAULT_PREFS: Prefs = {
   daily_prompt: false,
+  collaboration_replies: false,
   plan_reminders: false,
   marketing: false,
 };
@@ -39,7 +40,7 @@ export const NotificationSettings = () => {
     (async () => {
       const { data, error } = await supabase
         .from("user_notification_prefs")
-        .select("daily_prompt, plan_reminders, marketing")
+        .select("daily_prompt, collaboration_replies, plan_reminders, marketing")
         .eq("user_id", user.id)
         .maybeSingle();
       if (cancelled) return;
@@ -116,6 +117,14 @@ export const NotificationSettings = () => {
               description="A short, actionable prompt each morning."
               checked={prefs.daily_prompt}
               onChange={(v) => updatePref({ daily_prompt: v })}
+            />
+            <Separator />
+            <Row
+              id="pref-collaboration"
+              label="Teammate replies"
+              description="Alerts when someone responds on an analysis shared with your team."
+              checked={prefs.collaboration_replies}
+              onChange={(v) => updatePref({ collaboration_replies: v })}
             />
             <Separator />
             <Row

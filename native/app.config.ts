@@ -22,6 +22,7 @@ import type { ConfigContext, ExpoConfig } from "expo/config";
  */
 function assertProductionConfig(extra: {
   webUrl?: string;
+  oneSignalAppId?: string;
   revenueCatIosApiKey?: string;
   revenueCatAndroidApiKey?: string;
 }) {
@@ -38,6 +39,10 @@ function assertProductionConfig(extra: {
 
   if (platform !== "android") {
     requireStoreKey(extra.revenueCatIosApiKey, "FMA_REVENUECAT_IOS_API_KEY", "appl_");
+    if (!extra.oneSignalAppId) problems.push("FMA_ONESIGNAL_APP_ID is not set");
+    else if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(extra.oneSignalAppId)) {
+      problems.push("FMA_ONESIGNAL_APP_ID is not a valid OneSignal App ID");
+    }
   }
   if (platform !== "ios") {
     requireStoreKey(extra.revenueCatAndroidApiKey, "FMA_REVENUECAT_ANDROID_API_KEY", "goog_");

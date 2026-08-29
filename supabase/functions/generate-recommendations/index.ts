@@ -46,6 +46,7 @@ import {
 } from "../_shared/discovery/ranking.ts";
 import { fallbackReason, generateReasons } from "../_shared/discovery/reasons.ts";
 import { isoWeekKey } from "../_shared/discovery/week.ts";
+import { sendPush } from "../_shared/oneSignal.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -523,21 +524,16 @@ async function notifyReadyBatches(supabase: ReturnType<typeof createClient>): Pr
       const company =
         (batch.user_startup_profiles as { company_name?: string } | null)?.company_name ?? "your company";
       try {
-        const response = await fetch("https://onesignal.com/api/v1/notifications", {
-          method: "POST",
-          headers: { Authorization: `Basic ${apiKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            app_id: appId,
-            include_external_user_ids: [userId],
-            channel_for_external_user_ids: "push",
-            headings: { en: "Your weekly Founder Briefing" },
-            contents: { en: `${batch.item_count} recommendations for ${company} are ready.` },
-            url: "https://foundermodeadvice.com/discover?utm_source=push&utm_campaign=weekly_discovery",
-            data: { path: "/discover?utm_source=push&utm_campaign=weekly_discovery" },
-          }),
+        await sendPush({
+          appId,
+          apiKey,
+          externalIds: [userId],
+          heading: "Your weekly Founder Briefing",
+          content: `${batch.item_count} recommendations for ${company} are ready.`,
+          path: "/discover?utm_source=push&utm_campaign=weekly_discovery",
+          idempotencyKey: batchId,
         });
-        if (response.ok) sent += 1;
-        else console.warn("[discovery] OneSignal rejected notification:", response.status);
+        sent += 1;
       } catch (error) {
         console.warn("[discovery] notification failed:", error);
       }

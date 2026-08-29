@@ -1322,6 +1322,7 @@ export type Database = {
       }
       user_notification_prefs: {
         Row: {
+          collaboration_replies: boolean
           created_at: string
           daily_prompt: boolean
           marketing: boolean
@@ -1332,6 +1333,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          collaboration_replies?: boolean
           created_at?: string
           daily_prompt?: boolean
           marketing?: boolean
@@ -1342,6 +1344,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          collaboration_replies?: boolean
           created_at?: string
           daily_prompt?: boolean
           marketing?: boolean

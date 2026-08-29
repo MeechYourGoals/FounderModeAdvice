@@ -6,6 +6,7 @@
 //   ONESIGNAL_REST_API_KEY
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { sendPush } from "../_shared/oneSignal.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -78,31 +79,14 @@ serve(async (req) => {
     const externalIds = optedIn.map((r) => r.user_id);
     const prompt = todaysPrompt();
 
-    const res = await fetch("https://onesignal.com/api/v1/notifications", {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${oneSignalKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        app_id: oneSignalAppId,
-        include_external_user_ids: externalIds,
-        channel_for_external_user_ids: "push",
-        headings: { en: "Founder Mode — daily prompt" },
-        contents: { en: prompt },
-        url: "https://foundermodeadvice.com/?utm_source=push&utm_campaign=daily_prompt",
-        data: { path: "/?utm_source=push&utm_campaign=daily_prompt" },
-      }),
+    const payload = await sendPush({
+      appId: oneSignalAppId,
+      apiKey: oneSignalKey,
+      externalIds,
+      heading: "Founder Mode — daily prompt",
+      content: prompt,
+      path: "/?utm_source=push&utm_campaign=daily_prompt",
     });
-
-    const payload = await res.json();
-    if (!res.ok) {
-      console.error("OneSignal error", payload);
-      return new Response(
-        JSON.stringify({ error: "OneSignal request failed", details: payload }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
 
     return new Response(
       JSON.stringify({ sent: externalIds.length, oneSignalId: payload.id, prompt }),

@@ -16,6 +16,9 @@ verify_jwt = false
 [functions.send-daily-prompt]
 verify_jwt = false
 
+[functions.send-collaboration-notification]
+verify_jwt = true
+
 # Weekly discovery generation. Serves two callers on one endpoint: pg_cron
 # (authenticated by CRON_SECRET in the x-cron-secret header) and a signed-in
 # Boardroom user manually refreshing one profile. Because the scheduled caller

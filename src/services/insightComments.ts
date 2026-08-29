@@ -7,6 +7,13 @@ import { supabase as supabaseTyped } from "@/integrations/supabase/client";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const supabase = supabaseTyped as any;
 
+async function notifyInsightReply(recordId: string): Promise<void> {
+  const { error } = await supabaseTyped.functions.invoke("send-collaboration-notification", {
+    body: { kind: "insight_comment", recordId },
+  });
+  if (error && import.meta.env.DEV) console.warn("Insight push notification failed", error);
+}
+
 export type InsightType = "lesson" | "callout" | "personalized_insight";
 
 export type CommentVisibility = "shared" | "private";
@@ -93,6 +100,8 @@ export async function createInsightComment(params: {
   } else {
     comment.insight_comment_mentions = [];
   }
+
+  if (comment.visibility === "shared") void notifyInsightReply(comment.id);
 
   return comment;
 }
