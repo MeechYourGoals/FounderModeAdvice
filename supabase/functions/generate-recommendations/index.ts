@@ -143,7 +143,7 @@ async function gatherCandidates(
       stats.providerCalls += 1;
       try {
         const results = await provider.search(query, { limit: RESULTS_PER_QUERY });
-        candidates.push(...filterRecentResults(results));
+        candidates.push(...results);
       } catch (error) {
         console.warn(`[discovery] provider ${provider.id} failed:`, error);
       }
@@ -332,7 +332,10 @@ async function generateForProfile(
       curatedLoader(supabase, context),
     );
 
-    const candidates = filterRecentResults(await gatherCandidates(providers, plan, stats));
+    const gatheredCandidates = await gatherCandidates(providers, plan, stats);
+    const candidates = filterRecentResults(gatheredCandidates);
+    const rejectedMissingDate = gatheredCandidates.filter((candidate) => !candidate.publishedAt).length;
+    const rejectedStaleOrFuture = gatheredCandidates.length - candidates.length - rejectedMissingDate;
 
     // Novelty: what this profile has already been shown, so a repeat is pushed
     // far down rather than filling the new edition. Bounded and ordered newest
@@ -357,12 +360,21 @@ async function generateForProfile(
     const scored = candidates.map((result) =>
       scoreCandidate(result, context, terms, { seenContentKeys }),
     );
-    const picked = selectRecommendations(scored, {
+    const rankedPicks = selectRecommendations(scored, {
       limit: RECOMMENDATIONS_PER_BATCH,
       maxPerHost: 2,
       // Soft format mix: no single type may take more than ~40% of an edition.
       maxPerContentType: Math.max(2, Math.ceil(RECOMMENDATIONS_PER_BATCH * 0.4)),
     });
+    // Defense immediately before persistence/LLM reasoning. This is intentionally
+    // redundant with candidate admission: no future ranking or fallback change
+    // may turn an ineligible candidate into a persisted recommendation.
+    const picked = rankedPicks.filter((candidate) => filterRecentResults([candidate.result]).length === 1);
+    if (picked.length !== rankedPicks.length) {
+      console.error("[discovery] daily_brief_freshness_violation", {
+        rejectedAtPersistence: rankedPicks.length - picked.length,
+      });
+    }
 
     if (picked.length === 0) {
       // A fruitless manual refresh must not destroy the edition the user
@@ -370,8 +382,9 @@ async function generateForProfile(
       if (source === "manual") {
         const { data: existingItems } = await supabase
           .from("profile_recommendations")
-          .select("id")
+          .select("id, discovery_content!inner(published_at)")
           .eq("batch_id", batchId)
+          .gte("discovery_content.published_at", publishedAfterIso())
           .limit(1);
         if (existingItems && existingItems.length > 0) {
           return { profileId: profile.id, status: "empty", batchId, userId, reason: "nothing new found" };
@@ -382,7 +395,15 @@ async function generateForProfile(
         .update({
           status: "empty",
           item_count: 0,
-          generation_stats: { candidates: candidates.length, queries: plan.length },
+          generation_stats: {
+            queries: plan.length,
+            daily_brief_candidates_total: gatheredCandidates.length,
+            daily_brief_candidates_rejected_stale: rejectedStaleOrFuture,
+            daily_brief_candidates_rejected_missing_date: rejectedMissingDate,
+            daily_brief_candidates_eligible: candidates.length,
+            daily_brief_oldest_item_age_days: null,
+            daily_brief_freshness_violation: 0,
+          },
         })
         .eq("id", batchId);
       return { profileId: profile.id, status: "empty", batchId, userId };
@@ -439,6 +460,16 @@ async function generateForProfile(
           selected: rows.length,
           providers: [...new Set(candidates.map((c) => c.providerId))],
           reasons_generated: reasons.size,
+          daily_brief_candidates_total: gatheredCandidates.length,
+          daily_brief_candidates_rejected_stale: rejectedStaleOrFuture,
+          daily_brief_candidates_rejected_missing_date: rejectedMissingDate,
+          daily_brief_candidates_eligible: candidates.length,
+          daily_brief_oldest_item_age_days: Math.max(
+            ...picked.map((candidate) =>
+              (Date.now() - Date.parse(candidate.result.publishedAt!)) / 86_400_000
+            ),
+          ),
+          daily_brief_freshness_violation: rankedPicks.length - picked.length,
         },
       })
       .eq("id", batchId);

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {
   MAX_CONTENT_AGE_DAYS,
+  MAX_FUTURE_CLOCK_SKEW_MS,
   contentAgeDays,
   filterRecentResults,
   isRecentEnough,
@@ -15,15 +16,24 @@ Deno.test("MAX_CONTENT_AGE_DAYS is the briefing window", () => {
 });
 
 Deno.test("isRecentEnough — accepts items from the last 30 days", () => {
+  assert.equal(isRecentEnough(isoDaysAgo(1), NOW), true);
+  assert.equal(isRecentEnough(isoDaysAgo(29), NOW), true);
   assert.equal(isRecentEnough(isoDaysAgo(0), NOW), true);
   assert.equal(isRecentEnough(isoDaysAgo(7), NOW), true);
   assert.equal(isRecentEnough(isoDaysAgo(30), NOW), true);
 });
 
+Deno.test("isRecentEnough — enforces the exact timestamp boundary", () => {
+  assert.equal(isRecentEnough(new Date(NOW - 30 * 86_400_000 - 1_000).toISOString(), NOW), false);
+  assert.equal(isRecentEnough(isoDaysAgo(365), NOW), false);
+  assert.equal(isRecentEnough(isoDaysAgo(3_650), NOW), false);
+});
+
 Deno.test("isRecentEnough — rejects older, future, missing, and unparseable dates", () => {
   assert.equal(isRecentEnough(isoDaysAgo(31), NOW), false);
   assert.equal(isRecentEnough(isoDaysAgo(4000), NOW), false);
-  assert.equal(isRecentEnough(new Date(NOW + 86_400_000).toISOString(), NOW), false);
+  assert.equal(isRecentEnough(new Date(NOW + MAX_FUTURE_CLOCK_SKEW_MS).toISOString(), NOW), true);
+  assert.equal(isRecentEnough(new Date(NOW + MAX_FUTURE_CLOCK_SKEW_MS + 1).toISOString(), NOW), false);
   assert.equal(isRecentEnough(null, NOW), false);
   assert.equal(isRecentEnough(undefined, NOW), false);
   assert.equal(isRecentEnough("", NOW), false);

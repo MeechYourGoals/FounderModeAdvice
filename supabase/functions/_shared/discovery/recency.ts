@@ -7,6 +7,8 @@
 
 /** Hard cap for briefing content age. Older items never enter an edition. */
 export const MAX_CONTENT_AGE_DAYS = 30;
+/** Providers occasionally timestamp a release a few minutes ahead of our clock. */
+export const MAX_FUTURE_CLOCK_SKEW_MS = 5 * 60 * 1000;
 
 const MS_PER_DAY = 86_400_000;
 
@@ -23,7 +25,7 @@ export function isRecentEnough(publishedAt: string | null | undefined, now = Dat
   const parsed = new Date(publishedAt);
   if (Number.isNaN(parsed.getTime())) return false;
   const ageDays = (now - parsed.getTime()) / MS_PER_DAY;
-  return ageDays >= 0 && ageDays <= MAX_CONTENT_AGE_DAYS;
+  return parsed.getTime() <= now + MAX_FUTURE_CLOCK_SKEW_MS && ageDays <= MAX_CONTENT_AGE_DAYS;
 }
 
 /** ISO timestamp used as YouTube `publishedAfter` and curated `published_at` lower bound. */
