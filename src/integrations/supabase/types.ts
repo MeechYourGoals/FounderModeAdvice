@@ -1663,6 +1663,10 @@ export type Database = {
         Args: { _at?: string; _published_at: string }
         Returns: boolean
       }
+      is_discovery_content_servable: {
+        Args: { _at?: string; _is_curated: boolean; _published_at: string }
+        Returns: boolean
+      }
       is_episode_owner: {
         Args: { _episode_id: string; _user_id: string }
         Returns: boolean
@@ -1695,6 +1699,10 @@ export type Database = {
       owns_startup_profile: {
         Args: { _profile_id: string; _user_id: string }
         Returns: boolean
+      }
+      refund_rate_limit: {
+        Args: { _key: string; _user_id: string; _window: string }
+        Returns: undefined
       }
       set_recommendation_state: {
         Args: {
