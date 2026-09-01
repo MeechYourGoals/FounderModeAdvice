@@ -110,6 +110,33 @@ Deno.test("contentKey — matches the values seeded in the inspiration library m
     ["https://paulgraham.com/13sentences.html", "paulgraham.com/13sentences.html"],
     ["https://paulgraham.com/wealth.html", "paulgraham.com/wealth.html"],
     ["https://paulgraham.com/makersschedule.html", "paulgraham.com/makersschedule.html"],
+    // Second seed (20260902120000_seed_inspiration_library_v2.sql).
+    ["https://paulgraham.com/before.html", "paulgraham.com/before.html"],
+    ["https://paulgraham.com/really.html", "paulgraham.com/really.html"],
+    ["https://paulgraham.com/founders.html", "paulgraham.com/founders.html"],
+    ["https://paulgraham.com/die.html", "paulgraham.com/die.html"],
+    ["https://paulgraham.com/determination.html", "paulgraham.com/determination.html"],
+    ["https://paulgraham.com/schlep.html", "paulgraham.com/schlep.html"],
+    ["https://paulgraham.com/relres.html", "paulgraham.com/relres.html"],
+    ["https://paulgraham.com/superlinear.html", "paulgraham.com/superlinear.html"],
+    ["https://paulgraham.com/fr.html", "paulgraham.com/fr.html"],
+    ["https://paulgraham.com/convince.html", "paulgraham.com/convince.html"],
+    ["https://paulgraham.com/swan.html", "paulgraham.com/swan.html"],
+    ["https://blog.samaltman.com/idea-generation", "blog.samaltman.com/idea-generation"],
+    ["https://blog.samaltman.com/productivity", "blog.samaltman.com/productivity"],
+    [
+      "https://blog.samaltman.com/the-strength-of-being-misunderstood",
+      "blog.samaltman.com/the-strength-of-being-misunderstood",
+    ],
+    [
+      "https://www.joelonsoftware.com/2002/01/06/fire-and-motion/",
+      "joelonsoftware.com/2002/01/06/fire-and-motion",
+    ],
+    ["https://arxiv.org/abs/1512.03385", "arxiv.org/abs/1512.03385"],
+    ["https://arxiv.org/abs/1810.04805", "arxiv.org/abs/1810.04805"],
+    ["https://arxiv.org/abs/2203.02155", "arxiv.org/abs/2203.02155"],
+    ["https://arxiv.org/abs/1406.2661", "arxiv.org/abs/1406.2661"],
+    ["https://arxiv.org/abs/2302.13971", "arxiv.org/abs/2302.13971"],
   ];
   for (const [url, key] of seeded) {
     assert.equal(contentKey(url), key, url);

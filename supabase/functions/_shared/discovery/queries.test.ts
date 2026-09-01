@@ -76,3 +76,40 @@ Deno.test("buildQueryPlan — a zero cap still returns one query", () => {
   const plan = buildQueryPlan(buildRecommendationContext(fitness), [], 0);
   assert.equal(plan.length, 1);
 });
+
+Deno.test("baseQueries — a thin profile does not collapse to generic startup search", () => {
+  // domain used to fall straight through to the literal "startups" whenever a
+  // profile had no industry and a short description, making every thin
+  // profile's plan interchangeable with every other one's.
+  const thin: StartupProfileRow = {
+    id: "p3",
+    company_name: "Golf Ready",
+    description: "Helping golfers practice better with a mobile training app.",
+    industry: null,
+    stage: "seed",
+    role: "Founder",
+  };
+  const queries = baseQueries(buildRecommendationContext(thin)).map((q) => q.query);
+  assert.ok(queries.length > 0);
+  assert.ok(
+    !queries.some((q) => q.startsWith("startups ")),
+    `thin profile fell back to generic startup queries: ${queries.join(" | ")}`,
+  );
+  // And it never searches the company's own name — that returns news about
+  // them, not material to learn from.
+  assert.ok(!queries.some((q) => q.toLowerCase().includes("golf ready")));
+});
+
+Deno.test("baseQueries — covers adjacent angles, not just the core domain", () => {
+  const queries = baseQueries(buildRecommendationContext(fitness));
+  const text = queries.map((q) => q.query);
+  // The customer's own world, one step sideways from the company's lane.
+  assert.ok(
+    text.some((q) => q.startsWith("what ") && q.includes("care about now")),
+    `no customer-angle query: ${text.join(" | ")}`,
+  );
+  // A mix of timely and evergreen intents, so an edition is not ten takes on
+  // one news story.
+  assert.ok(queries.some((q) => q.intent === "timely"));
+  assert.ok(queries.some((q) => q.intent === "evergreen"));
+});

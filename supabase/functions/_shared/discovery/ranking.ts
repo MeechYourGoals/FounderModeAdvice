@@ -89,6 +89,10 @@ export function contextTerms(ctx: RecommendationContext): string[] {
     ...ctx.categories,
     ...(ctx.industry ? ctx.industry.split(/[/,&]/) : []),
     ...(ctx.businessModel ? [ctx.businessModel] : []),
+    // The company's own name is never a search term — searching it returns news
+    // about them, not material to learn from — but a result that does mention
+    // them is genuinely more relevant, so it counts here.
+    ...(ctx.companyName ? [ctx.companyName] : []),
   ];
   const seen = new Set<string>();
   const out: string[] = [];
@@ -129,13 +133,33 @@ export function relevanceScore(result: DiscoveryResult, terms: string[]): number
  * Items older than the window (or undated) score 0; they should already have
  * been filtered out before ranking.
  */
+/** Full credit for anything published in the last week. */
+const FRESHNESS_FULL_CREDIT_DAYS = 7;
+/**
+ * Where the steep part of the curve ends. Deliberately decoupled from
+ * MAX_CONTENT_AGE_DAYS: admission runs to a year, but if the decay stretched
+ * over that whole span a two-day-old article would barely outrank a six-month-
+ * old one, and "timely" would stop meaning anything. Recency discriminates
+ * sharply inside the first month, then fades gently across the rest.
+ */
+const FRESHNESS_DECAY_DAYS = 30;
+/** Score still left at FRESHNESS_DECAY_DAYS, spent over the remaining window. */
+const FRESHNESS_TAIL = 0.15;
+
 export function freshnessScore(result: DiscoveryResult, now: number): number {
   if (!result.publishedAt) return 0;
   const ageDays = contentAgeDays(result.publishedAt, now);
   if (ageDays < 0) return 0.5;
   if (ageDays > MAX_CONTENT_AGE_DAYS) return 0;
-  if (ageDays <= 7) return 1;
-  return clamp01(1 - ((ageDays - 7) / (MAX_CONTENT_AGE_DAYS - 7)) * 0.85);
+  if (ageDays <= FRESHNESS_FULL_CREDIT_DAYS) return 1;
+  if (ageDays <= FRESHNESS_DECAY_DAYS) {
+    const spanned = (ageDays - FRESHNESS_FULL_CREDIT_DAYS) /
+      (FRESHNESS_DECAY_DAYS - FRESHNESS_FULL_CREDIT_DAYS);
+    return clamp01(1 - spanned * (1 - FRESHNESS_TAIL));
+  }
+  const tailSpanned = (ageDays - FRESHNESS_DECAY_DAYS) /
+    (MAX_CONTENT_AGE_DAYS - FRESHNESS_DECAY_DAYS);
+  return clamp01(FRESHNESS_TAIL * (1 - tailSpanned));
 }
 
 export function sourceQualityScore(result: DiscoveryResult): number {

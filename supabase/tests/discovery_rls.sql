@@ -21,9 +21,14 @@ CREATE TEMP TABLE ids (
   user_a uuid, user_b uuid,
   profile_a1 uuid, profile_a2 uuid, profile_b1 uuid,
   batch_a1 uuid, batch_a2 uuid, batch_b1 uuid,
-  content_1 uuid, content_hidden uuid,
+  content_1 uuid, content_hidden uuid, content_fresh uuid, content_stale uuid,
   rec_a1 uuid, rec_b1 uuid
 ) ON COMMIT DROP;
+
+-- The assertions below read this fixture table while impersonating a user, so
+-- the impersonated roles need to see it. Without this the suite aborts on
+-- "permission denied for table ids" before reaching any real check.
+GRANT SELECT ON ids TO authenticated, anon;
 
 DO $$
 DECLARE
@@ -31,7 +36,7 @@ DECLARE
   v_user_b uuid := gen_random_uuid();
   v_p_a1 uuid; v_p_a2 uuid; v_p_b1 uuid;
   v_b_a1 uuid; v_b_a2 uuid; v_b_b1 uuid;
-  v_c1 uuid; v_c_hidden uuid;
+  v_c1 uuid; v_c_hidden uuid; v_c_fresh uuid; v_c_stale uuid;
   v_r_a1 uuid; v_r_b1 uuid;
 BEGIN
   INSERT INTO auth.users (instance_id, id, aud, role, email, encrypted_password,
@@ -57,13 +62,26 @@ BEGIN
   VALUES (v_user_b, 'Other Co', 'Something else.', 'seed')
   RETURNING id INTO v_p_b1;
 
-  INSERT INTO public.discovery_content (url, canonical_url, content_key, title, is_curated, active)
-  VALUES ('https://example.com/a', 'https://example.com/a', 'example.com/a', 'A curated item', true, true)
+  -- Deliberately ancient: a curated row is editorial and must stay servable
+  -- regardless of age. Dating it in 2004 is the regression guard for the bug
+  -- where a 30-day rule applied to the whole table emptied the library.
+  INSERT INTO public.discovery_content (url, canonical_url, content_key, title, is_curated, active, published_at)
+  VALUES ('https://example.com/a', 'https://example.com/a', 'example.com/a', 'A curated item', true, true,
+          '2004-05-01'::timestamptz)
   RETURNING id INTO v_c1;
-  INSERT INTO public.discovery_content (url, canonical_url, content_key, title, is_curated, active)
+  INSERT INTO public.discovery_content (url, canonical_url, content_key, title, is_curated, active, published_at)
   VALUES ('https://example.com/hidden', 'https://example.com/hidden', 'example.com/hidden',
-          'A deactivated item', true, false)
+          'A deactivated item', true, false, now() - interval '2 days')
   RETURNING id INTO v_c_hidden;
+  -- A discovered (non-curated) pair: recency still decides for these.
+  INSERT INTO public.discovery_content (url, canonical_url, content_key, title, is_curated, active, published_at)
+  VALUES ('https://example.com/fresh', 'https://example.com/fresh', 'example.com/fresh',
+          'A recently discovered item', false, true, now() - interval '3 days')
+  RETURNING id INTO v_c_fresh;
+  INSERT INTO public.discovery_content (url, canonical_url, content_key, title, is_curated, active, published_at)
+  VALUES ('https://example.com/stale', 'https://example.com/stale', 'example.com/stale',
+          'A long-stale discovered item', false, true, now() - interval '400 days')
+  RETURNING id INTO v_c_stale;
 
   INSERT INTO public.recommendation_batches (user_id, profile_id, week_key, status, item_count)
   VALUES (v_user_a, v_p_a1, '2026-W34', 'ready', 1) RETURNING id INTO v_b_a1;
@@ -78,7 +96,8 @@ BEGIN
   VALUES (v_b_b1, v_user_b, v_p_b1, v_c1, 0, 'Because something else.') RETURNING id INTO v_r_b1;
 
   INSERT INTO ids VALUES (v_user_a, v_user_b, v_p_a1, v_p_a2, v_p_b1,
-                          v_b_a1, v_b_a2, v_b_b1, v_c1, v_c_hidden, v_r_a1, v_r_b1);
+                          v_b_a1, v_b_a2, v_b_b1, v_c1, v_c_hidden, v_c_fresh, v_c_stale,
+                          v_r_a1, v_r_b1);
 END $$;
 
 -- Helper: adopt a user's identity for RLS purposes.
@@ -197,13 +216,23 @@ END $$;
 -- ---------------------------------------------------------------------------
 SET LOCAL ROLE authenticated;
 DO $$
-DECLARE v ids%ROWTYPE; n integer;
+DECLARE v ids%ROWTYPE; n integer := 0; v_blocked boolean := false;
 BEGIN
   SELECT * INTO v FROM ids;
   PERFORM pg_temp.become(v.user_a);
-  UPDATE public.profile_recommendations SET score = 9999, reason = 'tampered' WHERE id = v.rec_a1;
-  GET DIAGNOSTICS n = ROW_COUNT;
-  ASSERT n = 0, 'there must be no client UPDATE policy on profile_recommendations';
+  BEGIN
+    -- 999, not 9999: score is numeric(6,3), and an out-of-range constant is
+    -- coerced before any row is examined, so the statement used to abort with a
+    -- numeric overflow and this assertion never ran at all.
+    UPDATE public.profile_recommendations SET score = 999, reason = 'tampered' WHERE id = v.rec_a1;
+    GET DIAGNOSTICS n = ROW_COUNT;
+  EXCEPTION WHEN insufficient_privilege THEN
+    -- Stronger than a missing policy: authenticated holds no UPDATE grant at
+    -- all, so the statement is refused outright. Either outcome satisfies the
+    -- property under test.
+    v_blocked := true;
+  END;
+  ASSERT v_blocked OR n = 0, 'clients must not be able to UPDATE profile_recommendations';
   RAISE NOTICE 'PASS  clients cannot rewrite scores or reasons directly';
 END $$;
 
@@ -250,10 +279,16 @@ BEGIN
   PERFORM pg_temp.become(v.user_b); -- free tier
 
   SELECT count(*) INTO n FROM public.discovery_content WHERE id = v.content_1;
-  ASSERT n = 1, 'any signed-in user may browse the active library';
+  ASSERT n = 1, 'any signed-in user may browse the active library, however old the item is';
 
   SELECT count(*) INTO n FROM public.discovery_content WHERE id = v.content_hidden;
   ASSERT n = 0, 'deactivated library items must be hidden';
+
+  SELECT count(*) INTO n FROM public.discovery_content WHERE id = v.content_fresh;
+  ASSERT n = 1, 'a recently discovered item is servable';
+
+  SELECT count(*) INTO n FROM public.discovery_content WHERE id = v.content_stale;
+  ASSERT n = 0, 'a stale discovered item must stay hidden — recency still applies off the library';
 
   BEGIN
     INSERT INTO public.discovery_content (url, canonical_url, content_key, title)
@@ -263,8 +298,45 @@ BEGIN
   END;
   ASSERT v_blocked, 'non-admins must not write to the shared library';
 
-  RAISE NOTICE 'PASS  library reads are open, writes are admin-only';
+  RAISE NOTICE 'PASS  library reads are open, recency applies only off the library, writes are admin-only';
 END $$;
+
+-- ---------------------------------------------------------------------------
+-- 7b. An admin can curate. The freshness migration dropped the admin write
+--     policy with no replacement, leaving the documented table-editor
+--     workflow silently broken.
+-- ---------------------------------------------------------------------------
+RESET ROLE; -- the fixture write below is a service-role setup step
+DO $$
+DECLARE v ids%ROWTYPE; n integer;
+BEGIN
+  SELECT * INTO v FROM ids;
+  INSERT INTO public.user_roles (user_id, role) VALUES (v.user_b, 'admin')
+    ON CONFLICT DO NOTHING;
+
+  PERFORM pg_temp.become(v.user_b);
+
+  INSERT INTO public.discovery_content (url, canonical_url, content_key, title, is_curated, active, published_at)
+  VALUES ('https://example.com/admin-added', 'https://example.com/admin-added', 'example.com/admin-added',
+          'An admin-curated addition', true, true, '2011-03-01'::timestamptz);
+
+  UPDATE public.discovery_content SET priority = 42 WHERE content_key = 'example.com/admin-added';
+  SELECT count(*) INTO n FROM public.discovery_content
+   WHERE content_key = 'example.com/admin-added' AND priority = 42;
+  ASSERT n = 1, 'an admin may insert and update library rows';
+
+  DELETE FROM public.discovery_content WHERE content_key = 'example.com/admin-added';
+
+  RAISE NOTICE 'PASS  admins can curate the library';
+END $$;
+
+RESET ROLE;
+DO $$ BEGIN
+  DELETE FROM public.user_roles WHERE user_id = (SELECT user_b FROM ids) AND role = 'admin';
+END $$;
+-- Hand the session back exactly as section 5 left it: the checks below rely on
+-- running as `authenticated` (pg_temp.become only swaps the JWT claims).
+SET LOCAL ROLE authenticated;
 
 -- ---------------------------------------------------------------------------
 -- 8. The scheduler RPC is service-role only, and picks only eligible profiles

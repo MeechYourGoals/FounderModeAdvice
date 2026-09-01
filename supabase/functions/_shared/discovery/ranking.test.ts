@@ -101,21 +101,33 @@ Deno.test("freshness — age is scored the same for timely and evergreen", () =>
   }), NOW), 0);
 });
 
-Deno.test("freshness — items older than 30 days score zero", () => {
-  const atWindow = candidate({
-    url: "https://example.com/edge",
-    title: "Launch industry weekly roundup",
-    intent: "timely",
-    publishedAt: daysAgo(30),
-  });
-  const pastWindow = candidate({
-    url: "https://example.com/old",
-    title: "Launch industry weekly roundup",
-    intent: "timely",
-    publishedAt: daysAgo(31),
-  });
-  assert.ok(freshnessScore(atWindow, NOW) > 0);
-  assert.equal(freshnessScore(pastWindow, NOW), 0);
+Deno.test("freshness — decays sharply inside a month, reaches zero at the window edge", () => {
+  const at = (days: number) =>
+    freshnessScore(
+      candidate({
+        url: `https://example.com/age-${days}`,
+        title: "Launch industry weekly roundup",
+        intent: "timely",
+        publishedAt: daysAgo(days),
+      }),
+      NOW,
+    );
+
+  // Recent material must clearly beat older material, or "timely" stops meaning
+  // anything now that admission runs to a year rather than 30 days.
+  assert.equal(at(3), 1);
+  assert.ok(at(3) > at(20));
+  assert.ok(at(20) > at(30));
+  assert.ok(at(30) > at(120));
+  assert.ok(at(120) > at(300));
+
+  // Most of the score is spent in the first month.
+  assert.ok(at(30) < 0.2);
+  assert.ok(at(30) > 0);
+
+  // Nothing outside the admission window scores at all.
+  assert.equal(at(366), 0);
+  assert.equal(at(3_650), 0);
 });
 
 Deno.test("a recent lesson outranks stale classics and same-week filler", () => {

@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BriefingBasis } from "@/components/discover/BriefingBasis";
 import { DiscoverEmptyState } from "@/components/discover/DiscoverEmptyState";
 import { DiscoveryCard } from "@/components/discover/DiscoveryCard";
 import { DiscoveryBriefingSkeleton, DiscoveryGridSkeleton } from "@/components/discover/DiscoveryCardSkeleton";
@@ -47,6 +48,7 @@ import {
   resolveDiscoverBoot,
   resolveDiscoverForYou,
 } from "@/lib/discoverBoot";
+import { classifyBriefingGap, describeBriefingGap } from "@/lib/briefingDiagnosis";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 import { cn } from "@/lib/utils";
 
@@ -300,17 +302,32 @@ const Discover = () => {
     try {
       const result = await requestRecommendationRefresh(feedProfileId);
       if (result.status === "ok") {
+        const itemCount = result.itemCount ?? 0;
+        const gap = itemCount > 0 ? null : classifyBriefingGap(result.diagnostics);
         // Scheduled generation happens server-side with no client present, so
         // this event only covers manual refreshes; the complete picture lives in
         // recommendation_batches (week_key, status, item_count, generation_stats).
         captureEvent("profile_recommendations_generated", {
           source: "manual",
-          item_count: result.itemCount ?? 0,
+          item_count: itemCount,
+          gap,
         });
-        toast({
-          title: "Briefing refreshed",
-          description: `${result.itemCount ?? 0} new picks for ${feedProfile?.company_name ?? "your company"}.`,
-        });
+        if (itemCount > 0) {
+          toast({
+            title: "Briefing refreshed",
+            description: `${itemCount} new picks for ${feedProfile?.company_name ?? "your company"}.`,
+          });
+        } else {
+          // A refresh that found nothing is not a success, and saying so is the
+          // difference between "the app is broken" and "here is what happened".
+          const copy = describeBriefingGap(gap!, feedProfile?.company_name, result.diagnostics);
+          toast({
+            title: "Nothing new to add",
+            description: result.retainedExistingEdition
+              ? `${copy.description} Your current briefing is unchanged.`
+              : copy.description,
+          });
+        }
         await reloadFeed();
       } else {
         toast({
@@ -354,6 +371,19 @@ const Discover = () => {
   };
 
   // ------------------------------------------------------------- rendering ---
+
+  // "Still gathering" is only true before the first run. Once a batch exists and
+  // came back empty, the batch itself records why — say that instead, so a
+  // missing search key does not read as a slow week.
+  const emptyStateCopy = useMemo(
+    () =>
+      describeBriefingGap(
+        classifyBriefingGap(selectedBatch?.generation_stats),
+        feedProfile?.company_name,
+        selectedBatch?.generation_stats,
+      ),
+    [feedProfile?.company_name, selectedBatch?.generation_stats],
+  );
 
   const inspirationGrid = useMemo(
     () => (
@@ -572,6 +602,13 @@ const Discover = () => {
                     </div>
                   )}
 
+                  {!itemsLoading && (
+                    <BriefingBasis
+                      stats={selectedBatch?.generation_stats}
+                      companyName={feedProfile?.company_name}
+                    />
+                  )}
+
                   {itemsLoading ? (
                     <DiscoveryBriefingSkeleton />
                   ) : recommendations.length > 0 ? (
@@ -599,8 +636,8 @@ const Discover = () => {
                   ) : (
                     <>
                       <DiscoverEmptyState
-                        title={`I'm still gathering this week's set for ${feedProfile?.company_name ?? "your company"}`}
-                        description="The first briefing lands on the weekly cycle. Meanwhile, the Inspiration Library is ready whenever you want a memo."
+                        title={emptyStateCopy.title}
+                        description={emptyStateCopy.description}
                         action={{ label: "Refresh now", onClick: () => void refreshRecommendations() }}
                         secondaryAction={{ label: "Browse inspiration", onClick: () => setTab("inspiration") }}
                       />

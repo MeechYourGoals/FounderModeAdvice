@@ -10,7 +10,8 @@
 //
 // Per profile:
 //   claim week slot → context → query plan → providers → rank/dedupe/select
-//   → persist content + recommendations → one batched "why this" model call
+//   → evergreen fill if short → persist content + recommendations
+//   → one batched "why this" model call
 //
 // Cost shape: at most two model calls per profile (query expansion + reasons),
 // a bounded number of provider calls, and zero page fetches. The expensive
@@ -20,7 +21,8 @@
 // Required secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, CRON_SECRET.
 // Optional: LOVABLE_API_KEY (reasons + sharper queries), BRAVE_SEARCH_API_KEY,
 // YOUTUBE_API_KEY, ONESIGNAL_APP_ID + ONESIGNAL_REST_API_KEY (notification).
-// With no optional keys the job still runs, serving the curated library.
+// With no optional keys the job still runs, filling each edition from the
+// curated library.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
@@ -32,12 +34,13 @@ import {
 } from "../_shared/discovery/context.ts";
 import { buildQueryPlan, expandQueries, type DiscoveryQuery } from "../_shared/discovery/queries.ts";
 import {
+  createEvergreenFill,
   resolveProviders,
   toResult,
   type DiscoveryProvider,
   type DiscoveryResult,
 } from "../_shared/discovery/providers.ts";
-import { filterRecentResults, publishedAfterIso } from "../_shared/discovery/recency.ts";
+import { filterBriefingEligible } from "../_shared/discovery/recency.ts";
 import {
   contextTerms,
   scoreCandidate,
@@ -158,16 +161,18 @@ function curatedLoader(supabase: ReturnType<typeof createClient>, ctx: Recommend
   return async (limit: number): Promise<DiscoveryResult[]> => {
     // Prefer items tagged with one of this profile's categories, then fill from
     // the highest-priority curated items so the list is never empty.
+    //
+    // Deliberately unfiltered by date: these rows are editorial and timeless
+    // (Paul Graham on ideas, Steve Blank on customer development). A recency
+    // filter here is what emptied the library and, with it, every briefing.
     const select =
       "url, canonical_url, content_key, title, description, image_url, publisher, author, published_at, content_type, duration_seconds, language, categories";
-    const since = publishedAfterIso();
     const [tagged, general] = await Promise.all([
       supabase
         .from("discovery_content")
         .select(select)
         .eq("active", true)
         .eq("is_curated", true)
-        .gte("published_at", since)
         .overlaps("categories", ctx.categories.length > 0 ? ctx.categories : ["Startups"])
         .order("priority", { ascending: false })
         .limit(limit),
@@ -176,7 +181,6 @@ function curatedLoader(supabase: ReturnType<typeof createClient>, ctx: Recommend
         .select(select)
         .eq("active", true)
         .eq("is_curated", true)
-        .gte("published_at", since)
         .order("priority", { ascending: false })
         .limit(limit),
     ]);
@@ -200,6 +204,7 @@ function curatedLoader(supabase: ReturnType<typeof createClient>, ctx: Recommend
         durationSeconds: (row.duration_seconds as number | null) ?? null,
         language: row.language,
         providerId: "curated",
+        recencyBasis: "evergreen",
         rank: out.length,
         intent: "evergreen",
         label: Array.isArray(row.categories) ? (row.categories[0] as string) : undefined,
@@ -264,6 +269,12 @@ interface ProfileOutcome {
   reason?: string;
   batchId?: string;
   userId?: string;
+  /** What the run actually did, so the client can explain an empty edition. */
+  stats?: Record<string, unknown>;
+  /** Provider ids that were configured, even if they returned nothing. */
+  providersConfigured?: string[];
+  /** True when a fruitless manual refresh left the previous edition in place. */
+  retainedExistingEdition?: boolean;
 }
 
 async function generateForProfile(
@@ -325,16 +336,14 @@ async function generateForProfile(
       : [];
     const plan = buildQueryPlan(context, expanded, MAX_QUERIES_PER_PROFILE);
 
-    const providers = resolveProviders(
-      {
-        braveApiKey: Deno.env.get("BRAVE_SEARCH_API_KEY"),
-        youTubeApiKey: Deno.env.get("YOUTUBE_API_KEY"),
-      },
-      curatedLoader(supabase, context),
-    );
+    const providers = resolveProviders({
+      braveApiKey: Deno.env.get("BRAVE_SEARCH_API_KEY"),
+      youTubeApiKey: Deno.env.get("YOUTUBE_API_KEY"),
+    });
+    const evergreenFill = createEvergreenFill(curatedLoader(supabase, context));
 
     const gatheredCandidates = await gatherCandidates(providers, plan, stats);
-    const candidates = filterRecentResults(gatheredCandidates);
+    const candidates = filterBriefingEligible(gatheredCandidates);
     const rejectedMissingDate = gatheredCandidates.filter((candidate) => !candidate.publishedAt).length;
     const rejectedStaleOrFuture = gatheredCandidates.length - candidates.length - rejectedMissingDate;
 
@@ -361,21 +370,72 @@ async function generateForProfile(
     const scored = candidates.map((result) =>
       scoreCandidate(result, context, terms, { seenContentKeys }),
     );
-    const rankedPicks = selectRecommendations(scored, {
+    const selectOptions = {
       limit: RECOMMENDATIONS_PER_BATCH,
       maxPerHost: 2,
       // Soft format mix: no single type may take more than ~40% of an edition.
       maxPerContentType: Math.max(2, Math.ceil(RECOMMENDATIONS_PER_BATCH * 0.4)),
-    });
+    };
+    const rankedPicks = selectRecommendations(scored, selectOptions);
     // Defense immediately before persistence/LLM reasoning. This is intentionally
     // redundant with candidate admission: no future ranking or fallback change
     // may turn an ineligible candidate into a persisted recommendation.
-    const picked = rankedPicks.filter((candidate) => filterRecentResults([candidate.result]).length === 1);
-    if (picked.length !== rankedPicks.length) {
+    const timelyPicks = rankedPicks.filter(
+      (candidate) => filterBriefingEligible([candidate.result]).length === 1,
+    );
+    if (timelyPicks.length !== rankedPicks.length) {
       console.error("[discovery] daily_brief_freshness_violation", {
-        rejectedAtPersistence: rankedPicks.length - picked.length,
+        rejectedAtPersistence: rankedPicks.length - timelyPicks.length,
       });
     }
+
+    // ---- Tier 2: evergreen fill ------------------------------------------
+    //
+    // Live search can be thin (a quiet week), unconfigured (no provider keys),
+    // or down. None of those should hand the user a blank page when there is a
+    // curated library sitting right there. Fill runs through the same scorer,
+    // so the previously-seen penalty still suppresses repeats and an item the
+    // profile has already been shown loses to one it has not.
+    //
+    // The cap is asymmetric on purpose: a first edition may be entirely
+    // evergreen — a brand-new profile has seen nothing, and ten genuinely good
+    // essays is a fine first briefing. After that, fill is capped at half, so a
+    // provider outage shows up as a visibly short edition rather than a full one
+    // of re-runs the user has already read.
+    const fillNeeded = RECOMMENDATIONS_PER_BATCH - timelyPicks.length;
+    let fillPicks: ScoredCandidate[] = [];
+    if (fillNeeded > 0) {
+      const fillCap = seenContentKeys.size === 0
+        ? RECOMMENDATIONS_PER_BATCH
+        : Math.ceil(RECOMMENDATIONS_PER_BATCH * 0.5);
+      const want = Math.min(fillNeeded, fillCap);
+      if (want > 0) {
+        const pickedKeys = new Set(timelyPicks.map((candidate) => candidate.result.contentKey));
+        const fillCandidates = (await evergreenFill(want * 3))
+          .filter((result) => !pickedKeys.has(result.contentKey))
+          .map((result) => scoreCandidate(result, context, terms, { seenContentKeys }));
+        fillPicks = selectRecommendations(fillCandidates, { ...selectOptions, limit: want });
+      }
+    }
+
+    // Timely first, so the featured card is a live find whenever there is one.
+    const picked = [...timelyPicks, ...fillPicks];
+
+    const providersConfigured = providers.map((provider) => provider.id);
+    // Everything the UI needs to say WHY an edition looks the way it does,
+    // rather than falling back on "still gathering" for every failure mode.
+    // Counts and provider ids only, plus the searches — which derive from the
+    // owner's own profile and are shown back to them in the app.
+    const baseStats = {
+      queries: plan.length,
+      providers_configured: providersConfigured,
+      query_plan: plan.slice(0, 10).map((query) => ({ q: query.query, intent: query.intent })),
+      context_terms: terms.slice(0, 12),
+      daily_brief_candidates_total: gatheredCandidates.length,
+      daily_brief_candidates_rejected_stale: rejectedStaleOrFuture,
+      daily_brief_candidates_rejected_missing_date: rejectedMissingDate,
+      daily_brief_candidates_eligible: candidates.length,
+    };
 
     if (picked.length === 0) {
       // A fruitless manual refresh must not destroy the edition the user
@@ -383,31 +443,41 @@ async function generateForProfile(
       if (source === "manual") {
         const { data: existingItems } = await supabase
           .from("profile_recommendations")
-          .select("id, discovery_content!inner(published_at)")
+          .select("id")
           .eq("batch_id", batchId)
-          .gte("discovery_content.published_at", publishedAfterIso())
           .limit(1);
         if (existingItems && existingItems.length > 0) {
-          return { profileId: profile.id, status: "empty", batchId, userId, reason: "nothing new found" };
+          return {
+            profileId: profile.id,
+            status: "empty",
+            batchId,
+            userId,
+            reason: "nothing new found",
+            stats: { ...baseStats, selected: 0, evergreen_fill: 0 },
+            providersConfigured,
+            retainedExistingEdition: true,
+          };
         }
       }
+      const emptyStats = {
+        ...baseStats,
+        selected: 0,
+        evergreen_fill: 0,
+        daily_brief_oldest_item_age_days: null,
+        daily_brief_freshness_violation: 0,
+      };
       await supabase
         .from("recommendation_batches")
-        .update({
-          status: "empty",
-          item_count: 0,
-          generation_stats: {
-            queries: plan.length,
-            daily_brief_candidates_total: gatheredCandidates.length,
-            daily_brief_candidates_rejected_stale: rejectedStaleOrFuture,
-            daily_brief_candidates_rejected_missing_date: rejectedMissingDate,
-            daily_brief_candidates_eligible: candidates.length,
-            daily_brief_oldest_item_age_days: null,
-            daily_brief_freshness_violation: 0,
-          },
-        })
+        .update({ status: "empty", item_count: 0, generation_stats: emptyStats })
         .eq("id", batchId);
-      return { profileId: profile.id, status: "empty", batchId, userId };
+      return {
+        profileId: profile.id,
+        status: "empty",
+        batchId,
+        userId,
+        stats: emptyStats,
+        providersConfigured,
+      };
     }
 
     const contentIds = await persistContent(supabase, picked);
@@ -448,6 +518,27 @@ async function generateForProfile(
       .upsert(rows, { onConflict: "batch_id,content_id", ignoreDuplicates: true });
     if (insertError) throw new Error(`Could not save recommendations: ${insertError.message}`);
 
+    // Age of the oldest DATED, non-evergreen pick. Evergreen fill is excluded by
+    // design (a 2004 essay is not a freshness violation), and an edition made
+    // entirely of fill reports null rather than the NaN a bare Math.max over an
+    // empty list would produce — this is the metric the recency invariant is
+    // monitored by, so it has to stay a number or an honest null.
+    const datedAges = picked
+      .filter((candidate) => candidate.result.recencyBasis !== "evergreen" && candidate.result.publishedAt)
+      .map((candidate) => (Date.now() - Date.parse(candidate.result.publishedAt!)) / 86_400_000)
+      .filter((age) => Number.isFinite(age));
+
+    const readyStats = {
+      ...baseStats,
+      candidates: candidates.length,
+      selected: rows.length,
+      evergreen_fill: fillPicks.length,
+      providers: [...new Set(picked.map((candidate) => candidate.result.providerId))],
+      reasons_generated: reasons.size,
+      daily_brief_oldest_item_age_days: datedAges.length > 0 ? Math.max(...datedAges) : null,
+      daily_brief_freshness_violation: rankedPicks.length - timelyPicks.length,
+    };
+
     await supabase
       .from("recommendation_batches")
       .update({
@@ -455,27 +546,19 @@ async function generateForProfile(
         item_count: rows.length,
         generation_source: source,
         error_message: null,
-        generation_stats: {
-          queries: plan.length,
-          candidates: candidates.length,
-          selected: rows.length,
-          providers: [...new Set(candidates.map((c) => c.providerId))],
-          reasons_generated: reasons.size,
-          daily_brief_candidates_total: gatheredCandidates.length,
-          daily_brief_candidates_rejected_stale: rejectedStaleOrFuture,
-          daily_brief_candidates_rejected_missing_date: rejectedMissingDate,
-          daily_brief_candidates_eligible: candidates.length,
-          daily_brief_oldest_item_age_days: Math.max(
-            ...picked.map((candidate) =>
-              (Date.now() - Date.parse(candidate.result.publishedAt!)) / 86_400_000
-            ),
-          ),
-          daily_brief_freshness_violation: rankedPicks.length - picked.length,
-        },
+        generation_stats: readyStats,
       })
       .eq("id", batchId);
 
-    return { profileId: profile.id, status: "created", itemCount: rows.length, batchId, userId };
+    return {
+      profileId: profile.id,
+      status: "created",
+      itemCount: rows.length,
+      batchId,
+      userId,
+      stats: readyStats,
+      providersConfigured,
+    };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error(`[discovery] profile ${profile.id} failed:`, message);
@@ -684,6 +767,20 @@ serve(async (req) => {
     return json({ error: "Could not refresh recommendations. Please try again." }, 502);
   }
 
+  // Refund the allowance when no work was performed. The rule is deliberately
+  // "nothing was called", not "nothing was found": a refresh that queried
+  // providers and came back empty still spent money and still counts. But two
+  // presses against a deployment with no provider keys used to cost a user
+  // their whole day for a run that could never have returned anything.
+  if (stats.providerCalls === 0 && (outcome.itemCount ?? 0) === 0) {
+    const { error: refundError } = await supabase.rpc("refund_rate_limit", {
+      _user_id: user.id,
+      _key: `discovery_refresh:${profileId}`,
+      _window: "24 hours",
+    });
+    if (refundError) console.warn("[discovery] rate limit refund failed:", refundError.message);
+  }
+
   await supabase
     .from("profile_recommendation_contexts")
     .update({ last_manual_refresh_at: new Date().toISOString() })
@@ -694,5 +791,12 @@ serve(async (req) => {
     batchId: outcome.batchId,
     status: outcome.status,
     itemCount: outcome.itemCount ?? 0,
+    // Owner-scoped counts, provider ids, and the searches run for this profile.
+    // Lets the client say why an edition is empty instead of guessing.
+    diagnostics: {
+      ...(outcome.stats ?? {}),
+      providers_configured: outcome.providersConfigured ?? [],
+      retained_existing_edition: outcome.retainedExistingEdition ?? false,
+    },
   });
 });
