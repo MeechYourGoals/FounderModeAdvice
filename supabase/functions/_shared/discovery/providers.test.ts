@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {
   braveWebQueryParams,
   createEvergreenFill,
+  exaSearchBody,
   inferContentType,
   parseBraveAge,
   parseIsoDuration,
@@ -97,11 +98,15 @@ Deno.test("resolveProviders — only configured vendors are used, and none is a 
   // non-empty, so this must be an empty list rather than a stand-in provider.
   assert.deepEqual(resolveProviders({}).map((p) => p.id), []);
 
-  const all = resolveProviders({ braveApiKey: "k", youTubeApiKey: "y" });
-  assert.deepEqual(all.map((p) => p.id), ["brave_web", "brave_news", "youtube"]);
+  const all = resolveProviders({ braveApiKey: "k", youTubeApiKey: "y", exaApiKey: "e" });
+  assert.deepEqual(all.map((p) => p.id), ["brave_web", "brave_news", "exa", "youtube"]);
 
   const braveOnly = resolveProviders({ braveApiKey: "k" });
   assert.ok(!braveOnly.some((p) => p.id === "youtube"));
+  assert.ok(!braveOnly.some((p) => p.id === "exa"));
+
+  // Exa alone is a complete deployment — it covers both intents.
+  assert.deepEqual(resolveProviders({ exaApiKey: "e" }).map((p) => p.id), ["exa"]);
 });
 
 Deno.test("news providers decline evergreen intents", () => {
@@ -220,4 +225,83 @@ Deno.test("Brave Web — a hit that carries a real date is still admitted", () =
   })!;
   assert.equal(dated.recencyBasis, "published_at");
   assert.equal(isBriefingEligible(dated), true);
+});
+
+Deno.test("Exa — the request carries our own admission window, not a vendor bucket", () => {
+  const now = Date.parse("2026-08-21T12:00:00Z");
+  const body = exaSearchBody({ query: "sports industry developments", intent: "timely" }, 10, now);
+  // Exa filters on the real publication date, so the vendor filter and
+  // isRecentEnough cannot drift apart the way Brave's coarse buckets did.
+  assert.equal(body.startPublishedDate, publishedAfterIso(now));
+  assert.equal(body.query, "sports industry developments");
+  assert.equal(body.numResults, 10);
+  assert.equal(body.type, "auto");
+});
+
+Deno.test("Exa — numResults is clamped, and category is only set where it is unambiguous", () => {
+  const now = Date.parse("2026-08-21T12:00:00Z");
+  assert.equal(exaSearchBody({ query: "q for testing", intent: "timely" }, 500, now).numResults, 25);
+  assert.equal(exaSearchBody({ query: "q for testing", intent: "timely" }, 0, now).numResults, 1);
+
+  // Research is the one intent where a category narrows without losing good
+  // material; forcing "news" on every timely query would drop operator blogs.
+  assert.equal(
+    exaSearchBody({ query: "ai research overview", intent: "evergreen", prefer: "research" }, 10, now).category,
+    "research paper",
+  );
+  assert.equal(exaSearchBody({ query: "sports industry news", intent: "timely" }, 10, now).category, undefined);
+  assert.equal(
+    exaSearchBody({ query: "founder interview lessons", intent: "evergreen" }, 10, now).category,
+    undefined,
+  );
+});
+
+Deno.test("Exa — dated hits are admitted, undated ones are not", async () => {
+  const originalFetch = globalThis.fetch;
+  let sentBody: Record<string, unknown> = {};
+  let sentAuth: string | null = null;
+  globalThis.fetch = ((_input: string | URL | Request, init?: RequestInit) => {
+    sentBody = JSON.parse(String(init?.body ?? "{}"));
+    sentAuth = new Headers(init?.headers).get("x-api-key");
+    return Promise.resolve(
+      new Response(
+        JSON.stringify({
+          requestId: "r1",
+          results: [
+            {
+              url: "https://example.com/dated-piece",
+              title: "A piece that reports its publication date",
+              publishedDate: new Date(Date.now() - 3 * 86_400_000).toISOString(),
+              author: "A Writer",
+              image: "https://example.com/cover.png",
+            },
+            {
+              url: "https://example.com/undated-piece",
+              title: "A piece with no publication date at all",
+              publishedDate: null,
+            },
+          ],
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+  }) as typeof fetch;
+
+  try {
+    const exa = resolveProviders({ exaApiKey: "secret-key" }).find((p) => p.id === "exa")!;
+    const results = await exa.search({ query: "sports industry developments", intent: "timely" }, { limit: 10 });
+
+    assert.equal(sentAuth, "secret-key", "authenticates with x-api-key");
+    assert.ok(typeof sentBody.startPublishedDate === "string", "sends the date window");
+
+    assert.equal(results.length, 2, "both hits map cleanly");
+    const [dated, undated] = results;
+    assert.equal(dated.author, "A Writer");
+    assert.equal(dated.publisher, "example.com");
+    assert.equal(isBriefingEligible(dated), true);
+    assert.equal(undated.publishedAt, null);
+    assert.equal(isBriefingEligible(undated), false, "an undated Exa hit is refused like any other");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });

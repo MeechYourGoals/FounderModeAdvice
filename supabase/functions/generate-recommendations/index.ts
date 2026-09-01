@@ -20,7 +20,7 @@
 //
 // Required secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, CRON_SECRET.
 // Optional: LOVABLE_API_KEY (reasons + sharper queries), BRAVE_SEARCH_API_KEY,
-// YOUTUBE_API_KEY, ONESIGNAL_APP_ID + ONESIGNAL_REST_API_KEY (notification).
+// EXA_API_KEY, YOUTUBE_API_KEY, ONESIGNAL_APP_ID + ONESIGNAL_REST_API_KEY.
 // With no optional keys the job still runs, filling each edition from the
 // curated library.
 
@@ -339,6 +339,7 @@ async function generateForProfile(
     const providers = resolveProviders({
       braveApiKey: Deno.env.get("BRAVE_SEARCH_API_KEY"),
       youTubeApiKey: Deno.env.get("YOUTUBE_API_KEY"),
+      exaApiKey: Deno.env.get("EXA_API_KEY"),
     });
     const evergreenFill = createEvergreenFill(curatedLoader(supabase, context));
 
