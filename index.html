@@ -76,6 +76,18 @@
     }
   }
   </script>
+  <script>
+    (function () {
+      if (location.hostname === "www.foundermodeadvice.com") {
+        location.replace(
+          "https://foundermodeadvice.com" +
+            location.pathname +
+            location.search +
+            location.hash,
+        );
+      }
+    })();
+  </script>
 </head>
 
   <body>

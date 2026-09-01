@@ -1,6 +1,9 @@
 /** Production custom domain apex — OAuth PKCE must start and finish on this origin. */
 export const CANONICAL_WEB_ORIGIN = "https://foundermodeadvice.com";
 
+/** Apple Services ID for web OAuth only. Native iOS uses the bundle id via signInWithIdToken. */
+export const APPLE_WEB_SERVICES_CLIENT_ID = "com.foundermodeadvice.app.auth";
+
 const PRODUCTION_HOSTS = new Set(["foundermodeadvice.com", "www.foundermodeadvice.com"]);
 
 /**

@@ -153,26 +153,26 @@
     "publishingStatus": "Must be 'In production'. 'Testing' caps sign-in at 100 users and expires refresh tokens after 7 days."
   },
 
-  "lovableAuth": {
-    "_comment": "The app signs in through Lovable Cloud's OAuth broker, not supabase.auth.signInWithOAuth — src/pages/Auth.tsx says so explicitly ('missing OAuth secret' if called directly). Scripts 09-11 change WHOSE client the broker presents, not whether the broker is used.",
-    "projectId": "3d30aa39-abcb-406b-9441-e7a7f14b5734",
-    "brokerCallbackUrl": "CAPTURE from script 11 §1 — read off the provider screen character for character; scripts 09 and 10 both need it",
-    "brokerInitiatePath": "/~oauth/initiate (same-origin; intercepted by native/App.tsx and handed to ASWebAuthenticationSession because Google rejects embedded WebViews)",
-    "supabaseDirectAccess": "CAPTURE — script 11 §1b checks whether supabase.com/dashboard/project/iffcuueutmsusgdfekvm is reachable for this account",
-    "googleCredentialMode": "CAPTURE — managed / own",
-    "appleCredentialMode": "CAPTURE — managed / own",
-    "appleClientIds": "com.foundermodeadvice.app.auth,com.foundermodeadvice.app",
-    "appleClientIdsWarning": "BOTH values are required. The Services ID serves web sign-in; the iOS bundle ID serves the native AuthenticationServices sheet, whose identity token carries the bundle ID as its aud and is exchanged via supabase.auth.signInWithIdToken. Dropping the bundle ID breaks Apple sign-in in the shipped iOS app.",
+  "supabaseAuth": {
+    "_comment": "Web Google/Apple sign-in uses supabase.auth.signInWithOAuth (PKCE). The app forces apex redirectTo and passes client_id=com.foundermodeadvice.app.auth for web Apple OAuth so Supabase cannot comma-join the bundle ID.",
+    "siteUrl": "https://foundermodeadvice.com",
+    "webRedirectTo": "https://foundermodeadvice.com/auth",
+    "nativeRedirectTo": "com.foundermodeadvice.app://auth/callback",
+    "googleJsOrigin": "https://foundermodeadvice.com",
+    "googleClientId": "409793397680-8pk4j6ac1c0fqj0gn9tmbk8gbtfuams9.apps.googleusercontent.com",
+    "googleAuthorizedRedirectUri": "https://iffcuueutmsusgdfekvm.supabase.co/auth/v1/callback",
+    "appleServicesClientId": "com.foundermodeadvice.app.auth",
+    "appleNativeBundleId": "com.foundermodeadvice.app",
+    "appleReturnUrl": "https://iffcuueutmsusgdfekvm.supabase.co/auth/v1/callback",
+    "appleClientIdsWarning": "Supabase Apple OAuth Client IDs must be the Services ID only. Comma-joining the bundle ID breaks web Apple sign-in (invalid_client). Native iOS uses signInWithIdToken, not this field.",
+    "legacyLovableCallbackApexOnly": "If any allow-list still has /~oauth/callback, it must be https://foundermodeadvice.com/~oauth/callback — never www. Production 2026-09-01 showed www, which 302s and breaks Apple form_post.",
     "redirectAllowlist": [
-      "https://foundermodeadvice.com/auth/callback",
+      "https://foundermodeadvice.com/auth",
       "https://foundermodeadvice.com/**",
       "com.foundermodeadvice.app://auth/callback",
-      "http://localhost:8080/auth/callback",
+      "http://localhost:8080/auth",
       "http://localhost:8080/**"
-    ],
-    "siteUrl": "https://foundermodeadvice.com",
-    "featureFlag": "NONE. This repo has no VITE_FEATURE_* variable and needs none — nothing in the provider switch is build-time. No redeploy, no new binary.",
-    "rollback": "Switch both providers back to 'Managed by Lovable'. Takes effect within a minute; no redeploy and no App Store round trip."
+    ]
   },
 
   "oneSignal": {

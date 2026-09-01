@@ -1,8 +1,31 @@
 import { Capacitor } from "@capacitor/core";
-import type { Provider } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { getOAuthRedirectUrl } from "@/lib/appMode";
+import { CANONICAL_WEB_ORIGIN } from "@/lib/canonicalOrigin";
+import { getOAuthRedirectUrl, redirectWwwToApexIfNeeded } from "@/lib/appMode";
 import { isExpoShell, postToShell } from "@/services/expoShellService";
+import {
+  buildWebOAuthOptions,
+  type WebOAuthProvider,
+} from "@/lib/webOAuthBuild";
+
+export type { WebOAuthProvider } from "@/lib/webOAuthBuild";
+export { buildWebOAuthOptions } from "@/lib/webOAuthBuild";
+
+/**
+ * OAuth must never start on www — PKCE storage and Apple form_post both require
+ * the same apex origin as redirectTo. Returns false when a redirect is in flight.
+ */
+export function ensureApexBeforeOAuth(): boolean {
+  if (typeof window === "undefined") return true;
+  if (redirectWwwToApexIfNeeded()) return false;
+  if (window.location.hostname === "www.foundermodeadvice.com") {
+    window.location.replace(
+      `${CANONICAL_WEB_ORIGIN}${window.location.pathname}${window.location.search}${window.location.hash}`,
+    );
+    return false;
+  }
+  return true;
+}
 
 /**
  * Start Google or Apple sign-in through Supabase Auth (PKCE). Provider OAuth
@@ -10,16 +33,18 @@ import { isExpoShell, postToShell } from "@/services/expoShellService";
  * redirectTo on the apex host so verifier storage matches the return URL.
  */
 export async function signInWithOAuthProvider(
-  provider: Extract<Provider, "google" | "apple">,
-): Promise<{ error: Error | null }> {
+  provider: WebOAuthProvider,
+): Promise<{ error: Error | null; redirected?: boolean }> {
+  if (!ensureApexBeforeOAuth()) {
+    return { error: null, redirected: true };
+  }
+
   const needsExternalSession = isExpoShell() || Capacitor.isNativePlatform();
+  const redirectTo = getOAuthRedirectUrl();
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
-    options: {
-      redirectTo: getOAuthRedirectUrl(),
-      skipBrowserRedirect: needsExternalSession,
-    },
+    options: buildWebOAuthOptions(provider, needsExternalSession, redirectTo),
   });
 
   if (error) return { error };
@@ -30,9 +55,9 @@ export async function signInWithOAuthProvider(
         window.location.assign(data.url);
       }
     } else {
-      // Capacitor: leave the embedded WebView; appUrlOpen delivers the scheme callback.
       window.location.assign(data.url);
     }
+    return { error: null, redirected: true };
   }
 
   return { error: null };

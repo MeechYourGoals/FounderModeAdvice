@@ -94,22 +94,21 @@ After I confirm, save, reload, and read back:
 
 Pause for my OK first. Switch Apple to **"Use your own credentials"**. Then:
 
-**Client IDs must be exactly this comma-separated pair, no spaces:**
+**Client IDs must be the Services ID only — never comma-join the bundle ID:**
 
 ```
-com.foundermodeadvice.app.auth,com.foundermodeadvice.app
+com.foundermodeadvice.app.auth
 ```
 
-**Both entries are load-bearing, for different code paths:**
+**Why the old comma-separated pair breaks web sign-in:** Supabase forwards the
+Client IDs string as `client_id` on the Apple authorize URL. Apple rejects
+`com.foundermodeadvice.app.auth,com.foundermodeadvice.app` with `invalid_client`
+(yellow error page, no login form). Web OAuth must present the Services ID alone.
 
-- `com.foundermodeadvice.app.auth` is the **Services ID**. It is what the browser sign-in
-  flow presents on the web.
-- `com.foundermodeadvice.app` is the **iOS bundle ID**. In the App Store build, Sign in with
-  Apple is a native AuthenticationServices sheet whose identity token carries the *bundle ID*
-  as its audience (`aud`), and the app exchanges it via `supabase.auth.signInWithIdToken`.
-  **If the bundle ID is missing from this field, native Apple sign-in breaks in the shipped
-  iOS app** — it will reject the token's audience. This is the single highest-risk field in
-  the whole runbook.
+**Native iOS is a separate code path:** the App Store build uses
+AuthenticationServices + `supabase.auth.signInWithIdToken`, whose token carries
+the bundle ID (`com.foundermodeadvice.app`) as `aud`. That does **not** go
+through this OAuth client_id field. Do not concatenate the bundle ID here.
 
 Then tell me which fields the UI wants for the signing key — Team ID, Key ID, and either a
 `.p8` file upload or a pasted private key. I will supply those values.
