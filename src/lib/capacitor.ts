@@ -39,9 +39,8 @@ export async function initializeNativePlugins() {
 
     App.addListener('appUrlOpen', ({ url }) => {
       console.log('App opened with URL:', url);
-      // OAuth return: com.foundermodeadvice.app://auth/callback?access_token=…
-      // (broker) or ?code=… (PKCE). Hand the credentials to /auth/callback,
-      // which is the single place that knows how to finish every variant.
+      // OAuth return: com.foundermodeadvice.app://auth/callback?code=… (PKCE).
+      // Hand credentials to /auth/callback, the single place that finishes every variant.
       if (url.includes('auth/callback')) {
         const marker = 'auth/callback';
         const tail = url.slice(url.indexOf(marker) + marker.length);

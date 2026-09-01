@@ -1,6 +1,11 @@
 import { Capacitor } from "@capacitor/core";
 import { isDespia } from "@/services/despiaService";
 import { isExpoShell } from "@/services/expoShellService";
+import {
+  apexRedirectTarget,
+  canonicalWebOriginForHost,
+  shouldRedirectWwwToApex,
+} from "@/lib/canonicalOrigin";
 
 /**
  * Centralized environment / app-mode detection.
@@ -14,11 +19,7 @@ import { isExpoShell } from "@/services/expoShellService";
 export const NATIVE_OAUTH_REDIRECT = "com.foundermodeadvice.app://auth/callback";
 
 /**
- * True only for Lovable sandbox/preview hosts, which cannot be added to the OAuth
- * allow-list and therefore must go through the Lovable managed auth bridge.
- *
- * Everything else — the published *.lovable.app domain, the FounderModeAdvice.com
- * custom domain, native wrappers, and localhost — uses Supabase OAuth directly.
+ * True only for Lovable sandbox/preview hosts (session broker for the editor iframe).
  */
 export const isLovablePreview = (): boolean => {
   if (typeof window === "undefined") return false;
@@ -69,12 +70,41 @@ export const shouldShowAppAuthFirst = (): boolean =>
   isStandalonePWA() || isNativeWrapper();
 
 /** Where OAuth providers should redirect back to after the user picks an account. */
+export const getCanonicalWebOrigin = (): string => {
+  if (typeof window === "undefined") {
+    const fromEnv = import.meta.env.VITE_APP_URL as string | undefined;
+    if (fromEnv) {
+      try {
+        return new URL(fromEnv).origin;
+      } catch {
+        // fall through
+      }
+    }
+    return canonicalWebOriginForHost("foundermodeadvice.com", "https://foundermodeadvice.com");
+  }
+  return canonicalWebOriginForHost(window.location.hostname, window.location.origin);
+};
+
+/**
+ * Redirect www → apex before OAuth or session work so PKCE start and finish share
+ * one origin. Returns true when navigation was triggered.
+ */
+export const redirectWwwToApexIfNeeded = (): boolean => {
+  if (typeof window === "undefined") return false;
+  if (!shouldRedirectWwwToApex(window.location.hostname)) return false;
+  window.location.replace(
+    apexRedirectTarget(window.location.pathname, window.location.search, window.location.hash),
+  );
+  return true;
+};
+
+/** Where OAuth providers should redirect back to after the user picks an account. */
 export const getOAuthRedirectUrl = (): string => {
   // Both native containers need the provider to return through the registered
   // app scheme. The Expo shell completes OAuth in an ASWebAuthenticationSession
   // and then routes this callback back into the embedded web app.
   if (Capacitor.isNativePlatform() || isExpoShell()) return NATIVE_OAUTH_REDIRECT;
-  return `${window.location.origin}/auth/callback`;
+  return `${getCanonicalWebOrigin()}/auth/callback`;
 };
 
 /**

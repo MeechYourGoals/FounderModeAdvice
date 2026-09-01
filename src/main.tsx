@@ -5,10 +5,15 @@ import "./index.css";
 import { initializeNativePlugins, handleBackButton, initKeyboardViewportWatcher } from "./lib/capacitor";
 import { isDespia } from "./services/despiaService";
 import { isExpoShell, syncShellTheme } from "./services/expoShellService";
-import { isNativeWrapper, isStandalonePWA, getRuntimeSurface } from "./lib/appMode";
+import { isNativeWrapper, isStandalonePWA, getRuntimeSurface, redirectWwwToApexIfNeeded } from "./lib/appMode";
 import { initPushNotifications } from "./services/pushService";
 import { initAnalytics, captureEvent } from "./services/analytics";
 import { Capacitor } from "@capacitor/core";
+
+// www → apex before React mounts so OAuth PKCE verifier and callback share one origin.
+if (redirectWwwToApexIfNeeded()) {
+  // Navigation in progress; do not boot the app on www.
+} else {
 
 // Dev / Lovable-preview only: purge any service worker + Workbox caches left
 // behind on this origin by an earlier build. The PWA plugin doesn't emit a
@@ -91,3 +96,4 @@ createRoot(document.getElementById("root")!).render(
     <App />
   </HelmetProvider>,
 );
+}

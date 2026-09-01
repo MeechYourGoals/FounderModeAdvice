@@ -10,9 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft, X } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
-import { lovable } from "@/integrations/lovable/index";
 import { triggerHapticFeedback } from "@/lib/capacitor";
-import { isLovablePreview, getOAuthRedirectUrl, shouldShowAppAuthFirst } from "@/lib/appMode";
+import { getCanonicalWebOrigin, shouldShowAppAuthFirst } from "@/lib/appMode";
+import { signInWithOAuthProvider } from "@/lib/webOAuth";
 import { isExpoShell, requestShellAppleSignIn } from "@/services/expoShellService";
 import { usePageMeta } from "@/hooks/usePageMeta";
 
@@ -62,22 +62,13 @@ const Auth = () => {
     setGoogleLoading(true);
     rememberNext();
     try {
-      // Lovable Cloud managed Google auth: broker holds the OAuth secret, so
-      // ALL web environments (preview, published .lovable.app, custom domain,
-      // localhost) must go through the lovable.auth bridge. Calling
-      // supabase.auth.signInWithOAuth directly returns "missing OAuth secret".
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: getOAuthRedirectUrl(),
-      });
-      if (result.error) {
+      const { error } = await signInWithOAuthProvider("google");
+      if (error) {
         toast({
           title: "Google sign-in failed",
-          description: result.error.message,
+          description: error.message,
           variant: "destructive",
         });
-      } else if (!result.redirected) {
-        // Session was set by the lovable bridge — navigate into the app.
-        navigate(nextPath, { replace: true });
       }
     } catch (error: any) {
       toast({
@@ -135,17 +126,13 @@ const Auth = () => {
         }
       }
 
-      const result = await lovable.auth.signInWithOAuth("apple", {
-        redirect_uri: getOAuthRedirectUrl(),
-      });
-      if (result.error) {
+      const { error } = await signInWithOAuthProvider("apple");
+      if (error) {
         toast({
           title: "Apple sign-in failed",
-          description: result.error.message,
+          description: error.message,
           variant: "destructive",
         });
-      } else if (!result.redirected) {
-        navigate(nextPath, { replace: true });
       }
     } catch (error: any) {
       toast({
@@ -173,7 +160,7 @@ const Auth = () => {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth?reset=true`,
+        redirectTo: `${getCanonicalWebOrigin()}/auth?reset=true`,
       });
 
       if (error) {
@@ -210,7 +197,7 @@ const Auth = () => {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}${nextPath}`,
+          emailRedirectTo: `${getCanonicalWebOrigin()}${nextPath}`,
         },
       });
 

@@ -5,16 +5,11 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
 /**
- * Landing route for every OAuth return path:
+ * Landing route for OAuth returns from Supabase Auth (PKCE code exchange).
  *
- * 1. Lovable OAuth broker full-page redirect — tokens arrive as `access_token` /
- *    `refresh_token` params (query string on web, custom-scheme URL forwarded by
- *    the native shell). Supabase's `detectSessionInUrl` does NOT read those, so
- *    we call `setSession` explicitly. This was the cause of "sign in failed"
- *    loops after Google/Apple on the web and in TestFlight.
- * 2. PKCE style `?code=` returns — exchanged for a session.
- * 3. Implicit hash returns (`#access_token=…`) — handled by both 1 and the
- *    client's own URL detection.
+ * Supabase redirects here after the provider callback with `?code=` (or legacy
+ * token params). We exchange explicitly; detectSessionInUrl on the client is a
+ * backstop. Native shells deliver the same params via the app scheme.
  */
 const AuthCallback = () => {
   const navigate = useNavigate();
