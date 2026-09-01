@@ -41,7 +41,7 @@ Deno.test("no search provider but a working library says so plainly", () => {
 });
 
 Deno.test("configured providers that return nothing are distinguished from stale ones", () => {
-  const providers = ["brave_web", "brave_news"];
+  const providers = ["exa"];
   assert.equal(
     classifyBriefingGap({ providers_configured: providers, daily_brief_candidates_total: 0 }),
     "no-results",
@@ -80,7 +80,7 @@ Deno.test("older batches recorded providers but not providers_configured", () =>
   // Pre-change batches only ever wrote `providers`. Falling back to it keeps
   // their empty states from all collapsing to the generic message.
   assert.equal(
-    classifyBriefingGap({ providers: ["brave_web"], daily_brief_candidates_total: 0 }),
+    classifyBriefingGap({ providers: ["exa"], daily_brief_candidates_total: 0 }),
     "no-results",
   );
   assert.equal(
@@ -113,7 +113,7 @@ Deno.test("every gap yields non-empty copy, and the company name is used when pr
 
 Deno.test("copy reports the counts the run actually recorded", () => {
   const stats: BriefingStats = {
-    providers_configured: ["brave_web"],
+    providers_configured: ["exa"],
     daily_brief_candidates_total: 40,
     daily_brief_candidates_eligible: 0,
   };

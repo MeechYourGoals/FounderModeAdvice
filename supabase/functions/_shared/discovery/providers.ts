@@ -211,149 +211,6 @@ export function createEvergreenFill(load: CuratedLoader): CuratedLoader {
 }
 
 // ---------------------------------------------------------------------------
-// Brave Search — web + news. One key, two endpoints.
-// ---------------------------------------------------------------------------
-
-interface BraveHit {
-  url?: string;
-  title?: string;
-  description?: string;
-  page_age?: string;
-  age?: string;
-  thumbnail?: { src?: string; original?: string };
-  meta_url?: { hostname?: string };
-  profile?: { name?: string; long_name?: string };
-}
-
-const RELATIVE_AGE_UNIT_MS: Record<string, number> = {
-  minute: 60_000,
-  hour: 3_600_000,
-  day: 86_400_000,
-  week: 604_800_000,
-  month: 2_592_000_000,
-  year: 31_536_000_000,
-};
-
-/**
- * Brave populates `age` ("3 days ago", "November 12, 2025") far more often than
- * the ISO `page_age`, and the engine was throwing it away — the single largest
- * source of "found results, kept none". Returns ISO, or null when the string is
- * anything we cannot pin to a real instant.
- */
-export function parseBraveAge(raw: unknown, now = Date.now()): string | null {
-  if (typeof raw !== "string") return null;
-  const text = raw.trim();
-  if (!text) return null;
-
-  const relative = text.match(/^(\d+)\s+(minute|hour|day|week|month|year)s?\s+ago$/i);
-  if (relative) {
-    const unit = RELATIVE_AGE_UNIT_MS[relative[2].toLowerCase()];
-    if (!unit) return null;
-    return new Date(now - Number(relative[1]) * unit).toISOString();
-  }
-
-  const parsed = new Date(text);
-  if (Number.isNaN(parsed.getTime())) return null;
-  // Absolute strings with no year parse against the current one; a date in the
-  // future is a parse artifact, not a publication date.
-  if (parsed.getTime() > now + 86_400_000) return null;
-  return parsed.toISOString();
-}
-
-function braveResults(
-  payload: unknown,
-  providerId: string,
-  query: DiscoveryQuery,
-): DiscoveryResult[] {
-  const root = payload as { web?: { results?: BraveHit[] }; results?: BraveHit[] } | null;
-  const hits = root?.web?.results ?? root?.results ?? [];
-  if (!Array.isArray(hits)) return [];
-  const out: DiscoveryResult[] = [];
-  hits.forEach((hit, index) => {
-    const result = toResult({
-      url: hit?.url,
-      title: hit?.title,
-      description: hit?.description,
-      publisher: hit?.profile?.long_name ?? hit?.profile?.name ?? hit?.meta_url?.hostname,
-      // page_age is the ISO field; `age` is the human one Brave fills in far
-      // more often. An undated hit stays undated and is rejected downstream —
-      // the evergreen web search sends no date constraint, so there is nothing
-      // here that could vouch for it.
-      publishedAt: hit?.page_age ?? parseBraveAge(hit?.age),
-      imageUrl: hit?.thumbnail?.original ?? hit?.thumbnail?.src,
-      contentType: query.prefer === "research" ? "research" : undefined,
-      providerId,
-      rank: index,
-      intent: query.intent,
-      label: query.label,
-    });
-    if (result) out.push(result);
-  });
-  return out;
-}
-
-/**
- * Brave Web params. `freshness=pm` is applied only to the timely half of the
- * plan: an evergreen angle ("founder interview lessons") restricted to the past
- * month returns almost nothing, which is the opposite of what that intent is
- * for. Evergreen hits are still bounded by MAX_CONTENT_AGE_DAYS after the fact.
- */
-export function braveWebQueryParams(
-  query: string,
-  limit: number,
-  intent: QueryIntent = "timely",
-): URLSearchParams {
-  const params = new URLSearchParams({
-    q: query,
-    count: String(Math.min(20, Math.max(1, limit))),
-    result_filter: "web",
-    safesearch: "moderate",
-  });
-  if (intent === "timely") params.set("freshness", "pm");
-  return params;
-}
-
-export function createBraveWebProvider(apiKey: string): DiscoveryProvider {
-  return {
-    id: "brave_web",
-    supports: () => true,
-    maxQueriesPerRun: 8,
-    async search(query, options) {
-      const params = braveWebQueryParams(query.query, options.limit, query.intent);
-      const payload = await fetchJson(
-        `https://api.search.brave.com/res/v1/web/search?${params}`,
-        { headers: { Accept: "application/json", "X-Subscription-Token": apiKey } },
-        options.timeoutMs ?? 12000,
-      );
-      return braveResults(payload, "brave_web", query);
-    },
-  };
-}
-
-export function createBraveNewsProvider(apiKey: string): DiscoveryProvider {
-  return {
-    id: "brave_news",
-    // News is only meaningful for the timely half of the plan.
-    supports: (intent) => intent === "timely",
-    maxQueriesPerRun: 4,
-    async search(query, options) {
-      const params = new URLSearchParams({
-        q: query.query,
-        count: String(Math.min(20, Math.max(1, options.limit))),
-        freshness: "pw",
-        safesearch: "moderate",
-      });
-      const payload = await fetchJson(
-        `https://api.search.brave.com/res/v1/news/search?${params}`,
-        { headers: { Accept: "application/json", "X-Subscription-Token": apiKey } },
-        options.timeoutMs ?? 12000,
-      );
-      return braveResults(payload, "brave_news", query);
-    },
-  };
-}
-
-// ---------------------------------------------------------------------------
 // Exa — neural/semantic search with a real published-date filter.
 // ---------------------------------------------------------------------------
 
@@ -369,11 +226,8 @@ interface ExaHit {
 /**
  * Exa search body.
  *
- * The reason this provider fits well: Brave exposes coarse freshness buckets
- * ("pm", "pw") that only approximate our rule, which is what let a vendor-window
- * claim drift away from what we actually enforce. Exa filters on the real
- * publication date, so we hand it exactly the admission window this app already
- * uses and the two cannot disagree.
+ * Exa filters on the real publication date, so we hand it exactly the
+ * admission window this app already uses and the two cannot disagree.
  *
  * No `contents` is requested. Page text, summaries and highlights all cost extra
  * per result, and the design here is deliberately zero-fetch until the user
@@ -574,16 +428,11 @@ export function createYouTubeProvider(apiKey: string): DiscoveryProvider {
  */
 export function resolveProviders(
   env: {
-    braveApiKey?: string | null;
     youTubeApiKey?: string | null;
     exaApiKey?: string | null;
   },
 ): DiscoveryProvider[] {
   const providers: DiscoveryProvider[] = [];
-  if (env.braveApiKey) {
-    providers.push(createBraveWebProvider(env.braveApiKey));
-    providers.push(createBraveNewsProvider(env.braveApiKey));
-  }
   if (env.exaApiKey) providers.push(createExaProvider(env.exaApiKey));
   if (env.youTubeApiKey) providers.push(createYouTubeProvider(env.youTubeApiKey));
   return providers;

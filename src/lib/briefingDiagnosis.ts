@@ -42,7 +42,7 @@ export type BriefingGap =
   | "unknown";
 
 /** Provider ids that reach the live web. "curated" is the local library, not a search. */
-const EXTERNAL_PROVIDERS = ["brave_web", "brave_news", "exa", "youtube"];
+const EXTERNAL_PROVIDERS = ["exa", "youtube"];
 
 const hasExternalProvider = (stats: BriefingStats): boolean =>
   (stats.providers_configured ?? stats.providers ?? []).some((id) => EXTERNAL_PROVIDERS.includes(id));

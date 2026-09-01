@@ -42,7 +42,7 @@ function candidate(overrides: Partial<DiscoveryResult> & { url: string; title: s
     contentType: "article",
     durationSeconds: null,
     language: "en",
-    providerId: "brave_web",
+    providerId: "exa",
     rank: 0,
     intent: "evergreen",
     ...overrides,
