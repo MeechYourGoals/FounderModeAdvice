@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link, Navigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -37,8 +37,7 @@ const Auth = () => {
   // Validate it as a same-origin relative path before ever redirecting to it.
   const rawNext = searchParams.get("next") ?? "";
   const nextPath = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/";
-  // Social sign-in leaves the app entirely, so the intent is stashed for
-  // /auth/callback to consume on return.
+  // Social sign-in leaves the app entirely, so the intent is stashed for return.
   const rememberNext = () => {
     try {
       if (nextPath !== "/") sessionStorage.setItem("fma_post_auth_redirect", nextPath);
@@ -48,14 +47,87 @@ const Auth = () => {
     }
   };
 
+  // Supabase PKCE returns to /auth?code= on the apex host. Exchange explicitly so
+  // we fail with a toast instead of leaving the user on a signed-out form.
+  useEffect(() => {
+    const code = searchParams.get("code");
+    const oauthError =
+      searchParams.get("error_description") ?? searchParams.get("error");
+    if (!code && !oauthError) return;
+
+    let active = true;
+    const finish = (target: string) => {
+      if (!active) return;
+      window.history.replaceState({}, "", "/auth");
+      navigate(target, { replace: true });
+    };
+
+    void (async () => {
+      if (oauthError) {
+        toast({
+          title: "Sign in failed",
+          description: oauthError,
+          variant: "destructive",
+        });
+        window.history.replaceState({}, "", "/auth");
+        return;
+      }
+      const { error } = await supabase.auth.exchangeCodeForSession(code!);
+      if (!active) return;
+      if (error) {
+        toast({
+          title: "Sign in failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        window.history.replaceState({}, "", "/auth");
+        return;
+      }
+      let target = nextPath;
+      try {
+        const stashed = sessionStorage.getItem("fma_post_auth_redirect");
+        sessionStorage.removeItem("fma_post_auth_redirect");
+        if (stashed && stashed.startsWith("/") && !stashed.startsWith("//")) target = stashed;
+      } catch {
+        // ignore storage failures
+      }
+      finish(target);
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [searchParams, navigate, toast, nextPath]);
+
   // Already signed in (native relaunch, deep link, or manual navigation): send the
   // user into the app instead of showing a redundant login form.
   if (!authLoading && user && !isPasswordRecovery) {
-    return <Navigate to={nextPath} replace />;
+    let target = nextPath;
+    try {
+      const stashed = sessionStorage.getItem("fma_post_auth_redirect");
+      sessionStorage.removeItem("fma_post_auth_redirect");
+      if (stashed && stashed.startsWith("/") && !stashed.startsWith("//")) target = stashed;
+    } catch {
+      // ignore storage failures
+    }
+    return <Navigate to={target} replace />;
   }
 
   // Always show close button in browser; hide only in installed app/PWA to avoid loop.
   const showClose = !shouldShowAppAuthFirst();
+  const oauthCodePending = Boolean(searchParams.get("code"));
+
+  if (oauthCodePending && authLoading) {
+    return (
+      <div
+        className="h-screen flex flex-col items-center justify-center gap-4 p-4"
+        style={{ background: "var(--gradient-hero)" }}
+      >
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground">Completing sign in…</p>
+      </div>
+    );
+  }
 
   const handleGoogleSignIn = async () => {
     triggerHapticFeedback('light');

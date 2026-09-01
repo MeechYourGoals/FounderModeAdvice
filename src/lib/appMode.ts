@@ -104,7 +104,7 @@ export const getOAuthRedirectUrl = (): string => {
   // app scheme. The Expo shell completes OAuth in an ASWebAuthenticationSession
   // and then routes this callback back into the embedded web app.
   if (Capacitor.isNativePlatform() || isExpoShell()) return NATIVE_OAUTH_REDIRECT;
-  return `${getCanonicalWebOrigin()}/auth/callback`;
+  return `${getCanonicalWebOrigin()}/auth`;
 };
 
 /**
