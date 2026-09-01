@@ -46,8 +46,13 @@ const dedupeQueries = (queries: DiscoveryQuery[]): DiscoveryQuery[] => {
  * and the fallback whenever the LLM expansion is unavailable.
  */
 export function baseQueries(ctx: RecommendationContext): DiscoveryQuery[] {
-  const domain = ctx.subindustries[0] || ctx.industry || "startups";
-  const domain2 = ctx.subindustries[1] || ctx.industry || domain;
+  // A thin profile used to collapse straight to the literal "startups", making
+  // every query interchangeable with every other user's. Walk the profile's own
+  // vocabulary first — a matched category or topic is far more specific than a
+  // generic fallback, and one of them is always populated.
+  const domain =
+    ctx.subindustries[0] || ctx.industry || ctx.categories[0] || ctx.relevantTopics[0] || "startups";
+  const domain2 = ctx.subindustries[1] || ctx.industry || ctx.categories[1] || domain;
   const audience = ctx.customers[0] || "customers";
   const out: DiscoveryQuery[] = [];
 
@@ -71,6 +76,26 @@ export function baseQueries(ctx: RecommendationContext): DiscoveryQuery[] {
 
   // Their customer segment, from the buyer's side.
   out.push({ query: `selling to ${audience} playbook`, intent: "evergreen", label: "Sales" });
+
+  // Adjacent themes. Anchoring every query to the core domain returns ten takes
+  // on one lane; the useful idea for an operator often sits one step sideways —
+  // in what their customers are doing, or in the wider market they sell into.
+  out.push({ query: `what ${audience} care about now`, intent: "timely", label: ctx.categories[0] });
+  if (ctx.markets[0]) {
+    out.push({
+      query: `${domain} ${ctx.markets[0]} market outlook`,
+      intent: "timely",
+      label: ctx.categories[0],
+    });
+  }
+  const adjacentTopic = ctx.relevantTopics[2] || ctx.relevantTopics[0];
+  if (adjacentTopic) {
+    out.push({
+      query: `${adjacentTopic} for ${domain} companies`,
+      intent: "evergreen",
+      label: adjacentTopic,
+    });
+  }
 
   // Business-model specific.
   if (ctx.businessModel) {

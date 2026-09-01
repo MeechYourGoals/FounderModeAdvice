@@ -143,12 +143,13 @@ const TOPIC_TERMS: Array<[string, string[]]> = [
 /**
  * Generic operating concerns by stage. These are framed as focus areas for a
  * company at that stage — never asserted as facts about this company.
+ *
+ * Keys must match the public.startup_stage enum exactly. They previously did
+ * not: `series_b_plus`, `public` and `bootstrapped` had no entry and silently
+ * fell through to DEFAULT_FOCUS, while `idea`, `series_b` and `established`
+ * were unreachable — three of the seven selectable stages got generic goals.
  */
 const STAGE_FOCUS: Record<string, { goals: string[]; challenges: string[] }> = {
-  idea: {
-    goals: ["validate the problem with real users", "reach a first working version"],
-    challenges: ["finding product-market fit", "deciding what not to build"],
-  },
   pre_seed: {
     goals: ["find repeatable early demand", "reach a fundable milestone"],
     challenges: ["finding product-market fit", "raising a first round"],
@@ -161,7 +162,7 @@ const STAGE_FOCUS: Record<string, { goals: string[]; challenges: string[] }> = {
     goals: ["build a repeatable go-to-market motion", "scale the team without losing speed"],
     challenges: ["scaling sales", "management and process as headcount grows"],
   },
-  series_b: {
+  series_b_plus: {
     goals: ["expand into new segments", "improve unit economics"],
     challenges: ["organizational scaling", "competitive pressure"],
   },
@@ -169,9 +170,13 @@ const STAGE_FOCUS: Record<string, { goals: string[]; challenges: string[] }> = {
     goals: ["expand into new segments", "improve margins at scale"],
     challenges: ["organizational scaling", "defending against competitors"],
   },
-  established: {
+  public: {
     goals: ["defend the core business", "find the next growth line"],
     challenges: ["innovating inside an existing organization", "competitive pressure"],
+  },
+  bootstrapped: {
+    goals: ["grow revenue without outside capital", "keep the business durably profitable"],
+    challenges: ["growing with a small team", "pricing for margin rather than share"],
   },
 };
 

@@ -2,8 +2,9 @@
 //
 // The recommendation engine never talks to a search vendor directly — it asks
 // a list of DiscoveryProviders, each of which may be absent. Whatever is
-// configured is used; whatever is not, is skipped. A run with zero external
-// providers still produces a batch from the curated Inspiration Library.
+// configured is used; whatever is not, is skipped. A run with zero providers
+// still produces a batch: generate-recommendations tops the edition up from the
+// curated Inspiration Library (see createEvergreenFill below).
 //
 // Cost/safety note: providers only ever call their own fixed API host. Nothing
 // here fetches a discovered URL, so discovery cannot be used as an SSRF vector
@@ -12,7 +13,7 @@
 // which has its own SSRF guard).
 
 import type { DiscoveryQuery, QueryIntent } from "./queries.ts";
-import { publishedAfterIso } from "./recency.ts";
+import { publishedAfterIso, type RecencyBasis } from "./recency.ts";
 import { cleanText, looksLowQuality } from "./sanitize.ts";
 import { canonicalizeUrl, contentKey, hostOf } from "./url.ts";
 
@@ -27,6 +28,8 @@ export interface DiscoveryResult {
   publisher: string | null;
   author: string | null;
   publishedAt: string | null;
+  /** Why this result counts as recent enough to consider. See recency.ts. */
+  recencyBasis: RecencyBasis;
   imageUrl: string | null;
   contentType: ContentType;
   durationSeconds: number | null;
@@ -96,6 +99,12 @@ export function toResult(input: {
   publisher?: unknown;
   author?: unknown;
   publishedAt?: unknown;
+  /**
+   * What the caller can vouch for when the hit carries no date. Providers that
+   * do not constrain their query by date must leave this unset, so an undated
+   * hit from an unconstrained search gets no free pass.
+   */
+  recencyBasis?: RecencyBasis;
   imageUrl?: unknown;
   contentType?: ContentType;
   durationSeconds?: number | null;
@@ -125,6 +134,17 @@ export function toResult(input: {
 
   const imageUrl = typeof input.imageUrl === "string" ? canonicalizeUrl(input.imageUrl) : null;
 
+  // "evergreen" is an editorial classification, not a recency claim, so it wins
+  // outright — a curated 2013 essay carries a real date and is still evergreen,
+  // and labelling it "published_at" would make it read as a stale item in the
+  // freshness metrics. Otherwise a real date is the authority, and the vendor
+  // window only speaks for hits that have nothing to say for themselves.
+  const recencyBasis: RecencyBasis = input.recencyBasis === "evergreen"
+    ? "evergreen"
+    : publishedAt
+    ? "published_at"
+    : input.recencyBasis ?? "published_at";
+
   return {
     url: canonical,
     canonicalUrl: canonical,
@@ -134,6 +154,7 @@ export function toResult(input: {
     publisher: cleanText(input.publisher, 120) ?? hostOf(canonical),
     author: cleanText(input.author, 120),
     publishedAt,
+    recencyBasis,
     imageUrl,
     contentType: inferContentType(canonical, input.contentType),
     durationSeconds:
@@ -171,29 +192,28 @@ async function fetchJson(
 }
 
 // ---------------------------------------------------------------------------
-// Curated library provider — always available, no external dependency.
+// Curated library fill — always available, no external dependency.
 // ---------------------------------------------------------------------------
 
 export type CuratedLoader = (limit: number) => Promise<DiscoveryResult[]>;
 
 /**
- * Serves rows already in discovery_content (the admin-curated Inspiration
- * Library). It ignores the query text — its job is to guarantee a usable feed
- * when external providers are unconfigured, rate-limited, or down.
+ * Rows already in discovery_content (the admin-curated Inspiration Library),
+ * used to top an edition up when live search is thin or unconfigured.
+ *
+ * Deliberately NOT a DiscoveryProvider any more. As a provider it competed for
+ * query slots and was then destroyed by the recency filter along with the web
+ * results, which is how the "a run with zero external providers still produces
+ * a batch" guarantee quietly died. It is a second tier, applied after ranking.
  */
-export function createCuratedProvider(load: CuratedLoader): DiscoveryProvider {
-  return {
-    id: "curated",
-    supports: () => true,
-    maxQueriesPerRun: 1,
-    async search(_query, options) {
-      try {
-        return await load(options.limit);
-      } catch (error) {
-        console.warn("[discovery] curated provider failed:", error);
-        return [];
-      }
-    },
+export function createEvergreenFill(load: CuratedLoader): CuratedLoader {
+  return async (limit: number) => {
+    try {
+      return await load(limit);
+    } catch (error) {
+      console.warn("[discovery] evergreen fill failed:", error);
+      return [];
+    }
   };
 }
 
@@ -212,6 +232,41 @@ interface BraveHit {
   profile?: { name?: string; long_name?: string };
 }
 
+const RELATIVE_AGE_UNIT_MS: Record<string, number> = {
+  minute: 60_000,
+  hour: 3_600_000,
+  day: 86_400_000,
+  week: 604_800_000,
+  month: 2_592_000_000,
+  year: 31_536_000_000,
+};
+
+/**
+ * Brave populates `age` ("3 days ago", "November 12, 2025") far more often than
+ * the ISO `page_age`, and the engine was throwing it away — the single largest
+ * source of "found results, kept none". Returns ISO, or null when the string is
+ * anything we cannot pin to a real instant.
+ */
+export function parseBraveAge(raw: unknown, now = Date.now()): string | null {
+  if (typeof raw !== "string") return null;
+  const text = raw.trim();
+  if (!text) return null;
+
+  const relative = text.match(/^(\d+)\s+(minute|hour|day|week|month|year)s?\s+ago$/i);
+  if (relative) {
+    const unit = RELATIVE_AGE_UNIT_MS[relative[2].toLowerCase()];
+    if (!unit) return null;
+    return new Date(now - Number(relative[1]) * unit).toISOString();
+  }
+
+  const parsed = new Date(text);
+  if (Number.isNaN(parsed.getTime())) return null;
+  // Absolute strings with no year parse against the current one; a date in the
+  // future is a parse artifact, not a publication date.
+  if (parsed.getTime() > now + 86_400_000) return null;
+  return parsed.toISOString();
+}
+
 function braveResults(
   payload: unknown,
   providerId: string,
@@ -227,7 +282,10 @@ function braveResults(
       title: hit?.title,
       description: hit?.description,
       publisher: hit?.profile?.long_name ?? hit?.profile?.name ?? hit?.meta_url?.hostname,
-      publishedAt: hit?.page_age,
+      publishedAt: hit?.page_age ?? parseBraveAge(hit?.age),
+      // Both Brave endpoints constrain by date below, so an undated hit here is
+      // still known to be recent — it just cannot say so itself.
+      recencyBasis: "provider_window",
       imageUrl: hit?.thumbnail?.original ?? hit?.thumbnail?.src,
       contentType: query.prefer === "research" ? "research" : undefined,
       providerId,
@@ -240,15 +298,25 @@ function braveResults(
   return out;
 }
 
-/** Brave Web params. `freshness=pm` is the past-month window for every intent. */
-export function braveWebQueryParams(query: string, limit: number): URLSearchParams {
-  return new URLSearchParams({
+/**
+ * Brave Web params. `freshness=pm` is applied only to the timely half of the
+ * plan: an evergreen angle ("founder interview lessons") restricted to the past
+ * month returns almost nothing, which is the opposite of what that intent is
+ * for. Evergreen hits are still bounded by MAX_CONTENT_AGE_DAYS after the fact.
+ */
+export function braveWebQueryParams(
+  query: string,
+  limit: number,
+  intent: QueryIntent = "timely",
+): URLSearchParams {
+  const params = new URLSearchParams({
     q: query,
     count: String(Math.min(20, Math.max(1, limit))),
     result_filter: "web",
     safesearch: "moderate",
-    freshness: "pm",
   });
+  if (intent === "timely") params.set("freshness", "pm");
+  return params;
 }
 
 export function createBraveWebProvider(apiKey: string): DiscoveryProvider {
@@ -257,7 +325,7 @@ export function createBraveWebProvider(apiKey: string): DiscoveryProvider {
     supports: () => true,
     maxQueriesPerRun: 8,
     async search(query, options) {
-      const params = braveWebQueryParams(query.query, options.limit);
+      const params = braveWebQueryParams(query.query, options.limit, query.intent);
       const payload = await fetchJson(
         `https://api.search.brave.com/res/v1/web/search?${params}`,
         { headers: { Accept: "application/json", "X-Subscription-Token": apiKey } },
@@ -395,6 +463,7 @@ export function createYouTubeProvider(apiKey: string): DiscoveryProvider {
           publisher: item?.snippet?.channelTitle,
           author: item?.snippet?.channelTitle,
           publishedAt: item?.snippet?.publishedAt,
+          recencyBasis: "provider_window",
           imageUrl: thumbnails.high?.url ?? thumbnails.medium?.url ?? thumbnails.default?.url,
           contentType: "video",
           durationSeconds: durations.get(id) ?? null,
@@ -415,13 +484,12 @@ export function createYouTubeProvider(apiKey: string): DiscoveryProvider {
 }
 
 /**
- * Build the provider list from whatever credentials this deployment actually
- * has. Curated is always last so it fills gaps rather than crowding out fresh
- * material.
+ * Build the live-search provider list from whatever credentials this deployment
+ * actually has. May be empty — that is a legitimate deployment, and the
+ * evergreen fill is what keeps an edition non-empty in that case.
  */
 export function resolveProviders(
   env: { braveApiKey?: string | null; youTubeApiKey?: string | null },
-  curated: CuratedLoader,
 ): DiscoveryProvider[] {
   const providers: DiscoveryProvider[] = [];
   if (env.braveApiKey) {
@@ -429,6 +497,5 @@ export function resolveProviders(
     providers.push(createBraveNewsProvider(env.braveApiKey));
   }
   if (env.youTubeApiKey) providers.push(createYouTubeProvider(env.youTubeApiKey));
-  providers.push(createCuratedProvider(curated));
   return providers;
 }

@@ -13,10 +13,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { captureEvent } from "@/services/analytics";
 import type { DiscoveryContentType, RecommendationState } from "@/lib/discovery";
 import {
-  dailyBriefPublishedAfterIso,
-  filterFreshDailyBriefContent,
-  isDailyBriefContentFresh,
+  filterServableDailyBriefContent,
+  isDailyBriefContentServable,
 } from "@/lib/dailyBriefFreshness";
+import type { BriefingStats } from "@/lib/briefingDiagnosis";
 
 export interface DiscoveryContent {
   id: string;
@@ -43,6 +43,8 @@ export interface RecommendationBatch {
   status: "pending" | "ready" | "failed" | "empty";
   item_count: number;
   generated_at: string;
+  /** Why this edition looks the way it does. Drives the empty-state copy. */
+  generation_stats: BriefingStats | null;
 }
 
 export interface ProfileRecommendation {
@@ -97,14 +99,14 @@ const mapRecommendation = (row: Row): ProfileRecommendation => ({
   content: row.discovery_content as DiscoveryContent,
 });
 
-const freshRecommendations = (rows: Row[]): ProfileRecommendation[] =>
-  rows.map(mapRecommendation).filter((item) => isDailyBriefContentFresh(item.content.published_at));
+const servableRecommendations = (rows: Row[]): ProfileRecommendation[] =>
+  rows.map(mapRecommendation).filter((item) => isDailyBriefContentServable(item.content));
 
 /** Weekly editions for a profile, newest first. Powers the archive selector. */
 export async function fetchBatches(profileId: string, limit = 8): Promise<RecommendationBatch[]> {
   const { data, error } = await db
     .from("recommendation_batches")
-    .select("id, profile_id, week_key, status, item_count, generated_at")
+    .select("id, profile_id, week_key, status, item_count, generated_at, generation_stats")
     .eq("profile_id", profileId)
     .order("generated_at", { ascending: false })
     .limit(limit);
@@ -120,11 +122,10 @@ export async function fetchRecommendations(batchId: string): Promise<ProfileReco
       `id, batch_id, profile_id, position, reason, state, analyzed_episode_id, discovery_content!inner(${CONTENT_COLUMNS})`,
     )
     .eq("batch_id", batchId)
-    .gte("discovery_content.published_at", dailyBriefPublishedAfterIso())
     .neq("state", "dismissed")
     .order("position", { ascending: true });
   if (error) throw error;
-  return freshRecommendations(data ?? []);
+  return servableRecommendations(data ?? []);
 }
 
 /** Everything the user saved, across profiles and editions. */
@@ -135,11 +136,10 @@ export async function fetchSavedRecommendations(limit = 50): Promise<ProfileReco
       `id, batch_id, profile_id, position, reason, state, analyzed_episode_id, discovery_content!inner(${CONTENT_COLUMNS})`,
     )
     .eq("state", "saved")
-    .gte("discovery_content.published_at", dailyBriefPublishedAfterIso())
     .order("saved_at", { ascending: false })
     .limit(limit);
   if (error) throw error;
-  return freshRecommendations(data ?? []);
+  return servableRecommendations(data ?? []);
 }
 
 export interface LibraryQuery {
@@ -161,7 +161,6 @@ export async function fetchInspirationLibrary(query: LibraryQuery = {}): Promise
     .select(CONTENT_COLUMNS)
     .eq("active", true)
     .eq("is_curated", true);
-  request = request.gte("published_at", dailyBriefPublishedAfterIso());
 
   if (query.categories?.length) request = request.overlaps("categories", query.categories);
   if (query.contentTypes?.length) request = request.in("content_type", query.contentTypes);
@@ -171,7 +170,7 @@ export async function fetchInspirationLibrary(query: LibraryQuery = {}): Promise
     .order("priority", { ascending: false })
     .range(offset, offset + limit - 1);
   if (error) throw error;
-  return filterFreshDailyBriefContent((data ?? []) as unknown as DiscoveryContent[]);
+  return filterServableDailyBriefContent((data ?? []) as unknown as DiscoveryContent[]);
 }
 
 /**
@@ -273,6 +272,10 @@ export interface RefreshResult {
   status: "ok" | "rate_limited" | "upgrade_required" | "error";
   itemCount?: number;
   message?: string;
+  /** What the run did, so a zero-item refresh can say why instead of claiming success. */
+  diagnostics?: BriefingStats | null;
+  /** True when a fruitless refresh left the previous edition in place. */
+  retainedExistingEdition?: boolean;
 }
 
 /**
@@ -295,5 +298,14 @@ export async function requestRecommendationRefresh(profileId: string): Promise<R
     return { status: "error", message: error.message || "Could not refresh recommendations." };
   }
 
-  return { status: "ok", itemCount: (data as { itemCount?: number })?.itemCount ?? 0 };
+  const payload = data as
+    | { itemCount?: number; diagnostics?: (BriefingStats & { retained_existing_edition?: boolean }) | null }
+    | null;
+  return {
+    status: "ok",
+    itemCount: payload?.itemCount ?? 0,
+    diagnostics: payload?.diagnostics ?? null,
+    retainedExistingEdition: payload?.diagnostics?.retained_existing_edition === true,
+  };
 }
+

@@ -1,24 +1,42 @@
 // Briefing recency.
 //
-// Discover → For You only shows material published in the last 30 days.
-// Search APIs get the same window as a hint; this module is the source of
-// truth used after results come back, because vendor freshness flags are
-// best-effort and evergreen queries used to skip them entirely.
+// Discover → For You prefers recent material, but "recent" is not the same
+// question as "may we show this at all". Two predicates, deliberately separate:
+//
+//   isRecentEnough      — does this DISCOVERED item carry a real, in-window date?
+//   isBriefingEligible  — may this candidate enter an edition?
+//
+// The second is wider because a date is not the only evidence of recency. A hit
+// returned by a query that was itself constrained to the past month is recent by
+// construction, even when the vendor omits a date — and the curated library is
+// editorial, timeless, and never expires. Both cases are recorded on the
+// candidate as a `recencyBasis` so the reason is explicit rather than implied.
+//
+// Mirrors public.is_daily_brief_content_fresh / is_discovery_content_servable.
 
-/** Hard cap for briefing content age. Older items never enter an edition. */
-export const MAX_CONTENT_AGE_DAYS = 30;
+/** Upper bound on the age of a DATED discovered item. */
+export const MAX_CONTENT_AGE_DAYS = 365;
 /** Providers occasionally timestamp a release a few minutes ahead of our clock. */
 export const MAX_FUTURE_CLOCK_SKEW_MS = 5 * 60 * 1000;
 
 const MS_PER_DAY = 86_400_000;
+
+/**
+ * How we know a candidate is worth showing.
+ *   published_at    — it carries its own date, and that date is the authority
+ *   provider_window — undated, but the query that found it was date-constrained
+ *   evergreen       — curated editorial material; age is not a defect
+ */
+export type RecencyBasis = "published_at" | "provider_window" | "evergreen";
 
 export function contentAgeDays(publishedAt: string, now = Date.now()): number {
   return (now - new Date(publishedAt).getTime()) / MS_PER_DAY;
 }
 
 /**
- * Whether a publication date is usable in a briefing. Undated hits are
- * rejected — missing dates are how months-old pages used to sneak through.
+ * Whether a publication date is usable in a briefing. Undated hits fail here —
+ * a missing date is not evidence of freshness, and this is what stops an
+ * ancient page from being read as new.
  */
 export function isRecentEnough(publishedAt: string | null | undefined, now = Date.now()): boolean {
   if (typeof publishedAt !== "string" || !publishedAt.trim()) return false;
@@ -38,4 +56,26 @@ export function filterRecentResults<T extends { publishedAt: string | null }>(
   now = Date.now(),
 ): T[] {
   return results.filter((result) => isRecentEnough(result.publishedAt, now));
+}
+
+/**
+ * Admission rule for a briefing edition.
+ *
+ * An explicit date always wins: a hit that came back from a past-month query but
+ * carries a 2019 timestamp is still rejected. The window only rescues candidates
+ * with no contradicting evidence.
+ */
+export function isBriefingEligible(
+  result: { publishedAt: string | null; recencyBasis?: RecencyBasis },
+  now = Date.now(),
+): boolean {
+  if (result.recencyBasis === "evergreen") return true;
+  if (result.publishedAt) return isRecentEnough(result.publishedAt, now);
+  return result.recencyBasis === "provider_window";
+}
+
+export function filterBriefingEligible<
+  T extends { publishedAt: string | null; recencyBasis?: RecencyBasis },
+>(results: T[], now = Date.now()): T[] {
+  return results.filter((result) => isBriefingEligible(result, now));
 }

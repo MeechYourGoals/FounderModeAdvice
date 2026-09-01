@@ -98,3 +98,38 @@ Deno.test("profileFingerprint — moving text between fields changes the hash", 
   const b = profileFingerprint({ id: "p", company_name: "AstraLaunch", description: "" });
   assert.notEqual(a, b);
 });
+
+Deno.test("every selectable stage has its own focus areas", () => {
+  // STAGE_FOCUS keys must track the public.startup_stage enum. They drifted:
+  // series_b_plus, public and bootstrapped had no entry and silently fell
+  // through to DEFAULT_FOCUS, so three of seven stages produced generic goals.
+  const STARTUP_STAGES = [
+    "pre_seed",
+    "seed",
+    "series_a",
+    "series_b_plus",
+    "growth",
+    "public",
+    "bootstrapped",
+  ];
+  const defaults = buildRecommendationContext({
+    id: "no-stage",
+    description: "A company with no stage set at all.",
+    stage: null,
+  });
+
+  const seen = new Set<string>();
+  for (const stage of STARTUP_STAGES) {
+    const ctx = buildRecommendationContext({
+      id: `stage-${stage}`,
+      description: "A company with a stage set.",
+      stage,
+    });
+    assert.ok(ctx.goals.length > 0, `${stage} has goals`);
+    assert.ok(ctx.challenges.length > 0, `${stage} has challenges`);
+    assert.notDeepEqual(ctx.goals, defaults.goals, `${stage} must not fall through to the default focus`);
+    seen.add(ctx.goals.join("|"));
+  }
+  // Adjacent stages may legitimately share concerns, but not all seven.
+  assert.ok(seen.size >= 5, "stages should map to materially different focus areas");
+});
