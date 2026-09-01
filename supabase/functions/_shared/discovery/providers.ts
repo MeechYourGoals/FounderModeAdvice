@@ -354,6 +354,97 @@ export function createBraveNewsProvider(apiKey: string): DiscoveryProvider {
 }
 
 // ---------------------------------------------------------------------------
+// Exa — neural/semantic search with a real published-date filter.
+// ---------------------------------------------------------------------------
+
+interface ExaHit {
+  url?: string;
+  title?: string;
+  publishedDate?: string;
+  author?: string;
+  image?: string;
+  summary?: string;
+}
+
+/**
+ * Exa search body.
+ *
+ * The reason this provider fits well: Brave exposes coarse freshness buckets
+ * ("pm", "pw") that only approximate our rule, which is what let a vendor-window
+ * claim drift away from what we actually enforce. Exa filters on the real
+ * publication date, so we hand it exactly the admission window this app already
+ * uses and the two cannot disagree.
+ *
+ * No `contents` is requested. Page text, summaries and highlights all cost extra
+ * per result, and the design here is deliberately zero-fetch until the user
+ * presses Analyze — the per-item "why this" line is written later from metadata.
+ */
+export function exaSearchBody(
+  query: DiscoveryQuery,
+  limit: number,
+  now = Date.now(),
+): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    query: query.query,
+    numResults: Math.min(25, Math.max(1, limit)),
+    type: "auto",
+    startPublishedDate: publishedAfterIso(now),
+  };
+  // Only narrow by category where the intent is unambiguous. Forcing
+  // category "news" onto every timely query would drop the operator blog posts
+  // that are usually the better read, and yield is the scarce thing here.
+  if (query.prefer === "research") body.category = "research paper";
+  return body;
+}
+
+export function createExaProvider(apiKey: string): DiscoveryProvider {
+  return {
+    id: "exa",
+    // Semantic search handles the evergreen half as well as the timely one.
+    supports: () => true,
+    maxQueriesPerRun: 6,
+    async search(query, options) {
+      const payload = await fetchJson(
+        "https://api.exa.ai/search",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "x-api-key": apiKey,
+          },
+          body: JSON.stringify(exaSearchBody(query, options.limit)),
+        },
+        options.timeoutMs ?? 12000,
+      );
+      const hits = (payload as { results?: ExaHit[] } | null)?.results;
+      if (!Array.isArray(hits)) return [];
+
+      const out: DiscoveryResult[] = [];
+      hits.forEach((hit, index) => {
+        // publishedDate is ISO 8601 but nullable even with startPublishedDate
+        // set; an undated hit is rejected downstream like any other.
+        const result = toResult({
+          url: hit?.url,
+          title: hit?.title,
+          description: hit?.summary,
+          author: hit?.author,
+          publishedAt: hit?.publishedDate,
+          imageUrl: hit?.image,
+          contentType: query.prefer === "research" ? "research" : undefined,
+          providerId: "exa",
+          rank: index,
+          intent: query.intent,
+          label: query.label,
+        });
+        if (result) out.push(result);
+      });
+      return out;
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
 // YouTube Data API v3
 // ---------------------------------------------------------------------------
 
@@ -482,13 +573,18 @@ export function createYouTubeProvider(apiKey: string): DiscoveryProvider {
  * evergreen fill is what keeps an edition non-empty in that case.
  */
 export function resolveProviders(
-  env: { braveApiKey?: string | null; youTubeApiKey?: string | null },
+  env: {
+    braveApiKey?: string | null;
+    youTubeApiKey?: string | null;
+    exaApiKey?: string | null;
+  },
 ): DiscoveryProvider[] {
   const providers: DiscoveryProvider[] = [];
   if (env.braveApiKey) {
     providers.push(createBraveWebProvider(env.braveApiKey));
     providers.push(createBraveNewsProvider(env.braveApiKey));
   }
+  if (env.exaApiKey) providers.push(createExaProvider(env.exaApiKey));
   if (env.youTubeApiKey) providers.push(createYouTubeProvider(env.youTubeApiKey));
   return providers;
 }

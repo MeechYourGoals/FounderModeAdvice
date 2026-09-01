@@ -65,6 +65,17 @@ Deno.test("configured providers that return nothing are distinguished from stale
   );
 });
 
+Deno.test("an Exa-only deployment is not reported as having no web search", () => {
+  assert.equal(
+    classifyBriefingGap({ providers_configured: ["exa"], daily_brief_candidates_total: 0 }),
+    "no-results",
+  );
+  assert.notEqual(
+    classifyBriefingGap({ providers_configured: ["exa"], evergreen_fill: 4, selected: 4 }),
+    "no-providers",
+  );
+});
+
 Deno.test("older batches recorded providers but not providers_configured", () => {
   // Pre-change batches only ever wrote `providers`. Falling back to it keeps
   // their empty states from all collapsing to the generic message.
