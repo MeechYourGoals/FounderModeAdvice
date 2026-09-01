@@ -6,11 +6,18 @@
 //   isRecentEnough      — does this DISCOVERED item carry a real, in-window date?
 //   isBriefingEligible  — may this candidate enter an edition?
 //
-// The second is wider because a date is not the only evidence of recency. A hit
-// returned by a query that was itself constrained to the past month is recent by
-// construction, even when the vendor omits a date — and the curated library is
-// editorial, timeless, and never expires. Both cases are recorded on the
-// candidate as a `recencyBasis` so the reason is explicit rather than implied.
+// The second is wider only for the curated library, which is editorial,
+// timeless, and never expires. That exception is recorded on the candidate as a
+// `recencyBasis` so the reason is explicit rather than implied.
+//
+// Undated DISCOVERED hits are never admitted, even from a query that was itself
+// date-constrained. A vendor window is real evidence, but acting on it would
+// persist a row with published_at = null, which is then unservable under
+// is_discovery_content_servable — so the item would be counted in item_count
+// and the refresh toast while being invisible on the page. Admitting undated
+// hits needs a recency_basis column on discovery_content to carry the evidence
+// into the serving rule; until that exists, rejecting them is the honest
+// behaviour. parseBraveAge recovers most of these as genuinely dated anyway.
 //
 // Mirrors public.is_daily_brief_content_fresh / is_discovery_content_servable.
 
@@ -23,11 +30,10 @@ const MS_PER_DAY = 86_400_000;
 
 /**
  * How we know a candidate is worth showing.
- *   published_at    — it carries its own date, and that date is the authority
- *   provider_window — undated, but the query that found it was date-constrained
- *   evergreen       — curated editorial material; age is not a defect
+ *   published_at — it carries its own date, and that date is the authority
+ *   evergreen    — curated editorial material; age is not a defect
  */
-export type RecencyBasis = "published_at" | "provider_window" | "evergreen";
+export type RecencyBasis = "published_at" | "evergreen";
 
 export function contentAgeDays(publishedAt: string, now = Date.now()): number {
   return (now - new Date(publishedAt).getTime()) / MS_PER_DAY;
@@ -59,19 +65,15 @@ export function filterRecentResults<T extends { publishedAt: string | null }>(
 }
 
 /**
- * Admission rule for a briefing edition.
- *
- * An explicit date always wins: a hit that came back from a past-month query but
- * carries a 2019 timestamp is still rejected. The window only rescues candidates
- * with no contradicting evidence.
+ * Admission rule for a briefing edition: curated material, or a discovered item
+ * with its own in-window date. Nothing else.
  */
 export function isBriefingEligible(
   result: { publishedAt: string | null; recencyBasis?: RecencyBasis },
   now = Date.now(),
 ): boolean {
   if (result.recencyBasis === "evergreen") return true;
-  if (result.publishedAt) return isRecentEnough(result.publishedAt, now);
-  return result.recencyBasis === "provider_window";
+  return isRecentEnough(result.publishedAt, now);
 }
 
 export function filterBriefingEligible<

@@ -10,7 +10,7 @@ import {
   youTubeQueryParams,
   type DiscoveryResult,
 } from "./providers.ts";
-import { publishedAfterIso } from "./recency.ts";
+import { isBriefingEligible, publishedAfterIso } from "./recency.ts";
 
 const base = {
   providerId: "test",
@@ -148,34 +148,6 @@ Deno.test("parseBraveAge — Brave's second date field is worth reading", () => 
   assert.equal(parseBraveAge("January 1, 2099", now), null);
 });
 
-Deno.test("toResult — a real date always outranks the caller's window claim", () => {
-  const dated = toResult({
-    ...base,
-    url: "https://example.com/a",
-    title: "A dated hit with a real headline",
-    publishedAt: "2026-08-01T00:00:00Z",
-    recencyBasis: "provider_window",
-  })!;
-  assert.equal(dated.recencyBasis, "published_at");
-
-  const undatedFromWindow = toResult({
-    ...base,
-    url: "https://example.com/b",
-    title: "An undated hit from a date-constrained query",
-    recencyBasis: "provider_window",
-  })!;
-  assert.equal(undatedFromWindow.publishedAt, null);
-  assert.equal(undatedFromWindow.recencyBasis, "provider_window");
-
-  // A provider that does not constrain by date gets no free pass.
-  const undatedUnconstrained = toResult({
-    ...base,
-    url: "https://example.com/c",
-    title: "An undated hit from nowhere in particular",
-  })!;
-  assert.equal(undatedUnconstrained.recencyBasis, "published_at");
-});
-
 Deno.test("toResult — a curated essay stays evergreen despite carrying a real date", () => {
   // Curated rows have genuine, often very old, publication dates. Letting the
   // date override the editorial classification would file every library item as
@@ -190,4 +162,62 @@ Deno.test("toResult — a curated essay stays evergreen despite carrying a real 
   })!;
   assert.equal(essay.recencyBasis, "evergreen");
   assert.equal(essay.publishedAt, new Date("2013-07-01").toISOString());
+});
+
+Deno.test("Brave Web — an undated hit is never vouched for, on either intent", async () => {
+  // Regression: braveResults used to stamp every hit "provider_window" on the
+  // claim that both Brave endpoints constrain by date. That stopped being true
+  // once evergreen web searches dropped freshness=pm, so undated (often
+  // years-old) pages were admitted, then persisted with published_at = null —
+  // counted in item_count but hidden by the servability rule.
+  const originalFetch = globalThis.fetch;
+  const requested: string[] = [];
+  globalThis.fetch = ((input: string | URL | Request) => {
+    requested.push(String(input));
+    return Promise.resolve(
+      new Response(
+        JSON.stringify({
+          web: {
+            results: [{
+              url: "https://example.com/undated-essay",
+              title: "An essay carrying no publication date at all",
+              description: "Nothing here says when it was written.",
+            }],
+          },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+  }) as typeof fetch;
+
+  try {
+    const web = resolveProviders({ braveApiKey: "k" }).find((p) => p.id === "brave_web")!;
+
+    for (const intent of ["evergreen", "timely"] as const) {
+      const [result] = await web.search({ query: `founder ${intent} lessons`, intent }, { limit: 5 });
+      assert.equal(result.publishedAt, null, `${intent}: stays undated`);
+      assert.equal(result.recencyBasis, "published_at", `${intent}: no vendor-window claim`);
+      assert.equal(isBriefingEligible(result), false, `${intent}: not admitted to an edition`);
+    }
+
+    // The evergreen request really is unconstrained — that is what made the old
+    // blanket claim false.
+    assert.ok(!requested[0].includes("freshness"), "evergreen web search sends no freshness window");
+    assert.ok(requested[1].includes("freshness=pm"), "timely web search still asks for the past month");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+Deno.test("Brave Web — a hit that carries a real date is still admitted", () => {
+  // parseBraveAge is what preserves the yield: Brave fills `age` far more often
+  // than `page_age`, and those hits pass on their own merit, not on a claim.
+  const dated = toResult({
+    ...base,
+    url: "https://example.com/dated",
+    title: "A story that does say when it was published",
+    publishedAt: parseBraveAge("3 days ago"),
+  })!;
+  assert.equal(dated.recencyBasis, "published_at");
+  assert.equal(isBriefingEligible(dated), true);
 });

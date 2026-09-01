@@ -344,10 +344,7 @@ async function generateForProfile(
 
     const gatheredCandidates = await gatherCandidates(providers, plan, stats);
     const candidates = filterBriefingEligible(gatheredCandidates);
-    const rejectedMissingDate = gatheredCandidates.filter(
-      (candidate) => !candidate.publishedAt && candidate.recencyBasis !== "provider_window",
-    ).length;
-    const admittedProviderWindow = candidates.filter((candidate) => !candidate.publishedAt).length;
+    const rejectedMissingDate = gatheredCandidates.filter((candidate) => !candidate.publishedAt).length;
     const rejectedStaleOrFuture = gatheredCandidates.length - candidates.length - rejectedMissingDate;
 
     // Novelty: what this profile has already been shown, so a repeat is pushed
@@ -437,7 +434,6 @@ async function generateForProfile(
       daily_brief_candidates_total: gatheredCandidates.length,
       daily_brief_candidates_rejected_stale: rejectedStaleOrFuture,
       daily_brief_candidates_rejected_missing_date: rejectedMissingDate,
-      daily_brief_candidates_admitted_provider_window: admittedProviderWindow,
       daily_brief_candidates_eligible: candidates.length,
     };
 

@@ -99,11 +99,7 @@ export function toResult(input: {
   publisher?: unknown;
   author?: unknown;
   publishedAt?: unknown;
-  /**
-   * What the caller can vouch for when the hit carries no date. Providers that
-   * do not constrain their query by date must leave this unset, so an undated
-   * hit from an unconstrained search gets no free pass.
-   */
+  /** Set to "evergreen" for curated library rows, whose age is not a defect. */
   recencyBasis?: RecencyBasis;
   imageUrl?: unknown;
   contentType?: ContentType;
@@ -137,13 +133,10 @@ export function toResult(input: {
   // "evergreen" is an editorial classification, not a recency claim, so it wins
   // outright — a curated 2013 essay carries a real date and is still evergreen,
   // and labelling it "published_at" would make it read as a stale item in the
-  // freshness metrics. Otherwise a real date is the authority, and the vendor
-  // window only speaks for hits that have nothing to say for themselves.
+  // freshness metrics. Everything else stands on its own date.
   const recencyBasis: RecencyBasis = input.recencyBasis === "evergreen"
     ? "evergreen"
-    : publishedAt
-    ? "published_at"
-    : input.recencyBasis ?? "published_at";
+    : "published_at";
 
   return {
     url: canonical,
@@ -282,10 +275,11 @@ function braveResults(
       title: hit?.title,
       description: hit?.description,
       publisher: hit?.profile?.long_name ?? hit?.profile?.name ?? hit?.meta_url?.hostname,
+      // page_age is the ISO field; `age` is the human one Brave fills in far
+      // more often. An undated hit stays undated and is rejected downstream —
+      // the evergreen web search sends no date constraint, so there is nothing
+      // here that could vouch for it.
       publishedAt: hit?.page_age ?? parseBraveAge(hit?.age),
-      // Both Brave endpoints constrain by date below, so an undated hit here is
-      // still known to be recent — it just cannot say so itself.
-      recencyBasis: "provider_window",
       imageUrl: hit?.thumbnail?.original ?? hit?.thumbnail?.src,
       contentType: query.prefer === "research" ? "research" : undefined,
       providerId,
@@ -463,7 +457,6 @@ export function createYouTubeProvider(apiKey: string): DiscoveryProvider {
           publisher: item?.snippet?.channelTitle,
           author: item?.snippet?.channelTitle,
           publishedAt: item?.snippet?.publishedAt,
-          recencyBasis: "provider_window",
           imageUrl: thumbnails.high?.url ?? thumbnails.medium?.url ?? thumbnails.default?.url,
           contentType: "video",
           durationSeconds: durations.get(id) ?? null,

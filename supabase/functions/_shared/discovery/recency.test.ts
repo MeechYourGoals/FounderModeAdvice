@@ -65,33 +65,26 @@ Deno.test("isBriefingEligible — curated material never expires", () => {
   assert.equal(isBriefingEligible({ publishedAt: null, recencyBasis: "evergreen" }, NOW), true);
 });
 
-Deno.test("isBriefingEligible — a date-constrained query vouches for its undated hits", () => {
-  assert.equal(isBriefingEligible({ publishedAt: null, recencyBasis: "provider_window" }, NOW), true);
-  // ...but an explicit date always wins over the caller's claim about the query.
-  assert.equal(isBriefingEligible({ publishedAt: isoDaysAgo(400), recencyBasis: "provider_window" }, NOW), false);
-  assert.equal(isBriefingEligible({ publishedAt: isoDaysAgo(10), recencyBasis: "provider_window" }, NOW), true);
-});
-
-Deno.test("isBriefingEligible — an undated hit from an unconstrained search stays out", () => {
+Deno.test("isBriefingEligible — an undated discovered hit is never admitted", () => {
+  // Not even from a date-constrained vendor query. Admitting one would persist
+  // a row with published_at = null, which is unservable under
+  // is_discovery_content_servable — so it would be counted in item_count and
+  // the refresh toast while being invisible on the page.
   assert.equal(isBriefingEligible({ publishedAt: null, recencyBasis: "published_at" }, NOW), false);
   assert.equal(isBriefingEligible({ publishedAt: null }, NOW), false);
   assert.equal(isBriefingEligible({ publishedAt: isoDaysAgo(400), recencyBasis: "published_at" }, NOW), false);
+  assert.equal(isBriefingEligible({ publishedAt: isoDaysAgo(10), recencyBasis: "published_at" }, NOW), true);
 });
 
-Deno.test("filterBriefingEligible — admits the window and the library, drops the rest", () => {
+Deno.test("filterBriefingEligible — admits dated finds and the library, drops the rest", () => {
   const kept = filterBriefingEligible(
     [
       { publishedAt: isoDaysAgo(10), recencyBasis: "published_at" as const },
-      { publishedAt: null, recencyBasis: "provider_window" as const },
       { publishedAt: isoDaysAgo(7_000), recencyBasis: "evergreen" as const },
       { publishedAt: isoDaysAgo(400), recencyBasis: "published_at" as const },
       { publishedAt: null, recencyBasis: "published_at" as const },
     ],
     NOW,
   );
-  assert.deepEqual(kept.map((result) => result.recencyBasis), [
-    "published_at",
-    "provider_window",
-    "evergreen",
-  ]);
+  assert.deepEqual(kept.map((result) => result.recencyBasis), ["published_at", "evergreen"]);
 });
