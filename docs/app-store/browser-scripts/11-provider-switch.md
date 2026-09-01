@@ -204,15 +204,17 @@ is this cheap. Keep it that way.
 5. **Email/password sign-in.** Untouched by this runbook — a regression there means something
    else changed.
 
-## Why the broker stays (and what it would cost to remove it)
+## Why Supabase Auth directly (not the Lovable broker)
 
-The app calls `lovable.auth.signInWithOAuth()` rather than `supabase.auth.signInWithOAuth()`;
-the broker holds the secret, and calling Supabase directly returns *"missing OAuth secret"*.
-This runbook does not change that — it changes *whose client the broker presents*.
+Web Google/Apple sign-in uses `supabase.auth.signInWithOAuth` with PKCE and
+`redirectTo: https://foundermodeadvice.com/auth` (apex only — never `www`, never
+`~oauth/callback`). The Lovable Cloud Auth broker (`lovable.auth.signInWithOAuth`,
+`oauth.lovable.app`, `/~oauth/initiate`) was removed because www callbacks 302 to
+apex and break PKCE; Apple `form_post` cannot survive that redirect.
 
-Removing the broker entirely would mean a code change in `src/pages/Auth.tsx` **and a new iOS
-binary**: the shell intercepts OAuth only on the broker's `/~oauth/initiate` path
-(`native/App.tsx`), while a direct `…supabase.co/auth/v1/authorize` URL matches the shell's
-internal-host allowlist and would load *inside* the WebView, where Google rejects it with
-`disallowed_useragent`. That is a deliberate not-now, recorded here so it is not
-re-litigated later.
+Native iOS Apple sign-in uses `signInWithIdToken` with bundle
+`com.foundermodeadvice.app` (AuthenticationServices sheet). The Expo shell opens
+Supabase authorize URLs in ASWebAuthenticationSession, not inside the WebView.
+
+This runbook configures dashboard credentials for that path — Google/Apple client
+IDs, Supabase provider secrets, and redirect allow-lists.

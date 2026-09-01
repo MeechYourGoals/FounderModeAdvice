@@ -28,7 +28,7 @@
     "test:rls": "psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f supabase/tests/discovery_rls.sql",
     "test:subscription-mapping": "node scripts/verify-subscription-mapping.mjs",
     "verify:deploy": "node scripts/verify-deploy.mjs",
-    "build:verify": "vite build && node scripts/verify-deploy.mjs",
+    "build:verify": "vite build && node scripts/verify-deploy.mjs && node scripts/verify-oauth-bundle.mjs",
     "screenshots": "npx --yes @playwright/test@1.56.1 test scripts/generate-screenshots.spec.ts",
     "screenshots:capture": "node scripts/capture-app-store-frames.mjs",
     "screenshots:compose": "python3 scripts/compose-app-store-screenshots.py",
