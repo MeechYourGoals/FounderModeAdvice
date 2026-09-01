@@ -68,14 +68,33 @@ export const isNativeWrapper = (): boolean =>
 export const shouldShowAppAuthFirst = (): boolean =>
   isStandalonePWA() || isNativeWrapper();
 
+/**
+ * The one origin OAuth is allowed to start and finish on.
+ *
+ * `www.foundermodeadvice.com` 302s to the apex, which breaks OAuth twice over:
+ * the PKCE verifier is written on whichever origin started the flow, and Apple
+ * posts its response back with `response_mode=form_post`, whose body a 302
+ * silently drops. Canonicalising to the apex keeps start and finish on one
+ * origin. Every other host (preview, lovable.app, localhost) is returned as-is.
+ */
+export const getCanonicalOrigin = (): string => {
+  if (typeof window === "undefined") return "";
+  const { protocol, hostname, port, origin } = window.location;
+  if (hostname === "www.foundermodeadvice.com") {
+    return `${protocol}//foundermodeadvice.com${port ? `:${port}` : ""}`;
+  }
+  return origin;
+};
+
 /** Where OAuth providers should redirect back to after the user picks an account. */
 export const getOAuthRedirectUrl = (): string => {
   // Both native containers need the provider to return through the registered
   // app scheme. The Expo shell completes OAuth in an ASWebAuthenticationSession
   // and then routes this callback back into the embedded web app.
   if (Capacitor.isNativePlatform() || isExpoShell()) return NATIVE_OAUTH_REDIRECT;
-  return `${window.location.origin}/auth/callback`;
+  return `${getCanonicalOrigin()}/auth/callback`;
 };
+
 
 /**
  * The distinct runtimes this app can be opened from. Use this for descriptive
