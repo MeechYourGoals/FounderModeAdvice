@@ -130,9 +130,8 @@ except during a password‑reset (`?reset=true`) so the recovery flow can finish
 * **Redirect targets** (`getOAuthRedirectUrl()`):
   * Web → `https://foundermodeadvice.com/auth` (apex PKCE return; `/auth` exchanges `?code=`)
   * Native → `com.foundermodeadvice.app://auth/callback`, caught by the Capacitor
-    `appUrlOpen` listener in `src/lib/capacitor.ts`, which calls
-    `exchangeCodeForSession(url)`, then routes to `/` on success or **`/auth` on
-    failure** so a failed exchange is recoverable.
+    `appUrlOpen` listener in `src/lib/capacitor.ts`, which routes to `/auth/callback?code=…`
+    where `detectSessionInUrl` completes PKCE (no manual exchange).
   * Native Apple (Expo shell) → `signInWithIdToken` with bundle
     `com.foundermodeadvice.app` — not web OAuth.
 

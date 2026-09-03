@@ -123,25 +123,25 @@ Authentication → URL Configuration). Confirm all of these are present, and rep
 list verbatim. **Add only what is missing; delete nothing.**
 
 ```
+https://foundermodeadvice.com/auth
 https://foundermodeadvice.com/auth/callback
 https://foundermodeadvice.com/**
 com.foundermodeadvice.app://auth/callback
+http://localhost:8080/auth
 http://localhost:8080/auth/callback
 http://localhost:8080/**
 ```
 
 Site URL should be `https://foundermodeadvice.com`.
 
-`com.foundermodeadvice.app://auth/callback` is the native deep link. The iOS shell completes
-OAuth in an `ASWebAuthenticationSession` and the provider must be allowed to return through
-that scheme, or sign-in in the app dead-ends on a blank browser sheet.
+Web PKCE returns land on `/auth`; native Capacitor/Expo returns use `/auth/callback` or the
+app scheme. Keep both paths in the allowlist.
 
 ## §5 — What NOT to do
 
-- Do **not** set any environment variable or trigger a redeploy. Unlike some other Lovable
-  projects, nothing in this switch is build-time — there is no feature flag to flip. If you
-  find yourself looking for one, you are on the wrong runbook.
-- Do not disable the Lovable auth bridge or change the app's code.
+- Do **not** remove `com.foundermodeadvice.app` from the Apple Client IDs list — native
+  `signInWithIdToken` requires the bundle ID in that comma-separated field.
+- Do **not** reorder Client IDs — Services ID must stay first.
 - Do not touch the Email provider's "Confirm email" setting.
 
 ## REPORT BACK
@@ -182,12 +182,9 @@ SITE_URL=
 
 ## Rollback
 
-If sign-in behaves worse after this, switch both providers back to **"Managed by Lovable"**.
-That returns every surface to the managed client within a minute — no redeploy, no new build,
-no App Store round trip.
-
-Nothing in this runbook changes the app's code or its bundle, which is exactly why the exit
-is this cheap. Keep it that way.
+If sign-in behaves worse after dashboard changes, revert provider credentials to the prior
+values in Supabase (and Google/Apple consoles if those were changed). The app uses Supabase
+Auth directly — there is no Lovable broker toggle to flip back.
 
 ## Test in this order once §4 is saved
 

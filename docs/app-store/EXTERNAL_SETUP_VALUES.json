@@ -169,9 +169,11 @@
     "legacyLovableCallbackApexOnly": "If any allow-list still has /~oauth/callback, it must be https://foundermodeadvice.com/~oauth/callback — never www. Production 2026-09-01 showed www, which 302s and breaks Apple form_post.",
     "redirectAllowlist": [
       "https://foundermodeadvice.com/auth",
+      "https://foundermodeadvice.com/auth/callback",
       "https://foundermodeadvice.com/**",
       "com.foundermodeadvice.app://auth/callback",
       "http://localhost:8080/auth",
+      "http://localhost:8080/auth/callback",
       "http://localhost:8080/**"
     ]
   },
