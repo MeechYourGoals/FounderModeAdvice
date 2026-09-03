@@ -9,7 +9,7 @@
   "//unstable": "sloppy-imports lets Deno resolve the app's extensionless '@/...' imports without rewriting them to Deno style.",
   "unstable": ["sloppy-imports"],
   "tasks": {
-    "test": "deno test supabase/functions/_shared/ src/lib/ native/iapPaywallCatalog.test.ts"
+    "test": "deno test --allow-read=src supabase/functions/_shared/ src/lib/ native/iapPaywallCatalog.test.ts"
   },
   "fmt": {
     "exclude": ["**/*"]

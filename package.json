@@ -24,7 +24,7 @@
     "native:submit:ios": "cd native && eas submit --platform ios",
     "native:submit:android": "cd native && eas submit --platform android",
     "test": "deno task test",
-    "test:discovery": "deno test supabase/functions/_shared/discovery/ src/lib/",
+    "test:discovery": "deno test --allow-read=src supabase/functions/_shared/discovery/ src/lib/",
     "test:rls": "psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f supabase/tests/discovery_rls.sql",
     "test:subscription-mapping": "node scripts/verify-subscription-mapping.mjs",
     "verify:deploy": "node scripts/verify-deploy.mjs",

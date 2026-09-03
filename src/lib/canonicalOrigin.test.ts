@@ -1,10 +1,18 @@
 import assert from "node:assert/strict";
 import {
   CANONICAL_WEB_ORIGIN,
+  SUPABASE_APPLE_CLIENT_IDS,
   apexRedirectTarget,
   canonicalWebOriginForHost,
   shouldRedirectWwwToApex,
 } from "./canonicalOrigin.ts";
+
+Deno.test("SUPABASE_APPLE_CLIENT_IDS — Services ID first, bundle second", () => {
+  assert.equal(
+    SUPABASE_APPLE_CLIENT_IDS,
+    "com.foundermodeadvice.app.auth,com.foundermodeadvice.app",
+  );
+});
 
 Deno.test("canonicalWebOriginForHost — production hosts always use apex", () => {
   assert.equal(
