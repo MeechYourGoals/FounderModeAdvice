@@ -2,7 +2,9 @@
 
 Turn founder, investor, and operator content — links, videos, podcasts, or private
 documents — into transcript-grounded operating memos: lessons, risks, action items,
-company-specific advice, follow-up Q&A, and an organized intelligence library.
+company-specific advice, follow-up Q&A, and an organized intelligence library. Share
+any insight as a branded card, browse the crowdsourced Community Library, and get a
+push when your weekly briefing is ready.
 
 Product: https://foundermodeadvice.com · Operated by Saint Marlo Labs LLC.
 
