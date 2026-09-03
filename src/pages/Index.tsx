@@ -145,6 +145,32 @@ const Index = () => {
     }
   }, [location.state, navigate]);
 
+  // Deep-link prefill: "/?url=<source>" (the Share Insight landing page's
+  // "Analyze this yourself" CTA, and the Expo Share Extension) and
+  // "/?action=analyze" (the PWA manifest shortcut) both land here already
+  // signed in — reuse the exact same analyzeUrl path a starter video or a
+  // Discover pick uses, one shot, then strip the params.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const url = params.get("url");
+    const wantsAnalyze = params.get("action") === "analyze";
+    if (!url && !wantsAnalyze) return;
+    if (url) {
+      requestAnimationFrame(() => {
+        scrollToAnalyze();
+        window.dispatchEvent(new CustomEvent("analyzeUrl", { detail: { url } }));
+      });
+    } else {
+      requestAnimationFrame(scrollToAnalyze);
+    }
+    params.delete("url");
+    params.delete("action");
+    params.delete("source");
+    navigate({ pathname: location.pathname, search: params.toString() }, { replace: true });
+    // One-shot on mount — deliberately not re-run on every location change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Respond to same-page triggers (ProfileSwitcher "manage", empty-state CTAs).
   useEffect(() => {
     const openProfiles = () => openPanelAndPublishRef.current("profiles");

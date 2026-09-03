@@ -31,7 +31,7 @@ type ShellMessage =
   | { type: "pushRegister"; userId: string }
   | { type: "pushPrompt" }
   | { type: "appleSignIn" }
-  | { type: "share"; title: string; text: string; url: string }
+  | { type: "share"; title: string; text: string; url: string; imageDataUrl?: string }
   | { type: "openExternal"; url: string }
   | { type: "theme"; dark: boolean; backgroundColor: string };
 
@@ -218,7 +218,7 @@ export const requestShellAppleSignIn = (
   });
 };
 
-export const shareViaShell = (payload: { title: string; text: string; url: string }): boolean =>
+export const shareViaShell = (payload: { title: string; text: string; url: string; imageDataUrl?: string }): boolean =>
   postToShell({ type: "share", ...payload });
 
 export const openShellExternalUrl = (url: string): boolean =>
