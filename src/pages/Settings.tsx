@@ -17,6 +17,7 @@ import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { triggerHapticFeedback } from "@/lib/capacitor";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { NotificationSettings } from "@/components/NotificationSettings";
+import { PrivacySettings } from "@/components/PrivacySettings";
 import { SubscriptionSettingsCard } from "@/components/subscription";
 import { clearOfflineCache } from "@/lib/offlineCache";
 import { useToast } from "@/hooks/use-toast";
@@ -190,6 +191,9 @@ const Settings = () => {
 
             {/* Notifications */}
             <NotificationSettings />
+
+            {/* Privacy */}
+            <PrivacySettings />
 
             {/* Offline & storage */}
             <Card>

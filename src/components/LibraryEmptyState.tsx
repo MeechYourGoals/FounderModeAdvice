@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Building2, Compass, Play, ArrowUp } from "lucide-react";
+import { Building2, Compass, Play, ArrowUp, Users } from "lucide-react";
 import { useActiveProfile } from "@/contexts/ActiveProfileContext";
 import { STARTER_VIDEOS } from "@/lib/starterVideos";
 import { triggerHapticFeedback } from "@/lib/capacitor";
@@ -85,17 +85,30 @@ export const LibraryEmptyState = () => {
         ))}
       </div>
 
-      <Button
-        variant="outline"
-        className="rounded-full"
-        onClick={() => {
-          triggerHapticFeedback("light");
-          navigate("/discover");
-        }}
-      >
-        <Compass className="h-4 w-4 mr-2" />
-        Open this week's briefing
-      </Button>
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <Button
+          variant="outline"
+          className="rounded-full"
+          onClick={() => {
+            triggerHapticFeedback("light");
+            navigate("/discover");
+          }}
+        >
+          <Compass className="h-4 w-4 mr-2" />
+          Open this week's briefing
+        </Button>
+        <Button
+          variant="ghost"
+          className="rounded-full text-muted-foreground"
+          onClick={() => {
+            triggerHapticFeedback("light");
+            navigate("/discover?tab=community");
+          }}
+        >
+          <Users className="h-4 w-4 mr-2" />
+          Browse what other founders analyzed
+        </Button>
+      </div>
 
       {/* Personalized recommendations from the onboarding "who inspires you?" picks */}
       <InspirationRecommendations />

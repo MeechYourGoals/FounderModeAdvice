@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Loader2, ArrowLeft, FastForward, Building2, Check, ChevronDown, Globe } from "lucide-react";
+import { Loader2, ArrowLeft, FastForward, Building2, Check, ChevronDown, Globe, Users, X } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +28,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+const COMMUNITY_NOTICE_KEY = "fma_community_notice_dismissed";
 
 const POPULAR_SOURCES = [
   "TED",
@@ -73,6 +76,7 @@ export const AnalysisForm = ({ variant = "default", inactive = false }: Analysis
   const [uploadBusy, setUploadBusy] = useState(false);
   const [step, setStep] = useState<"episode" | "profile">("episode");
   const [celebrating, setCelebrating] = useState(false);
+  const [communityNoticeVisible, setCommunityNoticeVisible] = useState(false);
   const [savedProfiles, setSavedProfiles] = useState<SavedProfile[]>([]);
   const [startupContext, setStartupContext] = useState<any>(null);
   const [selectedProfileIds, setSelectedProfileIds] = useState<string[]>([]);
@@ -89,7 +93,7 @@ export const AnalysisForm = ({ variant = "default", inactive = false }: Analysis
     <SuccessMoment
       show={celebrating}
       title="First memo ready"
-      subtitle="I added it to today's desk."
+      subtitle="I added it to today's desk. Tap Share on any lesson to spread the word."
       onDone={() => setCelebrating(false)}
     />
   );
@@ -100,6 +104,24 @@ export const AnalysisForm = ({ variant = "default", inactive = false }: Analysis
     fetchSavedProfiles();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileLimit]);
+
+  // One-time disclosure that generic lessons from public sources feed the
+  // Community Library by default (opt-out lives in Settings → Privacy).
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(COMMUNITY_NOTICE_KEY) !== "1") setCommunityNoticeVisible(true);
+    } catch {
+      // Private-mode storage failure — just skip the one-time notice.
+    }
+  }, []);
+  const dismissCommunityNotice = () => {
+    try {
+      localStorage.setItem(COMMUNITY_NOTICE_KEY, "1");
+    } catch {
+      // non-fatal
+    }
+    setCommunityNoticeVisible(false);
+  };
 
   useEffect(() => {
     if (canBatchProfiles) {
@@ -635,6 +657,28 @@ export const AnalysisForm = ({ variant = "default", inactive = false }: Analysis
             </button>
           )}
         </div>
+
+        {communityNoticeVisible && (
+          <div className="mx-auto flex max-w-lg items-start gap-2 rounded-xl border border-primary/15 bg-primary/5 p-3 text-left text-xs text-muted-foreground">
+            <Users className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+            <p className="flex-1">
+              General lessons from public links you analyze help grow the Community Library for every founder —
+              your company is never named. Manage this in{" "}
+              <Link to="/settings" className="font-medium text-primary underline-offset-2 hover:underline">
+                Settings → Privacy
+              </Link>
+              .
+            </p>
+            <button
+              type="button"
+              aria-label="Dismiss"
+              className="shrink-0 text-muted-foreground hover:text-foreground"
+              onClick={dismissCommunityNotice}
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
 
         <Tabs value={inputMode} onValueChange={(v) => setInputMode(v as "series" | "url" | "upload")} className="w-full">
           <TabsList className="grid w-full grid-cols-3 max-w-lg mx-auto h-11 sm:h-10">

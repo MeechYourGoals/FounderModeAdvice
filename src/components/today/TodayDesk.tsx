@@ -52,6 +52,11 @@ export const TodayDesk = ({ onOpenEpisode, onPrepareMemo }: TodayDeskProps) => {
     navigate("/discover");
   };
 
+  const openCommunityLibrary = () => {
+    triggerHapticFeedback("light");
+    navigate("/discover?tab=community");
+  };
+
   return (
     <section className="space-y-5" aria-label="Today's desk">
       <header className="space-y-1.5">
@@ -164,10 +169,20 @@ export const TodayDesk = ({ onOpenEpisode, onPrepareMemo }: TodayDeskProps) => {
         </div>
 
         {!isPremium ? (
-          <UpgradePrompt
-            message="Your briefing unlocks on The Boardroom — a short weekly set chosen for what you're building."
-            feature="discovery"
-          />
+          <>
+            <UpgradePrompt
+              message="Your briefing unlocks on The Boardroom — a short weekly set chosen for what you're building."
+              feature="discovery"
+            />
+            <button
+              type="button"
+              onClick={openCommunityLibrary}
+              className="inline-flex items-center gap-1 text-footnote text-muted-foreground underline-offset-2 hover:text-primary hover:underline"
+            >
+              Not sure where to start? Browse what other founders have analyzed
+              <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          </>
         ) : briefingLoading ? (
           <div className="space-y-3" aria-busy="true" aria-label="Loading this week's briefing">
             <Skeleton className="h-32 w-full rounded-2xl" />

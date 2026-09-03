@@ -7,6 +7,7 @@ import { applyAdminTierFloor, userHasAdminRole } from "../_shared/admin.ts";
 import { applyFolderTagRules } from "../_shared/folderTagRules.ts";
 import { getVideoContext, deriveChannelHandle } from "../_shared/transcript.ts";
 import { mentionsViewerCompany, sanitizeLessonText } from "../_shared/genericLessons.ts";
+import { buildCommunityContent, prepareCommunityLessons } from "../_shared/community.ts";
 
 // Canonical topic vocabulary (keep in sync with src/lib/topics.ts).
 const CANONICAL_TOPICS = [
@@ -1004,6 +1005,64 @@ INSTRUCTIONS:
         if (authenticatedUserId && appliedTags.size > 0) {
           await applyFolderTagRules(supabase, authenticatedUserId, episode.id, Array.from(appliedTags));
         }
+      }
+    }
+
+    // Step 6b: Publish the generic lessons to the Community Library — public
+    // URL sources only (never an uploaded document), only the already
+    // company-scrubbed generic lessons (never personalized_insights), and
+    // only when the user hasn't opted out. Never fails the analysis: any
+    // error here is swallowed after logging.
+    if (!isUpload && authenticatedUserId && analysis.lessons?.length > 0) {
+      try {
+        const { data: privacyPrefs } = await supabase
+          .from('user_privacy_prefs')
+          .select('contribute_to_community')
+          .eq('user_id', authenticatedUserId)
+          .maybeSingle();
+        const contributesToCommunity = privacyPrefs?.contribute_to_community !== false;
+
+        if (contributesToCommunity) {
+          const contentRow = buildCommunityContent({
+            sourceUrl,
+            title: analysis.episodeTitle,
+            founderNames: analysis.founderNames,
+            channelName,
+            podcastName: finalPodcastName,
+            releaseDate: analysis.releaseDate,
+            topics,
+          });
+          if (contentRow) {
+            const lessonRows = await prepareCommunityLessons(
+              analysis.lessons.map((lesson: {
+                text: string;
+                category?: string;
+                founderAttribution?: string;
+                impactScore?: number;
+                actionabilityScore?: number;
+              }) => ({
+                text: lesson.text,
+                category: lesson.category,
+                founderAttribution: lesson.founderAttribution,
+                impactScore: lesson.impactScore,
+                actionabilityScore: lesson.actionabilityScore,
+              })),
+              resolvedStartupProfile?.company_name,
+              resolvedStartupProfile?.company_website,
+            );
+            if (lessonRows.length > 0) {
+              const { error: communityError } = await supabase.rpc('community_register_analysis', {
+                _content: contentRow,
+                _lessons: lessonRows,
+              });
+              if (communityError) {
+                console.warn('Community Library publish failed:', communityError);
+              }
+            }
+          }
+        }
+      } catch (communityErr) {
+        console.warn('Community Library publish threw:', communityErr);
       }
     }
 
