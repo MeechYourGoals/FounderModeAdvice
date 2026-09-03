@@ -3,6 +3,7 @@ import * as Haptics from "expo-haptics";
 import * as ExpoLinking from "expo-linking";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
+import { useShareIntent } from "expo-share-intent";
 import * as SystemUI from "expo-system-ui";
 import * as WebBrowser from "expo-web-browser";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -61,6 +62,12 @@ const WEB_URL = (extra.webUrl || "https://foundermodeadvice.com").replace(/\/+$/
 const WEB_HOST = new URL(WEB_URL).hostname;
 const START_URL = `${WEB_URL}/?source=app`;
 const APP_SCHEME = "com.foundermodeadvice.app";
+
+/** Best-effort http(s) URL extraction from free-form shared text (e.g. "check this out: https://..."). */
+function firstUrlIn(text: string | undefined | null): string | null {
+  const match = text?.match(/https?:\/\/\S+/);
+  return match ? match[0] : null;
+}
 
 /**
  * Full Safari/Chrome-like user agent with our token appended. OAuth never runs
@@ -199,7 +206,7 @@ type BridgeMessage =
   | { type: "pushRegister"; userId: string }
   | { type: "pushPrompt" }
   | { type: "appleSignIn" }
-  | { type: "share"; title?: string; text?: string; url?: string }
+  | { type: "share"; title?: string; text?: string; url?: string; imageDataUrl?: string }
   | { type: "openExternal"; url: string }
   | { type: "theme"; dark: boolean; backgroundColor: string };
 
@@ -321,6 +328,7 @@ function Shell() {
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [paywallPlanId, setPaywallPlanId] = useState<IapPlanId>(DEFAULT_IAP_PLAN_ID);
   const incomingUrl = ExpoLinking.useURL();
+  const { hasShareIntent, shareIntent, resetShareIntent } = useShareIntent();
   const authSessionActiveRef = useRef(false);
 
   /** Route a native callback back to the hosted SPA without leaving auth in Safari. */
@@ -416,6 +424,22 @@ function Shell() {
       // Ignore unparseable URLs (e.g. exp:// development launches).
     }
   }, [incomingUrl]);
+
+  // Share Extension (iOS) / share intent (Android): "Share" a link from any
+  // app (YouTube, Safari, X, ...) straight into an analysis — the shared
+  // payload arrives as a deep link the same way, so it reuses the exact
+  // "/?url=" prefill path the web app's share-landing CTA also uses.
+  useEffect(() => {
+    if (!hasShareIntent) return;
+    const shared = shareIntent?.webUrl || firstUrlIn(shareIntent?.text);
+    if (shared) {
+      const target = `${WEB_URL}/?url=${encodeURIComponent(shared)}&source=share-extension`;
+      webViewRef.current?.injectJavaScript(
+        `window.location.href=${JSON.stringify(target)};true;`,
+      );
+    }
+    resetShareIntent();
+  }, [hasShareIntent, shareIntent, resetShareIntent]);
 
   const notifyPurchaseSuccess = useCallback(() => {
     webViewRef.current?.injectJavaScript(
@@ -603,11 +627,18 @@ function Shell() {
 
         case "share":
           try {
-            await Share.share(
-              Platform.OS === "ios"
-                ? { message: message.text || message.title || "", url: message.url }
-                : { message: [message.text, message.url].filter(Boolean).join("\n") },
-            );
+            if (Platform.OS === "ios" && message.imageDataUrl) {
+              // iOS Share.share attaches the `url` as an image when it's a data:/file: URI;
+              // the link still needs to travel as text since only one `url` slot exists.
+              await Share.share({
+                message: [message.text, message.url].filter(Boolean).join("\n") || message.title || "",
+                url: message.imageDataUrl,
+              });
+            } else if (Platform.OS === "ios") {
+              await Share.share({ message: message.text || message.title || "", url: message.url });
+            } else {
+              await Share.share({ message: [message.text, message.url].filter(Boolean).join("\n") });
+            }
           } catch {}
           break;
 

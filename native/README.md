@@ -108,6 +108,13 @@ review notes) lives in `docs/store-readiness.md`.
 - Push: OneSignal click/foreground handlers keep the user inside the WebView
   (daily-prompt payload includes `data.path`). The OS permission prompt is
   only shown when the user enables a notification preference — never at launch.
+- Share Extension (iOS) / share intent (Android): sharing a link from any app
+  (Safari, YouTube, X, …) via the OS share sheet and picking "Founder Mode"
+  routes the shared URL into the WebView as `/?url=<source>` — the same
+  prefill path the web app's own share-landing page uses — which starts an
+  analysis immediately. Backed by `expo-share-intent` (config plugin in
+  `app.json`); requires a dev-client/EAS build (not available in Expo Go) and
+  a new build number since it adds an iOS extension target.
 
 ## Sign in with Apple (required before first EAS production build)
 

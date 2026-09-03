@@ -46,6 +46,11 @@ website; log in first, then paste everything below `--- COPY FROM HERE ---`).
 
 ## 3. Development-build test pass ☐
 
+> Note: adding `expo-share-intent` (the Share Extension) adds a new iOS
+> extension target — this needs a fresh `eas build` (new build number) and a
+> device test of "Share to Founder Mode" from Safari/YouTube; it cannot run
+> in Expo Go.
+
 9.  ☐ `eas build --profile development --platform ios` → install on device.
 10. ☐ Run FINAL TEST GATE steps 1–9 (auth, consent, analysis, offline,
     library) + sandbox purchase/restore/manage (steps 10–16) + iPad visual QA
