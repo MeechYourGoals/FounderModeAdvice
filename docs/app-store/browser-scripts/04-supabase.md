@@ -31,8 +31,10 @@ Open Authentication → URL Configuration
 
 - Site URL: `https://foundermodeadvice.com`
 - Additional Redirect URLs — ensure ALL of these exist (add missing, do not delete extras unless they are clearly hostile):
+  - `https://foundermodeadvice.com/auth`
   - `https://foundermodeadvice.com/auth/callback`
   - `https://foundermodeadvice.com/**`
+  - `http://localhost:8080/auth`
   - `http://localhost:8080/auth/callback`
   - `http://localhost:8080/**`
   - `com.foundermodeadvice.app://auth/callback`
