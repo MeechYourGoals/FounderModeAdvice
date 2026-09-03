@@ -11,9 +11,7 @@ import { initAnalytics, captureEvent } from "./services/analytics";
 import { Capacitor } from "@capacitor/core";
 
 // www → apex before React mounts so OAuth PKCE verifier and callback share one origin.
-if (redirectWwwToApexIfNeeded()) {
-  // Navigation in progress; do not boot the app on www.
-} else {
+if (!redirectWwwToApexIfNeeded()) {
 
 // Dev / Lovable-preview only: purge any service worker + Workbox caches left
 // behind on this origin by an earlier build. The PWA plugin doesn't emit a
@@ -96,4 +94,5 @@ createRoot(document.getElementById("root")!).render(
     <App />
   </HelmetProvider>,
 );
+
 }

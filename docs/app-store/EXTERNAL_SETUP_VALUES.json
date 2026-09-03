@@ -154,17 +154,18 @@
   },
 
   "supabaseAuth": {
-    "_comment": "Web Google/Apple sign-in uses supabase.auth.signInWithOAuth (PKCE). The app forces apex redirectTo and passes client_id=com.foundermodeadvice.app.auth for web Apple OAuth so Supabase cannot comma-join the bundle ID.",
+    "_comment": "Web Google/Apple sign-in uses supabase.auth.signInWithOAuth (PKCE). Apex redirectTo only. Supabase Apple Client IDs: Services ID first, bundle second.",
     "siteUrl": "https://foundermodeadvice.com",
     "webRedirectTo": "https://foundermodeadvice.com/auth",
     "nativeRedirectTo": "com.foundermodeadvice.app://auth/callback",
     "googleJsOrigin": "https://foundermodeadvice.com",
     "googleClientId": "409793397680-8pk4j6ac1c0fqj0gn9tmbk8gbtfuams9.apps.googleusercontent.com",
     "googleAuthorizedRedirectUri": "https://iffcuueutmsusgdfekvm.supabase.co/auth/v1/callback",
+    "appleSupabaseClientIds": "com.foundermodeadvice.app.auth,com.foundermodeadvice.app",
     "appleServicesClientId": "com.foundermodeadvice.app.auth",
     "appleNativeBundleId": "com.foundermodeadvice.app",
     "appleReturnUrl": "https://iffcuueutmsusgdfekvm.supabase.co/auth/v1/callback",
-    "appleClientIdsWarning": "Supabase Apple OAuth Client IDs must be the Services ID only. Comma-joining the bundle ID breaks web Apple sign-in (invalid_client). Native iOS uses signInWithIdToken, not this field.",
+    "appleClientIdsNote": "Supabase Apple Client IDs field must be comma-separated with Services ID FIRST and native bundle SECOND. Google Cloud and Apple Developer consoles already use the Supabase callback URL above.",
     "legacyLovableCallbackApexOnly": "If any allow-list still has /~oauth/callback, it must be https://foundermodeadvice.com/~oauth/callback — never www. Production 2026-09-01 showed www, which 302s and breaks Apple form_post.",
     "redirectAllowlist": [
       "https://foundermodeadvice.com/auth",

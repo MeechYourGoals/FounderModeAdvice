@@ -94,21 +94,21 @@ After I confirm, save, reload, and read back:
 
 Pause for my OK first. Switch Apple to **"Use your own credentials"**. Then:
 
-**Client IDs must be the Services ID only — never comma-join the bundle ID:**
+**Client IDs — comma-separated, Services ID first, native bundle second:**
 
 ```
-com.foundermodeadvice.app.auth
+com.foundermodeadvice.app.auth,com.foundermodeadvice.app
 ```
 
-**Why the old comma-separated pair breaks web sign-in:** Supabase forwards the
-Client IDs string as `client_id` on the Apple authorize URL. Apple rejects
-`com.foundermodeadvice.app.auth,com.foundermodeadvice.app` with `invalid_client`
-(yellow error page, no login form). Web OAuth must present the Services ID alone.
+Supabase uses the **first** client ID for web OAuth (Services ID → Apple web login).
+The bundle ID is required so native `signInWithIdToken` tokens validate. **Order matters**
+— Services ID must come first per Supabase docs.
 
-**Native iOS is a separate code path:** the App Store build uses
-AuthenticationServices + `supabase.auth.signInWithIdToken`, whose token carries
-the bundle ID (`com.foundermodeadvice.app`) as `aud`. That does **not** go
-through this OAuth client_id field. Do not concatenate the bundle ID here.
+**Apple Developer (Services ID `com.foundermodeadvice.app.auth`):** Return URL is
+`https://iffcuueutmsusgdfekvm.supabase.co/auth/v1/callback` (already configured).
+
+**Native iOS** uses AuthenticationServices + `signInWithIdToken` with bundle
+`com.foundermodeadvice.app` — not the web OAuth authorize URL.
 
 Then tell me which fields the UI wants for the signing key — Team ID, Key ID, and either a
 `.p8` file upload or a pasted private key. I will supply those values.

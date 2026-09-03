@@ -47,61 +47,27 @@ const Auth = () => {
     }
   };
 
-  // Supabase PKCE returns to /auth?code= on the apex host. Exchange explicitly so
-  // we fail with a toast instead of leaving the user on a signed-out form.
+  // OAuth provider errors land on redirectTo with ?error= / ?error_description=.
+  // PKCE code exchange is owned by the Supabase client (detectSessionInUrl).
   useEffect(() => {
-    const code = searchParams.get("code");
     const oauthError =
       searchParams.get("error_description") ?? searchParams.get("error");
-    if (!code && !oauthError) return;
+    if (!oauthError) return;
 
-    let active = true;
-    const finish = (target: string) => {
-      if (!active) return;
-      window.history.replaceState({}, "", "/auth");
-      navigate(target, { replace: true });
-    };
-
-    void (async () => {
-      if (oauthError) {
-        toast({
-          title: "Sign in failed",
-          description: oauthError,
-          variant: "destructive",
-        });
-        window.history.replaceState({}, "", "/auth");
-        return;
-      }
-      const { error } = await supabase.auth.exchangeCodeForSession(code!);
-      if (!active) return;
-      if (error) {
-        toast({
-          title: "Sign in failed",
-          description: error.message,
-          variant: "destructive",
-        });
-        window.history.replaceState({}, "", "/auth");
-        return;
-      }
-      let target = nextPath;
-      try {
-        const stashed = sessionStorage.getItem("fma_post_auth_redirect");
-        sessionStorage.removeItem("fma_post_auth_redirect");
-        if (stashed && stashed.startsWith("/") && !stashed.startsWith("//")) target = stashed;
-      } catch {
-        // ignore storage failures
-      }
-      finish(target);
-    })();
-
-    return () => {
-      active = false;
-    };
-  }, [searchParams, navigate, toast, nextPath]);
+    toast({
+      title: "Sign in failed",
+      description: oauthError,
+      variant: "destructive",
+    });
+    window.history.replaceState({}, "", "/auth");
+  }, [searchParams, toast]);
 
   // Already signed in (native relaunch, deep link, or manual navigation): send the
   // user into the app instead of showing a redundant login form.
   if (!authLoading && user && !isPasswordRecovery) {
+    if (searchParams.get("code") || searchParams.get("error")) {
+      window.history.replaceState({}, "", "/auth");
+    }
     let target = nextPath;
     try {
       const stashed = sessionStorage.getItem("fma_post_auth_redirect");

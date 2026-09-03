@@ -46,10 +46,11 @@ Enable Apple.
 
 Fields (names vary slightly by dashboard version):
 - **Client IDs / Services ID / Authorized Client IDs** for the Apple **OAuth** provider:
-  - `com.foundermodeadvice.app.auth` (Services ID — web sign-in only; **do not** comma-join the bundle ID)
-  - Native iOS sign-in uses `signInWithIdToken` with bundle `com.foundermodeadvice.app` and does not use this OAuth client_id field.
+  - `com.foundermodeadvice.app.auth,com.foundermodeadvice.app` (**Services ID first**, bundle second — order matters for Supabase web OAuth)
+  - Native iOS sign-in uses `signInWithIdToken` with bundle `com.foundermodeadvice.app`.
 - **Secret Key**: USER ACTION REQUIRED — I generate the Apple client secret JWT (from the Sign in with Apple .p8 + Team ID + Key ID + Services ID) and paste it. You do not generate or echo it. If the UI asks for Team ID + Key ID + .p8 instead, I fill those; you never upload the .p8 into chat.
-- Save. Re-open and verify Apple is Enabled and **only** `com.foundermodeadvice.app.auth` is listed (no comma-joined bundle ID).
+- Save. Re-open and verify Apple is Enabled and Client IDs read exactly:
+  `com.foundermodeadvice.app.auth,com.foundermodeadvice.app`
 
 ### 4. Edge Function secrets
 Open Project Settings → Edge Functions → Secrets

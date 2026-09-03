@@ -1,17 +1,14 @@
 import assert from "node:assert/strict";
-import {
-  APPLE_WEB_SERVICES_CLIENT_ID,
-  CANONICAL_WEB_ORIGIN,
-} from "./canonicalOrigin.ts";
+import { CANONICAL_WEB_ORIGIN } from "./canonicalOrigin.ts";
 import { buildWebOAuthOptions } from "./webOAuthBuild.ts";
 
-Deno.test("buildWebOAuthOptions — Apple web OAuth uses the Services ID only", () => {
+Deno.test("buildWebOAuthOptions — Apple does not override client_id (Supabase dashboard owns ordering)", () => {
   const options = buildWebOAuthOptions(
     "apple",
     false,
     `${CANONICAL_WEB_ORIGIN}/auth`,
   );
-  assert.deepEqual(options.queryParams, { client_id: APPLE_WEB_SERVICES_CLIENT_ID });
+  assert.equal("queryParams" in options, false);
   assert.equal(options.redirectTo, `${CANONICAL_WEB_ORIGIN}/auth`);
   assert.equal(options.skipBrowserRedirect, false);
 });
@@ -22,7 +19,7 @@ Deno.test("buildWebOAuthOptions — Google does not override client_id", () => {
     false,
     `${CANONICAL_WEB_ORIGIN}/auth`,
   );
-  assert.equal(options.queryParams, undefined);
+  assert.equal("queryParams" in options, false);
 });
 
 Deno.test("buildWebOAuthOptions — native shells skip in-webview redirect", () => {

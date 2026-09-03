@@ -336,10 +336,12 @@ async function generateForProfile(
       : [];
     const plan = buildQueryPlan(context, expanded, MAX_QUERIES_PER_PROFILE);
 
+    // Discovery uses Exa + YouTube only. Brave is intentionally not wired.
     const providers = resolveProviders({
       youTubeApiKey: Deno.env.get("YOUTUBE_API_KEY"),
       exaApiKey: Deno.env.get("EXA_API_KEY"),
     });
+
     const evergreenFill = createEvergreenFill(curatedLoader(supabase, context));
 
     const gatheredCandidates = await gatherCandidates(providers, plan, stats);

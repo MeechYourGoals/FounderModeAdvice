@@ -5,11 +5,11 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
 /**
- * Landing route for OAuth returns from Supabase Auth (PKCE code exchange).
+ * Landing route for native OAuth returns (Capacitor scheme → /auth/callback?code=).
  *
- * Supabase redirects here after the provider callback with `?code=` (or legacy
- * token params). We exchange explicitly; detectSessionInUrl on the client is a
- * backstop. Native shells deliver the same params via the app scheme.
+ * PKCE code exchange is owned by the Supabase client (`detectSessionInUrl: true`).
+ * This page waits for `onAuthStateChange`, handles provider errors in the URL, and
+ * supports legacy implicit hash tokens when present.
  */
 const AuthCallback = () => {
   const navigate = useNavigate();
@@ -18,20 +18,20 @@ const AuthCallback = () => {
 
   useEffect(() => {
     let active = true;
+    let finished = false;
 
     const fail = (description: string) => {
-      if (!active) return;
+      if (!active || finished) return;
+      finished = true;
       setMessage("We couldn't complete sign in.");
       toast({ title: "Sign in failed", description, variant: "destructive" });
       navigate("/auth", { replace: true });
     };
 
     const succeed = () => {
-      if (!active) return;
-      // Strip tokens from the address bar before entering the app.
+      if (!active || finished) return;
+      finished = true;
       window.history.replaceState({}, "", "/auth/callback");
-      // Resume an interrupted flow (e.g. the OAuth consent screen) if one was
-      // stashed before leaving for the provider; validated as relative.
       let target = "/";
       try {
         const stashed = sessionStorage.getItem("fma_post_auth_redirect");
@@ -55,46 +55,50 @@ const AuthCallback = () => {
       };
     };
 
-    const run = async () => {
-      const { accessToken, refreshToken, code, error } = readParams();
+    const { accessToken, refreshToken, code, error } = readParams();
 
-      if (error) return fail(error);
+    if (error) {
+      fail(error);
+      return () => {
+        active = false;
+      };
+    }
 
-      if (accessToken && refreshToken) {
-        const { error: setErr } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken,
+    // Legacy implicit-flow tokens (hash); PKCE ?code= is handled by detectSessionInUrl.
+    if (accessToken && refreshToken) {
+      void supabase.auth
+        .setSession({ access_token: accessToken, refresh_token: refreshToken })
+        .then(({ error: setErr }) => {
+          if (setErr) fail(setErr.message);
+          else succeed();
         });
-        if (setErr) return fail(setErr.message);
-        return succeed();
-      }
+      return () => {
+        active = false;
+      };
+    }
 
-      if (code) {
-        const { error: exErr } = await supabase.auth.exchangeCodeForSession(code);
-        if (exErr) return fail(exErr.message);
-        return succeed();
-      }
-
-      // No credentials in the URL: the client may still be resolving a session
-      // it detected itself. Give it a moment before giving up.
-      await new Promise((r) => window.setTimeout(r, 1500));
-      const { data } = await supabase.auth.getSession();
-      if (data.session) return succeed();
-      fail("Something went wrong completing sign in. Please try again.");
-    };
-
-    // A session delivered by the client's own URL detection also finishes here.
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) succeed();
     });
 
-    void run();
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) succeed();
+    });
+
+    const timeout = window.setTimeout(async () => {
+      if (!active || finished) return;
+      if (!code) return;
+      const { data } = await supabase.auth.getSession();
+      if (data.session) succeed();
+      else fail("Something went wrong completing sign in. Please try again.");
+    }, 5000);
 
     return () => {
       active = false;
       subscription.unsubscribe();
+      window.clearTimeout(timeout);
     };
   }, [navigate, toast]);
 
