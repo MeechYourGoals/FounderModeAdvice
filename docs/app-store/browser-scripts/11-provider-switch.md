@@ -94,22 +94,21 @@ After I confirm, save, reload, and read back:
 
 Pause for my OK first. Switch Apple to **"Use your own credentials"**. Then:
 
-**Client IDs must be exactly this comma-separated pair, no spaces:**
+**Client IDs — comma-separated, Services ID first, native bundle second:**
 
 ```
 com.foundermodeadvice.app.auth,com.foundermodeadvice.app
 ```
 
-**Both entries are load-bearing, for different code paths:**
+Supabase uses the **first** client ID for web OAuth (Services ID → Apple web login).
+The bundle ID is required so native `signInWithIdToken` tokens validate. **Order matters**
+— Services ID must come first per Supabase docs.
 
-- `com.foundermodeadvice.app.auth` is the **Services ID**. It is what the browser sign-in
-  flow presents on the web.
-- `com.foundermodeadvice.app` is the **iOS bundle ID**. In the App Store build, Sign in with
-  Apple is a native AuthenticationServices sheet whose identity token carries the *bundle ID*
-  as its audience (`aud`), and the app exchanges it via `supabase.auth.signInWithIdToken`.
-  **If the bundle ID is missing from this field, native Apple sign-in breaks in the shipped
-  iOS app** — it will reject the token's audience. This is the single highest-risk field in
-  the whole runbook.
+**Apple Developer (Services ID `com.foundermodeadvice.app.auth`):** Return URL is
+`https://iffcuueutmsusgdfekvm.supabase.co/auth/v1/callback` (already configured).
+
+**Native iOS** uses AuthenticationServices + `signInWithIdToken` with bundle
+`com.foundermodeadvice.app` — not the web OAuth authorize URL.
 
 Then tell me which fields the UI wants for the signing key — Team ID, Key ID, and either a
 `.p8` file upload or a pasted private key. I will supply those values.
@@ -124,25 +123,25 @@ Authentication → URL Configuration). Confirm all of these are present, and rep
 list verbatim. **Add only what is missing; delete nothing.**
 
 ```
+https://foundermodeadvice.com/auth
 https://foundermodeadvice.com/auth/callback
 https://foundermodeadvice.com/**
 com.foundermodeadvice.app://auth/callback
+http://localhost:8080/auth
 http://localhost:8080/auth/callback
 http://localhost:8080/**
 ```
 
 Site URL should be `https://foundermodeadvice.com`.
 
-`com.foundermodeadvice.app://auth/callback` is the native deep link. The iOS shell completes
-OAuth in an `ASWebAuthenticationSession` and the provider must be allowed to return through
-that scheme, or sign-in in the app dead-ends on a blank browser sheet.
+Web PKCE returns land on `/auth`; native Capacitor/Expo returns use `/auth/callback` or the
+app scheme. Keep both paths in the allowlist.
 
 ## §5 — What NOT to do
 
-- Do **not** set any environment variable or trigger a redeploy. Unlike some other Lovable
-  projects, nothing in this switch is build-time — there is no feature flag to flip. If you
-  find yourself looking for one, you are on the wrong runbook.
-- Do not disable the Lovable auth bridge or change the app's code.
+- Do **not** remove `com.foundermodeadvice.app` from the Apple Client IDs list — native
+  `signInWithIdToken` requires the bundle ID in that comma-separated field.
+- Do **not** reorder Client IDs — Services ID must stay first.
 - Do not touch the Email provider's "Confirm email" setting.
 
 ## REPORT BACK
@@ -183,12 +182,9 @@ SITE_URL=
 
 ## Rollback
 
-If sign-in behaves worse after this, switch both providers back to **"Managed by Lovable"**.
-That returns every surface to the managed client within a minute — no redeploy, no new build,
-no App Store round trip.
-
-Nothing in this runbook changes the app's code or its bundle, which is exactly why the exit
-is this cheap. Keep it that way.
+If sign-in behaves worse after dashboard changes, revert provider credentials to the prior
+values in Supabase (and Google/Apple consoles if those were changed). The app uses Supabase
+Auth directly — there is no Lovable broker toggle to flip back.
 
 ## Test in this order once §4 is saved
 
@@ -205,15 +201,17 @@ is this cheap. Keep it that way.
 5. **Email/password sign-in.** Untouched by this runbook — a regression there means something
    else changed.
 
-## Why the broker stays (and what it would cost to remove it)
+## Why Supabase Auth directly (not the Lovable broker)
 
-The app calls `lovable.auth.signInWithOAuth()` rather than `supabase.auth.signInWithOAuth()`;
-the broker holds the secret, and calling Supabase directly returns *"missing OAuth secret"*.
-This runbook does not change that — it changes *whose client the broker presents*.
+Web Google/Apple sign-in uses `supabase.auth.signInWithOAuth` with PKCE and
+`redirectTo: https://foundermodeadvice.com/auth` (apex only — never `www`, never
+`~oauth/callback`). The Lovable Cloud Auth broker (`lovable.auth.signInWithOAuth`,
+`oauth.lovable.app`, `/~oauth/initiate`) was removed because www callbacks 302 to
+apex and break PKCE; Apple `form_post` cannot survive that redirect.
 
-Removing the broker entirely would mean a code change in `src/pages/Auth.tsx` **and a new iOS
-binary**: the shell intercepts OAuth only on the broker's `/~oauth/initiate` path
-(`native/App.tsx`), while a direct `…supabase.co/auth/v1/authorize` URL matches the shell's
-internal-host allowlist and would load *inside* the WebView, where Google rejects it with
-`disallowed_useragent`. That is a deliberate not-now, recorded here so it is not
-re-litigated later.
+Native iOS Apple sign-in uses `signInWithIdToken` with bundle
+`com.foundermodeadvice.app` (AuthenticationServices sheet). The Expo shell opens
+Supabase authorize URLs in ASWebAuthenticationSession, not inside the WebView.
+
+This runbook configures dashboard credentials for that path — Google/Apple client
+IDs, Supabase provider secrets, and redirect allow-lists.

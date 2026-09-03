@@ -128,14 +128,12 @@ except during a password‑reset (`?reset=true`) so the recovery flow can finish
   (`src/integrations/supabase/client.ts`). Capacitor/Despia webviews expose
   `localStorage`, so no native secure‑store shim is required today.
 * **Redirect targets** (`getOAuthRedirectUrl()`):
-  * Web → `${origin}/auth/callback`, handled by `src/pages/AuthCallback.tsx`
-    (Supabase `detectSessionInUrl` + a listener + a timed fallback).
+  * Web → `https://foundermodeadvice.com/auth` (apex PKCE return; `/auth` exchanges `?code=`)
   * Native → `com.foundermodeadvice.app://auth/callback`, caught by the Capacitor
-    `appUrlOpen` listener in `src/lib/capacitor.ts`, which calls
-    `exchangeCodeForSession(url)`, then routes to `/` on success or **`/auth` on
-    failure** so a failed exchange is recoverable.
-  * Lovable preview hosts → the managed `lovable.auth` bridge (they can't be on
-    the OAuth allow‑list).
+    `appUrlOpen` listener in `src/lib/capacitor.ts`, which routes to `/auth/callback?code=…`
+    where `detectSessionInUrl` completes PKCE (no manual exchange).
+  * Native Apple (Expo shell) → `signInWithIdToken` with bundle
+    `com.foundermodeadvice.app` — not web OAuth.
 
 ### Supabase dashboard — redirect URLs
 
@@ -143,9 +141,11 @@ Authentication → URL Configuration must allow (already documented in
 `docs/store-readiness.md`):
 
 ```
-https://foundermodeadvice.com/auth/callback     # production web
-http://localhost:8080/auth/callback             # local dev
-com.foundermodeadvice.app://auth/callback       # native (Capacitor/Despia)
+https://foundermodeadvice.com/auth                  # production web PKCE return
+https://foundermodeadvice.com/**                    # production web
+http://localhost:8080/auth                          # local dev
+http://localhost:8080/**                            # local dev
+com.foundermodeadvice.app://auth/callback           # native (Capacitor/Despia/Expo)
 ```
 
 If Google/Apple OAuth is enabled, confirm each provider's callback still points at

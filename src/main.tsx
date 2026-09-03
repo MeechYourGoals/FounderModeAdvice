@@ -5,20 +5,13 @@ import "./index.css";
 import { initializeNativePlugins, handleBackButton, initKeyboardViewportWatcher } from "./lib/capacitor";
 import { isDespia } from "./services/despiaService";
 import { isExpoShell, syncShellTheme } from "./services/expoShellService";
-import { isNativeWrapper, isStandalonePWA, getRuntimeSurface } from "./lib/appMode";
+import { isNativeWrapper, isStandalonePWA, getRuntimeSurface, redirectWwwToApexIfNeeded } from "./lib/appMode";
 import { initPushNotifications } from "./services/pushService";
 import { initAnalytics, captureEvent } from "./services/analytics";
 import { Capacitor } from "@capacitor/core";
 
-// Canonical-origin guard. The app is served on the apex; www 302s to it. Any
-// OAuth flow started on www writes its PKCE verifier on www and then finishes
-// on the apex, so the code exchange fails ("failed to exchange authorization
-// code"). Move to the apex before React (and the Supabase client) boot.
-if (typeof window !== "undefined" && window.location.hostname === "www.foundermodeadvice.com") {
-  const { pathname, search, hash } = window.location;
-  window.location.replace(`https://foundermodeadvice.com${pathname}${search}${hash}`);
-}
-
+// www → apex before React mounts so OAuth PKCE verifier and callback share one origin.
+if (!redirectWwwToApexIfNeeded()) {
 
 // Dev / Lovable-preview only: purge any service worker + Workbox caches left
 // behind on this origin by an earlier build. The PWA plugin doesn't emit a
@@ -101,3 +94,5 @@ createRoot(document.getElementById("root")!).render(
     <App />
   </HelmetProvider>,
 );
+
+}

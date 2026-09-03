@@ -31,6 +31,7 @@ type ShellMessage =
   | { type: "pushRegister"; userId: string }
   | { type: "pushPrompt" }
   | { type: "appleSignIn" }
+  | { type: "oauthSession"; url: string }
   | { type: "share"; title: string; text: string; url: string }
   | { type: "openExternal"; url: string }
   | { type: "theme"; dark: boolean; backgroundColor: string };

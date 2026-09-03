@@ -199,6 +199,7 @@ type BridgeMessage =
   | { type: "pushRegister"; userId: string }
   | { type: "pushPrompt" }
   | { type: "appleSignIn" }
+  | { type: "oauthSession"; url: string }
   | { type: "share"; title?: string; text?: string; url?: string }
   | { type: "openExternal"; url: string }
   | { type: "theme"; dark: boolean; backgroundColor: string };
@@ -601,6 +602,12 @@ function Shell() {
           break;
         }
 
+        case "oauthSession":
+          if (typeof message.url === "string" && message.url.startsWith("http")) {
+            void openOAuthSession(message.url);
+          }
+          break;
+
         case "share":
           try {
             await Share.share(
@@ -723,12 +730,14 @@ function Shell() {
     const { url } = request;
     if (url.startsWith("about:")) return true;
 
-    // Lovable's OAuth broker is same-origin (`/~oauth/initiate`). Intercept it
-    // before the WebView loads it; Google explicitly rejects embedded user
-    // agents and an external auth session is required for a reliable login.
+    // Google forbids OAuth in embedded WebViews. Run Supabase's authorize URL in
+    // ASWebAuthenticationSession (iOS) / a custom tab (Android), then deliver the
+    // registered custom-scheme callback to the SPA for session persistence.
     try {
       const parsed = new URL(url);
-      if (parsed.hostname === WEB_HOST && parsed.pathname === "/~oauth/initiate") {
+      const isSupabaseAuthorize =
+        parsed.hostname.endsWith(".supabase.co") && parsed.pathname === "/auth/v1/authorize";
+      if (isSupabaseAuthorize) {
         void openOAuthSession(url);
         return false;
       }

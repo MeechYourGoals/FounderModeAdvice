@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link, Navigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,9 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft, X } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
-import { lovable } from "@/integrations/lovable/index";
 import { triggerHapticFeedback } from "@/lib/capacitor";
-import { isLovablePreview, getOAuthRedirectUrl, shouldShowAppAuthFirst } from "@/lib/appMode";
+import { getCanonicalWebOrigin, shouldShowAppAuthFirst } from "@/lib/appMode";
+import { signInWithOAuthProvider } from "@/lib/webOAuth";
 import { isExpoShell, requestShellAppleSignIn } from "@/services/expoShellService";
 import { usePageMeta } from "@/hooks/usePageMeta";
 
@@ -37,8 +37,7 @@ const Auth = () => {
   // Validate it as a same-origin relative path before ever redirecting to it.
   const rawNext = searchParams.get("next") ?? "";
   const nextPath = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/";
-  // Social sign-in leaves the app entirely, so the intent is stashed for
-  // /auth/callback to consume on return.
+  // Social sign-in leaves the app entirely, so the intent is stashed for return.
   const rememberNext = () => {
     try {
       if (nextPath !== "/") sessionStorage.setItem("fma_post_auth_redirect", nextPath);
@@ -48,36 +47,66 @@ const Auth = () => {
     }
   };
 
+  // OAuth provider errors land on redirectTo with ?error= / ?error_description=.
+  // PKCE code exchange is owned by the Supabase client (detectSessionInUrl).
+  useEffect(() => {
+    const oauthError =
+      searchParams.get("error_description") ?? searchParams.get("error");
+    if (!oauthError) return;
+
+    toast({
+      title: "Sign in failed",
+      description: oauthError,
+      variant: "destructive",
+    });
+    window.history.replaceState({}, "", "/auth");
+  }, [searchParams, toast]);
+
   // Already signed in (native relaunch, deep link, or manual navigation): send the
   // user into the app instead of showing a redundant login form.
   if (!authLoading && user && !isPasswordRecovery) {
-    return <Navigate to={nextPath} replace />;
+    if (searchParams.get("code") || searchParams.get("error")) {
+      window.history.replaceState({}, "", "/auth");
+    }
+    let target = nextPath;
+    try {
+      const stashed = sessionStorage.getItem("fma_post_auth_redirect");
+      sessionStorage.removeItem("fma_post_auth_redirect");
+      if (stashed && stashed.startsWith("/") && !stashed.startsWith("//")) target = stashed;
+    } catch {
+      // ignore storage failures
+    }
+    return <Navigate to={target} replace />;
   }
 
   // Always show close button in browser; hide only in installed app/PWA to avoid loop.
   const showClose = !shouldShowAppAuthFirst();
+  const oauthCodePending = Boolean(searchParams.get("code"));
+
+  if (oauthCodePending && authLoading) {
+    return (
+      <div
+        className="h-screen flex flex-col items-center justify-center gap-4 p-4"
+        style={{ background: "var(--gradient-hero)" }}
+      >
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground">Completing sign in…</p>
+      </div>
+    );
+  }
 
   const handleGoogleSignIn = async () => {
     triggerHapticFeedback('light');
     setGoogleLoading(true);
     rememberNext();
     try {
-      // Lovable Cloud managed Google auth: broker holds the OAuth secret, so
-      // ALL web environments (preview, published .lovable.app, custom domain,
-      // localhost) must go through the lovable.auth bridge. Calling
-      // supabase.auth.signInWithOAuth directly returns "missing OAuth secret".
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: getOAuthRedirectUrl(),
-      });
-      if (result.error) {
+      const { error } = await signInWithOAuthProvider("google");
+      if (error) {
         toast({
           title: "Google sign-in failed",
-          description: result.error.message,
+          description: error.message,
           variant: "destructive",
         });
-      } else if (!result.redirected) {
-        // Session was set by the lovable bridge — navigate into the app.
-        navigate(nextPath, { replace: true });
       }
     } catch (error: any) {
       toast({
@@ -135,17 +164,13 @@ const Auth = () => {
         }
       }
 
-      const result = await lovable.auth.signInWithOAuth("apple", {
-        redirect_uri: getOAuthRedirectUrl(),
-      });
-      if (result.error) {
+      const { error } = await signInWithOAuthProvider("apple");
+      if (error) {
         toast({
           title: "Apple sign-in failed",
-          description: result.error.message,
+          description: error.message,
           variant: "destructive",
         });
-      } else if (!result.redirected) {
-        navigate(nextPath, { replace: true });
       }
     } catch (error: any) {
       toast({
@@ -173,7 +198,7 @@ const Auth = () => {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth?reset=true`,
+        redirectTo: `${getCanonicalWebOrigin()}/auth?reset=true`,
       });
 
       if (error) {
@@ -210,7 +235,7 @@ const Auth = () => {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}${nextPath}`,
+          emailRedirectTo: `${getCanonicalWebOrigin()}${nextPath}`,
         },
       });
 

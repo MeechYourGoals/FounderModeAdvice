@@ -19,7 +19,7 @@
 // actually presses Analyze.
 //
 // Required secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, CRON_SECRET.
-// Optional: LOVABLE_API_KEY (reasons + sharper queries), BRAVE_SEARCH_API_KEY,
+// Optional: LOVABLE_API_KEY (reasons + sharper queries),
 // EXA_API_KEY, YOUTUBE_API_KEY, ONESIGNAL_APP_ID + ONESIGNAL_REST_API_KEY.
 // With no optional keys the job still runs, filling each edition from the
 // curated library.

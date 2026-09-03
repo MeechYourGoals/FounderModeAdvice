@@ -16,7 +16,7 @@ The Discover code is already in the workspace (`src/pages/Discover.tsx`, `supaba
 ## What I cannot do and will hand back to you
 
 - **The weekly cron job.** Secrets are write-only to me, so I can't read the existing `CRON_SECRET`. I'll give you the exact SQL to paste in the SQL editor (the `alter database ... set app.cron_secret` line plus the `cron.schedule` call from `docs/discovery-setup.md`), with `pg_cron`/`pg_net` enabled first.
-- **Optional provider keys.** `BRAVE_SEARCH_API_KEY` and `YOUTUBE_API_KEY` are yours to add if you want web/news/video candidates. Without them the weekly job still runs and serves the curated library — `generation_stats.providers` returning only `["curated"]` is exactly that signal.
+- **Optional provider keys.** `YOUTUBE_API_KEY` is yours to add if you want web/news/video candidates. Without them the weekly job still runs and serves the curated library — `generation_stats.providers` returning only `["curated"]` is exactly that signal.
 
 ## Verification I will report back
 

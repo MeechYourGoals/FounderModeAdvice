@@ -1,10 +1,8 @@
 import assert from "node:assert/strict";
 import {
-  braveWebQueryParams,
   createEvergreenFill,
   exaSearchBody,
   inferContentType,
-  parseBraveAge,
   parseIsoDuration,
   resolveProviders,
   toResult,
@@ -98,22 +96,15 @@ Deno.test("resolveProviders — only configured vendors are used, and none is a 
   // non-empty, so this must be an empty list rather than a stand-in provider.
   assert.deepEqual(resolveProviders({}).map((p) => p.id), []);
 
-  const all = resolveProviders({ braveApiKey: "k", youTubeApiKey: "y", exaApiKey: "e" });
-  assert.deepEqual(all.map((p) => p.id), ["brave_web", "brave_news", "exa", "youtube"]);
-
-  const braveOnly = resolveProviders({ braveApiKey: "k" });
-  assert.ok(!braveOnly.some((p) => p.id === "youtube"));
-  assert.ok(!braveOnly.some((p) => p.id === "exa"));
+  const all = resolveProviders({ youTubeApiKey: "y", exaApiKey: "e" });
+  assert.deepEqual(all.map((p) => p.id), ["exa", "youtube"]);
 
   // Exa alone is a complete deployment — it covers both intents.
   assert.deepEqual(resolveProviders({ exaApiKey: "e" }).map((p) => p.id), ["exa"]);
-});
 
-Deno.test("news providers decline evergreen intents", () => {
-  const providers = resolveProviders({ braveApiKey: "k" });
-  const news = providers.find((p) => p.id === "brave_news")!;
-  assert.equal(news.supports("timely"), true);
-  assert.equal(news.supports("evergreen"), false);
+  const youTubeOnly = resolveProviders({ youTubeApiKey: "y" });
+  assert.ok(!youTubeOnly.some((p) => p.id === "exa"));
+  assert.deepEqual(youTubeOnly.map((p) => p.id), ["youtube"]);
 });
 
 Deno.test("evergreen fill — a throwing loader yields no candidates, not a crash", async () => {
@@ -123,34 +114,12 @@ Deno.test("evergreen fill — a throwing loader yields no candidates, not a cras
   assert.deepEqual(await fill(5), []);
 });
 
-Deno.test("Brave Web constrains the timely half only", () => {
-  // An evergreen angle ("founder interview lessons") restricted to the past
-  // month returns almost nothing, which is the opposite of that intent's point.
-  assert.equal(braveWebQueryParams("rocket startup news", 10, "timely").get("freshness"), "pm");
-  assert.equal(braveWebQueryParams("founder interview lessons", 10, "evergreen").get("freshness"), null);
-  // Defaults to the safer, narrower window.
-  assert.equal(braveWebQueryParams("rocket startup news", 10).get("freshness"), "pm");
-});
-
 Deno.test("YouTube always sets publishedAfter to the recency window", () => {
   const now = Date.parse("2026-08-21T12:00:00Z");
   const timely = youTubeQueryParams("launch industry developments", 8, "key", now);
   const evergreen = youTubeQueryParams("founder interview lessons", 8, "key", now);
   assert.equal(timely.get("publishedAfter"), publishedAfterIso(now));
   assert.equal(evergreen.get("publishedAfter"), publishedAfterIso(now));
-});
-
-Deno.test("parseBraveAge — Brave's second date field is worth reading", () => {
-  const now = Date.parse("2026-08-21T12:00:00Z");
-  assert.equal(parseBraveAge("3 days ago", now), new Date(now - 3 * 86_400_000).toISOString());
-  assert.equal(parseBraveAge("1 hour ago", now), new Date(now - 3_600_000).toISOString());
-  assert.equal(parseBraveAge("2 weeks ago", now), new Date(now - 2 * 604_800_000).toISOString());
-  assert.equal(parseBraveAge("November 12, 2025", now), new Date("November 12, 2025").toISOString());
-  // Anything we cannot pin to a real past instant stays undated.
-  assert.equal(parseBraveAge("recently", now), null);
-  assert.equal(parseBraveAge("", now), null);
-  assert.equal(parseBraveAge(undefined, now), null);
-  assert.equal(parseBraveAge("January 1, 2099", now), null);
 });
 
 Deno.test("toResult — a curated essay stays evergreen despite carrying a real date", () => {
@@ -169,69 +138,9 @@ Deno.test("toResult — a curated essay stays evergreen despite carrying a real 
   assert.equal(essay.publishedAt, new Date("2013-07-01").toISOString());
 });
 
-Deno.test("Brave Web — an undated hit is never vouched for, on either intent", async () => {
-  // Regression: braveResults used to stamp every hit "provider_window" on the
-  // claim that both Brave endpoints constrain by date. That stopped being true
-  // once evergreen web searches dropped freshness=pm, so undated (often
-  // years-old) pages were admitted, then persisted with published_at = null —
-  // counted in item_count but hidden by the servability rule.
-  const originalFetch = globalThis.fetch;
-  const requested: string[] = [];
-  globalThis.fetch = ((input: string | URL | Request) => {
-    requested.push(String(input));
-    return Promise.resolve(
-      new Response(
-        JSON.stringify({
-          web: {
-            results: [{
-              url: "https://example.com/undated-essay",
-              title: "An essay carrying no publication date at all",
-              description: "Nothing here says when it was written.",
-            }],
-          },
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } },
-      ),
-    );
-  }) as typeof fetch;
-
-  try {
-    const web = resolveProviders({ braveApiKey: "k" }).find((p) => p.id === "brave_web")!;
-
-    for (const intent of ["evergreen", "timely"] as const) {
-      const [result] = await web.search({ query: `founder ${intent} lessons`, intent }, { limit: 5 });
-      assert.equal(result.publishedAt, null, `${intent}: stays undated`);
-      assert.equal(result.recencyBasis, "published_at", `${intent}: no vendor-window claim`);
-      assert.equal(isBriefingEligible(result), false, `${intent}: not admitted to an edition`);
-    }
-
-    // The evergreen request really is unconstrained — that is what made the old
-    // blanket claim false.
-    assert.ok(!requested[0].includes("freshness"), "evergreen web search sends no freshness window");
-    assert.ok(requested[1].includes("freshness=pm"), "timely web search still asks for the past month");
-  } finally {
-    globalThis.fetch = originalFetch;
-  }
-});
-
-Deno.test("Brave Web — a hit that carries a real date is still admitted", () => {
-  // parseBraveAge is what preserves the yield: Brave fills `age` far more often
-  // than `page_age`, and those hits pass on their own merit, not on a claim.
-  const dated = toResult({
-    ...base,
-    url: "https://example.com/dated",
-    title: "A story that does say when it was published",
-    publishedAt: parseBraveAge("3 days ago"),
-  })!;
-  assert.equal(dated.recencyBasis, "published_at");
-  assert.equal(isBriefingEligible(dated), true);
-});
-
 Deno.test("Exa — the request carries our own admission window, not a vendor bucket", () => {
   const now = Date.parse("2026-08-21T12:00:00Z");
   const body = exaSearchBody({ query: "sports industry developments", intent: "timely" }, 10, now);
-  // Exa filters on the real publication date, so the vendor filter and
-  // isRecentEnough cannot drift apart the way Brave's coarse buckets did.
   assert.equal(body.startPublishedDate, publishedAfterIso(now));
   assert.equal(body.query, "sports industry developments");
   assert.equal(body.numResults, 10);
@@ -243,8 +152,6 @@ Deno.test("Exa — numResults is clamped, and category is only set where it is u
   assert.equal(exaSearchBody({ query: "q for testing", intent: "timely" }, 500, now).numResults, 25);
   assert.equal(exaSearchBody({ query: "q for testing", intent: "timely" }, 0, now).numResults, 1);
 
-  // Research is the one intent where a category narrows without losing good
-  // material; forcing "news" on every timely query would drop operator blogs.
   assert.equal(
     exaSearchBody({ query: "ai research overview", intent: "evergreen", prefer: "research" }, 10, now).category,
     "research paper",

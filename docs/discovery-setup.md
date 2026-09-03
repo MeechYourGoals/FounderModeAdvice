@@ -9,10 +9,9 @@ Steps 1–2 are required. Step 3 is applied by migration and only needs verifyin
 Steps 4–8 are optional and independent of each other.
 
 **If you only do one optional step, configure a search provider** — step 4
-(Exa) or step 5 (Brave). Without one, For You can never contain recent
-material: it becomes a rotation of curated classics that runs out of unseen
-items in a few weeks. Exa is the lowest-friction option; its free tier needs no
-payment method.
+(Exa). Without one, For You can never contain recent material: it becomes a
+rotation of curated classics that runs out of unseen items in a few weeks. Exa
+is the lowest-friction option; its free tier needs no payment method.
 
 ---
 
@@ -103,33 +102,12 @@ To drain a large backlog faster on the first run, temporarily use `'*/10 * * * 1
 | **Why** | Enables the `exa` provider, which serves both timely and evergreen intents. Free tier requires no payment method. |
 | **How to validate** | Trigger a manual refresh from Discover, then `select generation_stats->'providers' from public.recommendation_batches order by generated_at desc limit 1;` — the array should include `exa`. |
 
-Preferred over Brave where you only want one provider. Brave exposes coarse
-freshness buckets (`pm`, `pw`) that only approximate the app's rule — the gap
-between the two is what let an undated hit be treated as recent. Exa filters on
-the real publication date, so it is handed exactly the same window
-`is_daily_brief_content_fresh` enforces and the two cannot drift.
-
 No page contents are requested (text, summaries and highlights each cost extra
 per result), so cards from Exa carry a title, date, author and image but no
 description. The per-item "why this" line is written separately from metadata.
 Budget: capped at 6 searches per profile per run.
 
-## 5. Brave search provider (optional)
-
-| | |
-|---|---|
-| **Service** | Brave Search API — https://api-dashboard.search.brave.com |
-| **Exact setting** | Edge Function secret `BRAVE_SEARCH_API_KEY` |
-| **Value format** | The subscription token string from the dashboard (e.g. `BSA...`), no prefix, no quotes |
-| **Where it belongs** | Supabase → Project Settings → Edge Functions → Secrets |
-| **Why** | Enables the `brave_web` and `brave_news` providers. |
-| **How to validate** | Trigger a manual refresh from Discover, then `select generation_stats from public.recommendation_batches order by generated_at desc limit 1;` — the `providers` array should include `brave_web`. |
-
-Brave requires a card on file even for the free tier. Note that `freshness=pm`
-is sent only for timely intents; evergreen queries are unconstrained and rely on
-each hit carrying its own in-window date.
-
-## 6. YouTube provider (optional)
+## 5. YouTube provider (optional)
 
 | | |
 |---|---|
@@ -144,7 +122,7 @@ Quota note: a `search.list` call costs 100 units against the default 10,000/day
 project quota, so the provider is capped at 3 searches per profile per run
 (~30 profiles/day). Request a quota increase before scaling past that.
 
-## 7. Weekly notification (optional)
+## 6. Weekly notification (optional)
 
 | | |
 |---|---|
@@ -158,7 +136,7 @@ project quota, so the provider is capped at 3 searches per profile per run
 Only one notification is ever sent per batch: `notified_at` is stamped whether
 or not the send succeeded, and whether or not the user was opted in.
 
-## 8. Analytics (optional, no config change)
+## 7. Analytics (optional, no config change)
 
 PostHog events are emitted through the existing `src/services/analytics.ts`
 provider, which is gated to installed-app runtimes. No new keys. Create funnels

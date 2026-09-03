@@ -17,7 +17,7 @@
 // and the refresh toast while being invisible on the page. Admitting undated
 // hits needs a recency_basis column on discovery_content to carry the evidence
 // into the serving rule; until that exists, rejecting them is the honest
-// behaviour. parseBraveAge recovers most of these as genuinely dated anyway.
+// behaviour.
 //
 // Mirrors public.is_daily_brief_content_fresh / is_discovery_content_servable.
 

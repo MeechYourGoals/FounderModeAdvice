@@ -41,13 +41,13 @@ CLI you still run locally after #8 (the browser cannot): `cd native && eas init`
 ## OAuth ownership (scripts 09–12) — separate track
 
 Scripts 01–08 get the **iOS build** to the App Store. Scripts 09–12 fix a different
-problem: today Google's consent screen names **Lovable**, not Founder Mode Advice, because
-the app signs in through Lovable Cloud's *managed* OAuth client
-(`src/pages/Auth.tsx` calls `lovable.auth.signInWithOAuth`, and the broker holds the secret).
+problem: Google's consent screen should name **Founder Mode Advice**, not Lovable.
+The app signs in through **Supabase Auth** (`supabase.auth.signInWithOAuth` in
+`src/pages/Auth.tsx`) with OAuth clients we own — not the Lovable Cloud Auth broker.
 
-These four move Google and Apple sign-in onto OAuth clients we own. The broker stays in the
-request path — it just presents *our* client, so the consent screen renames. **No code
-change, no redeploy, no new binary**, and rollback is one dashboard toggle.
+These four configure Google and Apple dashboard credentials and Supabase provider
+secrets. **Deploy the auth code change** (Supabase PKCE on apex) before expecting
+production sign-in to match this runbook.
 
 ### Run order — recon first
 
