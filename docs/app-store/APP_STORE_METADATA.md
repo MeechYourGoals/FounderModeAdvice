@@ -47,8 +47,12 @@ BUILT FOR OPERATORS
   bookmark the insights that matter, find them again instantly
 • Share with your team — invite teammates and advisors to shared folders and
   discuss individual insights (The Boardroom plan)
+• Share any insight — turn a lesson into a branded card for Slack, iMessage,
+  or your feed, or share a link straight from any app to start an analysis
+• Community Library — search general lessons other founders have already
+  pulled from public sources when you're not sure where to start
 • Native app experience — Sign in with Apple, haptics, share sheet, optional
-  daily founder prompt notifications
+  daily founder prompt and weekly briefing notifications
 
 PLANS
 Free: 1 business profile, 3 source analyses per month, organized library.

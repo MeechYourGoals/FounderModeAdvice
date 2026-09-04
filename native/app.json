@@ -156,6 +156,18 @@
           "resizeMode": "contain",
           "backgroundColor": "#0c0e15"
         }
+      ],
+      [
+        "expo-share-intent",
+        {
+          "iosActivationRules": {
+            "NSExtensionActivationSupportsWebURLWithMaxCount": 1,
+            "NSExtensionActivationSupportsText": true
+          },
+          "androidIntentFilters": [
+            "text/*"
+          ]
+        }
       ]
     ],
     "extra": {

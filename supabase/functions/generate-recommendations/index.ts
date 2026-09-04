@@ -598,7 +598,7 @@ async function notifyReadyBatches(supabase: ReturnType<typeof createClient>): Pr
     .from("user_notification_prefs")
     .select("user_id")
     .in("user_id", userIds)
-    .eq("daily_prompt", true);
+    .eq("weekly_briefing", true);
   const optedIn = new Set((prefs ?? []).map((p: Record<string, unknown>) => String(p.user_id)));
 
   let sent = 0;

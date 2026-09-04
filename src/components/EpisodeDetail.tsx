@@ -22,6 +22,7 @@ import { getAnalysisProfileLabel, getBoardMeetingMemoTitle, getViewerCompanyName
 import { getAnalysisSourceKind, getAnalysisSourceLabel } from "@/lib/analysisSource";
 import { getSourceThumbnailUrl } from "@/lib/thumbnails";
 import { toGenericInsightText } from "@/lib/genericLessons";
+import { ShareInsightSheet } from "@/components/ShareInsightSheet";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -83,6 +84,7 @@ interface Episode {
   url: string;
   founder_names: string | null;
   analyzed_by: string | null;
+  source_type?: string | null;
   custom_prompt?: string | null;
   analyzed_profile_id?: string | null;
   analyzed_profile_name_snapshot?: string | null;
@@ -514,6 +516,9 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
   // collaborators viewing shared content may always participate. RLS enforces
   // the same rules server-side.
   const isEpisodeOwner = episode.analyzed_by === currentUserId;
+  // A lesson can only be shared publicly from a public-URL source, never an
+  // uploaded private document, and only by the person who ran the analysis.
+  const canShareInsight = isEpisodeOwner && episode.source_type !== "document";
   // `subscription` is null while SubscriptionProvider is still resolving —
   // treat that as "needs upgrade" (comment box hidden) rather than crashing;
   // it flips to the real value as soon as the tier loads.
@@ -735,9 +740,19 @@ export const EpisodeDetail = ({ episodeId, onBack }: EpisodeDetailProps) => {
                       </span>
                       {lesson.category && <Badge variant="outline">{lesson.category}</Badge>}
                     </div>
-                    <div className="flex gap-2 text-xs sm:text-sm">
+                    <div className="flex items-center gap-2 text-xs sm:text-sm">
                       <ScorePill label="Impact" score={lesson.impact_score} />
                       <ScorePill label="Action" score={lesson.actionability_score} />
+                      {canShareInsight && (
+                        <ShareInsightSheet
+                          episodeId={episode.id}
+                          lessonId={lesson.id}
+                          quoteText={toGenericInsightText(lesson.lesson_text, getViewerCompanyName(episode))}
+                          attribution={lesson.founder_attribution}
+                          sourceTitle={episode.title}
+                          sourceUrl={episode.url}
+                        />
+                      )}
                     </div>
                   </div>
                   <p className="text-body-lg text-foreground leading-relaxed max-w-[65ch] mb-2">

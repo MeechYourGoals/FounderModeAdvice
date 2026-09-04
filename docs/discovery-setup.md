@@ -153,7 +153,7 @@ project quota, so the provider is capped at 3 searches per profile per run
 | **Value format** | — |
 | **Where it belongs** | Already in Edge Function secrets |
 | **Why** | Sends one push per ready batch: "N recommendations for {Company} are ready." |
-| **How to validate** | After a run, `select notified_at from public.recommendation_batches where status = 'ready';` is non-null. Users opt in through the existing `user_notification_prefs.daily_prompt` toggle in Settings. |
+| **How to validate** | After a run, `select notified_at from public.recommendation_batches where status = 'ready';` is non-null. Users opt in through the dedicated `user_notification_prefs.weekly_briefing` toggle in Settings ("Weekly Founder Briefing"), separate from the daily prompt. |
 
 Only one notification is ever sent per batch: `notified_at` is stamped whether
 or not the send succeeded, and whether or not the user was opted in.

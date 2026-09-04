@@ -6,8 +6,10 @@ import {
   Layers,
   MessageSquare,
   ScrollText,
+  Share2,
   ShieldCheck,
   Target,
+  Users,
   X,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -191,6 +193,20 @@ export const PublicLanding = () => {
                       description="Invite teammates or advisors to a single analysis or a whole folder. They can add notes, comment on individual insights, and tag each other — without seeing the rest of your workspace."
                     />
                   </m.div>
+                  <m.div variants={cardChild}>
+                    <ValueCard
+                      icon={<Share2 className="w-4 h-4" />}
+                      title="Share an insight"
+                      description="Turn any lesson into a branded quote card for Slack, iMessage, or WhatsApp — the link unfurls with the quote, not just a URL, so your team sees it before they click."
+                    />
+                  </m.div>
+                  <m.div variants={cardChild}>
+                    <ValueCard
+                      icon={<Users className="w-4 h-4" />}
+                      title="Community Library"
+                      description="Search what other founders have already analyzed — general lessons from public sources, ready the moment you don't know where to start."
+                    />
+                  </m.div>
                   <m.div variants={cardChild} className="sm:col-span-2">
                     <ValueCard
                       icon={<FolderOpen className="w-4 h-4" />}
@@ -258,6 +274,7 @@ export const PublicLanding = () => {
                         <ComparisonItem positive={false}>Passive — the synthesis is still on you</ComparisonItem>
                         <ComparisonItem positive={false}>Generic — the same takeaway for every viewer</ComparisonItem>
                         <ComparisonItem positive={false}>Disposable — scattered and forgotten in a week</ComparisonItem>
+                        <ComparisonItem positive={false}>Solitary — nothing to share, nothing to search</ComparisonItem>
                       </ul>
                     </div>
                   </m.div>
@@ -273,6 +290,7 @@ export const PublicLanding = () => {
                         <ComparisonItem positive>Structured memos — risks, actions, questions</ComparisonItem>
                         <ComparisonItem positive>Tailored to your company, stage, and decision</ComparisonItem>
                         <ComparisonItem positive>Saved into a library that compounds over time</ComparisonItem>
+                        <ComparisonItem positive>Shareable as a card, and backed by a Community Library</ComparisonItem>
                       </ul>
                     </div>
                   </m.div>
@@ -484,6 +502,10 @@ const FAQS = [
   {
     q: "Does this replace real advisors?",
     a: "No. Founder Mode Advice analyzes public content only. It's independent, doesn't imply endorsement, and isn't a substitute for legal, financial, or fiduciary advice.",
+  },
+  {
+    q: "Is my analysis private?",
+    a: "Your tailored memos, uploaded documents, and account are always private. By default, the general lessons from public links you analyze (never your company-specific advice, never a document) also feed a shared Community Library other founders can search — scrubbed of your company name. You can turn this off anytime in Settings → Privacy.",
   },
 ] as const;
 

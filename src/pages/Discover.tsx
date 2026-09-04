@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
-import { Building2, Check, ChevronDown, Compass, Globe, RefreshCw } from "lucide-react";
+import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { Building2, Check, ChevronDown, Compass, Globe, RefreshCw, Search, Users } from "lucide-react";
 
 import { AppLoadingScreen } from "@/components/AppLoadingScreen";
 import { PullToRefresh } from "@/components/PullToRefresh";
@@ -16,14 +16,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BriefingBasis } from "@/components/discover/BriefingBasis";
+import { BriefingNotifyBanner } from "@/components/discover/BriefingNotifyBanner";
+import { CommunityLessonsSheet } from "@/components/discover/CommunityLessonsSheet";
 import { DiscoverEmptyState } from "@/components/discover/DiscoverEmptyState";
 import { DiscoveryCard } from "@/components/discover/DiscoveryCard";
 import { DiscoveryBriefingSkeleton, DiscoveryGridSkeleton } from "@/components/discover/DiscoveryCardSkeleton";
+import { Input } from "@/components/ui/input";
 
 import { useActiveProfile } from "@/contexts/ActiveProfileContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useInspirationLibrary } from "@/hooks/useInspirationLibrary";
+import { useCommunityLibrary } from "@/hooks/useCommunityLibrary";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useRecommendations } from "@/hooks/useRecommendations";
 import { useToast } from "@/hooks/use-toast";
@@ -36,6 +40,7 @@ import {
   type DiscoveryContent,
   type ProfileRecommendation,
 } from "@/services/discovery";
+import type { CommunityContent } from "@/services/community";
 import {
   DISCOVERY_CATEGORIES,
   editionLabel,
@@ -52,7 +57,7 @@ import { classifyBriefingGap, describeBriefingGap } from "@/lib/briefingDiagnosi
 import { triggerHapticFeedback } from "@/lib/capacitor";
 import { cn } from "@/lib/utils";
 
-type DiscoverTab = "for-you" | "inspiration" | "saved";
+type DiscoverTab = "for-you" | "inspiration" | "community" | "saved";
 
 const Discover = () => {
   const { user, loading: authLoading } = useAuth();
@@ -72,8 +77,12 @@ const Discover = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useMediaQuery("(max-width: 767px)");
+  const [searchParams] = useSearchParams();
 
-  const [tab, setTab] = useState<DiscoverTab>("for-you");
+  const initialTab = searchParams.get("tab");
+  const [tab, setTab] = useState<DiscoverTab>(
+    initialTab === "community" || initialTab === "inspiration" || initialTab === "saved" ? initialTab : "for-you",
+  );
   const [bootGeneration, setBootGeneration] = useState(0);
   const [timedOut, setTimedOut] = useState(false);
   const [hasBootstrapped, setHasBootstrapped] = useState(false);
@@ -81,6 +90,8 @@ const Discover = () => {
   const [saved, setSaved] = useState<ProfileRecommendation[]>([]);
   const [savedLoading, setSavedLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [communityQuery, setCommunityQuery] = useState("");
+  const [communityLessonsFor, setCommunityLessonsFor] = useState<CommunityContent | null>(null);
 
   usePageMeta({
     title: "Briefing",
@@ -118,6 +129,18 @@ const Discover = () => {
     hasMore,
     loadMore,
   } = useInspirationLibrary(selectedCategories);
+
+  const {
+    items: communityItems,
+    loading: communityLoading,
+    loadingMore: communityLoadingMore,
+    hasMore: communityHasMore,
+    loadMore: communityLoadMore,
+  } = useCommunityLibrary(communityQuery);
+
+  useEffect(() => {
+    if (tab === "community") captureEvent("community_viewed");
+  }, [tab]);
 
   useEffect(() => {
     setTimedOut(false);
@@ -513,12 +536,15 @@ const Discover = () => {
           </header>
 
           <Tabs value={tab} onValueChange={(value) => setTab(value as DiscoverTab)}>
-            <TabsList className="grid h-11 w-full max-w-md grid-cols-3 sm:h-10">
+            <TabsList className="grid h-11 w-full max-w-xl grid-cols-4 sm:h-10">
               <TabsTrigger value="for-you" className="min-h-[44px] text-xs sm:min-h-0 sm:text-sm">
                 For You
               </TabsTrigger>
               <TabsTrigger value="inspiration" className="min-h-[44px] text-xs sm:min-h-0 sm:text-sm">
                 Inspiration
+              </TabsTrigger>
+              <TabsTrigger value="community" className="min-h-[44px] text-xs sm:min-h-0 sm:text-sm">
+                Community
               </TabsTrigger>
               <TabsTrigger value="saved" className="min-h-[44px] text-xs sm:min-h-0 sm:text-sm">
                 Saved
@@ -608,6 +634,8 @@ const Discover = () => {
                       companyName={feedProfile?.company_name}
                     />
                   )}
+
+                  {!itemsLoading && recommendations.length > 0 && <BriefingNotifyBanner />}
 
                   {itemsLoading ? (
                     <DiscoveryBriefingSkeleton />
@@ -708,6 +736,82 @@ const Discover = () => {
               )}
             </TabsContent>
 
+            {/* ---------------------------------------------------- Community */}
+            <TabsContent value="community" className="mt-6 space-y-5">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={communityQuery}
+                  onChange={(e) => setCommunityQuery(e.target.value)}
+                  placeholder="Search founders, companies, or topics…"
+                  className="h-11 rounded-full pl-10"
+                  aria-label="Search the Community Library"
+                />
+              </div>
+              <p className="text-footnote text-muted-foreground">
+                General lessons other founders have already pulled from public sources — not tailored to any one
+                company. Search, or browse what's been analyzed most.
+              </p>
+
+              {communityLoading ? (
+                <DiscoveryGridSkeleton />
+              ) : communityItems.length === 0 ? (
+                <DiscoverEmptyState
+                  title={communityQuery ? "No matches" : "Nothing here yet"}
+                  description={
+                    communityQuery
+                      ? "Try a different search, or browse the full inspiration library."
+                      : "Be the first — analyze a source and its general lessons appear here for everyone."
+                  }
+                  action={
+                    communityQuery
+                      ? { label: "Clear search", onClick: () => setCommunityQuery("") }
+                      : { label: "Bring a source", onClick: () => navigate("/", { state: { action: "analyze", ts: Date.now() } }) }
+                  }
+                />
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {communityItems.map((item) => (
+                      <div key={item.id} className="space-y-2">
+                        <DiscoveryCard
+                          content={item}
+                          onAnalyze={() => {
+                            captureEvent("community_analyze_clicked", { content_id: item.id });
+                            analyzeContent(item, undefined, "inspiration");
+                          }}
+                          onOpenSource={() => openSource(item, undefined, "inspiration")}
+                        />
+                        <button
+                          type="button"
+                          className="flex w-full items-center justify-center gap-1.5 rounded-full border border-border/70 px-3 py-1.5 text-caption-1 text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary min-h-[36px]"
+                          onClick={() => {
+                            triggerHapticFeedback("light");
+                            setCommunityLessonsFor(item);
+                          }}
+                        >
+                          <Users className="h-3.5 w-3.5" />
+                          {item.community_analysis_count} {item.community_analysis_count === 1 ? "founder" : "founders"} analyzed · See lessons
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  {communityHasMore && (
+                    <div className="flex justify-center pt-2">
+                      <Button
+                        variant="outline"
+                        className="min-h-[44px] rounded-full sm:min-h-0"
+                        onClick={() => void communityLoadMore()}
+                        disabled={communityLoadingMore}
+                      >
+                        {communityLoadingMore ? "Loading..." : "Load more"}
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+            </TabsContent>
+
             {/* -------------------------------------------------------- Saved */}
             <TabsContent value="saved" className="mt-6 space-y-5">
               {savedLoading ? (
@@ -742,6 +846,14 @@ const Discover = () => {
           </Tabs>
         </div>
       </PullToRefresh>
+
+      <CommunityLessonsSheet
+        content={communityLessonsFor}
+        open={communityLessonsFor !== null}
+        onOpenChange={(open) => {
+          if (!open) setCommunityLessonsFor(null);
+        }}
+      />
     </div>
   );
 };

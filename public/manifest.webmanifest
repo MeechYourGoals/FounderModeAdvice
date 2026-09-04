@@ -1,7 +1,7 @@
 {
   "name": "Founder Mode Advice",
   "short_name": "Founder Mode",
-  "description": "Transcript-grounded operating memos, risks, and follow-up Q&A from any founder, investor, or operator video — tailored to your company.",
+  "description": "Transcript-grounded operating memos, risks, and follow-up Q&A from any founder, investor, or operator video — tailored to your company, shareable as a card, and backed by a Community Library.",
   "id": "/",
   "start_url": "/?source=pwa",
   "scope": "/",
@@ -59,6 +59,13 @@
       "short_name": "Profiles",
       "description": "Switch the analysis lens",
       "url": "/?panel=profiles&source=pwa",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Community Library",
+      "short_name": "Community",
+      "description": "Search what other founders have already analyzed",
+      "url": "/discover?tab=community&source=pwa",
       "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
     }
   ],

@@ -52,3 +52,9 @@ verify_jwt = true
 
 [functions.get-paddle-price]
 verify_jwt = true
+
+# Serves Open Graph HTML to link scrapers and a 302 to humans for shared
+# insight cards, plus the generated PNG. Public by design — no Supabase JWT
+# on a share link opened from Slack/iMessage/WhatsApp.
+[functions.share-card]
+verify_jwt = false

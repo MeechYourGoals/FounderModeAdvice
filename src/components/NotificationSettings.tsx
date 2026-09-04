@@ -1,94 +1,16 @@
-import { useEffect, useState } from "react";
 import { Bell, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { triggerHapticFeedback } from "@/lib/capacitor";
 import { isDespia } from "@/services/despiaService";
-import { isExpoShell, promptShellPush } from "@/services/expoShellService";
+import { isExpoShell } from "@/services/expoShellService";
 import { Capacitor } from "@capacitor/core";
-
-interface Prefs {
-  daily_prompt: boolean;
-  collaboration_replies: boolean;
-  plan_reminders: boolean;
-  marketing: boolean;
-}
-
-const DEFAULT_PREFS: Prefs = {
-  daily_prompt: false,
-  collaboration_replies: false,
-  plan_reminders: false,
-  marketing: false,
-};
+import { useNotificationPrefs } from "@/hooks/useNotificationPrefs";
 
 export const NotificationSettings = () => {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const { prefs, loading, saving, updatePref } = useNotificationPrefs();
   const inInstalledApp = isDespia() || isExpoShell() || Capacitor.isNativePlatform();
-
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    (async () => {
-      const { data, error } = await supabase
-        .from("user_notification_prefs")
-        .select("daily_prompt, collaboration_replies, plan_reminders, marketing")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (cancelled) return;
-      if (error) {
-        console.warn("Failed to load notification prefs", error);
-      } else if (data) {
-        setPrefs(data as Prefs);
-      }
-      setLoading(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
-
-  const updatePref = async (patch: Partial<Prefs>) => {
-    if (!user) return;
-    triggerHapticFeedback("light");
-    // Turning a push preference ON is the contextual moment to request OS
-    // permission in the Expo shell (registration itself happens silently at
-    // login; see pushService.syncPushUser).
-    if (isExpoShell() && Object.values(patch).some(Boolean)) {
-      promptShellPush();
-    }
-    const next = { ...prefs, ...patch };
-    setPrefs(next);
-    setSaving(true);
-    try {
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-      const { error } = await supabase
-        .from("user_notification_prefs")
-        .upsert(
-          { user_id: user.id, ...next, timezone },
-          { onConflict: "user_id" },
-        );
-      if (error) throw error;
-    } catch (err) {
-      console.error("Failed to save notification prefs", err);
-      toast({
-        title: "Couldn't save preference",
-        description: "Please try again.",
-        variant: "destructive",
-      });
-      setPrefs((p) => ({ ...p, ...invert(patch) }));
-    } finally {
-      setSaving(false);
-    }
-  };
 
   return (
     <Card>
@@ -111,6 +33,14 @@ export const NotificationSettings = () => {
           </div>
         ) : (
           <>
+            <Row
+              id="pref-weekly-briefing"
+              label="Weekly Founder Briefing"
+              description="One push when your personalized briefing is ready each week."
+              checked={prefs.weekly_briefing}
+              onChange={(v) => updatePref({ weekly_briefing: v })}
+            />
+            <Separator />
             <Row
               id="pref-daily"
               label="Daily founder prompt"
@@ -172,11 +102,3 @@ const Row = ({
     <Switch id={id} checked={checked} onCheckedChange={onChange} />
   </div>
 );
-
-function invert(patch: Partial<Prefs>): Partial<Prefs> {
-  const out: Partial<Prefs> = {};
-  for (const k of Object.keys(patch) as (keyof Prefs)[]) {
-    out[k] = !patch[k];
-  }
-  return out;
-}

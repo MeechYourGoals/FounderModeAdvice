@@ -15,11 +15,23 @@ export interface ShareInput {
   title?: string;
   text?: string;
   url?: string;
+  /** An image (e.g. a generated share card) to attach where the platform supports it. */
+  file?: File;
 }
 
 export type ShareResult =
   | { ok: true; transport: "despia" | "shell" | "webshare" | "clipboard" }
   | { ok: false; reason: "cancelled" | "unsupported" | "error"; error?: unknown };
+
+/** File -> data: URL, for bridges that only accept a string payload (Expo shell). */
+async function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
 
 export async function shareNative(input: ShareInput): Promise<ShareResult> {
   const payload = {
@@ -30,7 +42,7 @@ export async function shareNative(input: ShareInput): Promise<ShareResult> {
 
   triggerHapticFeedback("light");
 
-  // 1. Despia native share sheet
+  // 1. Despia native share sheet (no image attachment support today — link+text only)
   if (isDespia()) {
     try {
       const params = new URLSearchParams({
@@ -46,14 +58,21 @@ export async function shareNative(input: ShareInput): Promise<ShareResult> {
   }
 
   // 2. Expo shell native share sheet (WebViews often lack navigator.share)
-  if (isExpoShell() && shareViaShell(payload)) {
-    return { ok: true, transport: "shell" };
+  if (isExpoShell()) {
+    const imageDataUrl = input.file ? await fileToDataUrl(input.file).catch(() => undefined) : undefined;
+    if (shareViaShell({ ...payload, imageDataUrl })) {
+      return { ok: true, transport: "shell" };
+    }
   }
 
-  // 3. Web Share API
+  // 3. Web Share API — prefer sharing the image file when the platform supports it.
   if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
     try {
-      await navigator.share(payload);
+      if (input.file && typeof navigator.canShare === "function" && navigator.canShare({ files: [input.file] })) {
+        await navigator.share({ title: payload.title, text: payload.text, url: payload.url, files: [input.file] });
+      } else {
+        await navigator.share(payload);
+      }
       return { ok: true, transport: "webshare" };
     } catch (error) {
       if ((error as DOMException)?.name === "AbortError") {

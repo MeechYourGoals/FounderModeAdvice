@@ -4,7 +4,7 @@ const SITE_NAME = "Founder Mode Advice";
 const SITE_URL = "https://foundermodeadvice.com";
 const DEFAULT_TITLE = "Founder Mode Advice — turn any link or document into founder advice";
 const DEFAULT_DESCRIPTION =
-  "Paste almost any public URL — articles, posts, newsletters, videos, podcasts — or upload private docs, and get operating memos, risks, action items, and follow-up Q&A tailored to your company, stage, and next decision.";
+  "Paste almost any public URL — articles, posts, newsletters, videos, podcasts — or upload private docs, and get operating memos, risks, action items, and follow-up Q&A tailored to your company, stage, and next decision Share any insight as a branded card, or search the Community Library for what other founders have already found.";
 
 interface PageMeta {
   /** Page-specific title; rendered as "<title> — Founder Mode Advice". */
