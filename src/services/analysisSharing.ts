@@ -74,20 +74,10 @@ export async function listAnalysisInvites(episodeId: string): Promise<AnalysisIn
 }
 
 export async function revokeAnalysisInvite(invite: AnalysisInvite) {
-  const { error } = await (supabase as any)
-    .from("analysis_invites")
-    .update({ status: "revoked" })
-    .eq("id", invite.id);
+  const { error } = await (supabase as any).rpc("revoke_analysis_invite", {
+    p_invite_id: invite.id,
+  });
   if (error) throw error;
-
-  if (invite.accepted_by_user_id) {
-    const { error: deleteError } = await (supabase as any)
-      .from("analysis_access_grants")
-      .delete()
-      .eq("episode_id", invite.episode_id)
-      .eq("grantee_user_id", invite.accepted_by_user_id);
-    if (deleteError) throw deleteError;
-  }
 }
 
 export async function acceptAnalysisInvite(rawToken: string): Promise<string> {

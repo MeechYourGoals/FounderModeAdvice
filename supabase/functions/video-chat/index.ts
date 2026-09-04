@@ -211,7 +211,8 @@ serve(async (req) => {
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
 
     if (!supabaseUrl || !supabaseKey) {
-      return jsonResponse({ error: "Supabase environment is not configured." }, 500);
+      console.error("video-chat: required Supabase configuration is missing");
+      return jsonResponse({ error: "Service temporarily unavailable." }, 503);
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -266,7 +267,8 @@ serve(async (req) => {
     }
 
     if (!lovableApiKey) {
-      return jsonResponse({ error: "AI provider is not configured." }, 500);
+      console.error("video-chat: AI provider configuration is missing");
+      return jsonResponse({ error: "Service temporarily unavailable." }, 503);
     }
 
     if (action === "summary") {
@@ -478,9 +480,6 @@ ${trimmedMessage}`;
     return jsonResponse({ sessionId, message: assistantMessage, groundingMode });
   } catch (error) {
     console.error("Error in video-chat:", error);
-    return jsonResponse(
-      { error: error instanceof Error ? error.message : "Unknown video chat error." },
-      500,
-    );
+    return jsonResponse({ error: "Could not complete chat. Please try again." }, 500);
   }
 });

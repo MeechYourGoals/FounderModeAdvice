@@ -31,7 +31,10 @@ export default defineTool({
     if (topic) request = request.contains("topics", [topic]);
 
     const { data, error } = await request;
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    if (error) {
+      console.error("list_analyses query failed", error);
+      return { content: [{ type: "text", text: "Could not load analyses." }], isError: true };
+    }
 
     return {
       content: [{ type: "text", text: JSON.stringify(data ?? [], null, 2) }],

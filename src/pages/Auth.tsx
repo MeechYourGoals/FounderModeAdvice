@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { useNavigate, Link, Navigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,6 +16,9 @@ import { triggerHapticFeedback } from "@/lib/capacitor";
 import { isLovablePreview, getOAuthRedirectUrl, shouldShowAppAuthFirst } from "@/lib/appMode";
 import { isExpoShell, requestShellAppleSignIn } from "@/services/expoShellService";
 import { usePageMeta } from "@/hooks/usePageMeta";
+import { authErrorMessage, type AuthOperation } from "@/lib/authErrors";
+
+const TURNSTILE_SITE_KEY = (import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined)?.trim();
 
 const Auth = () => {
   usePageMeta({ title: "Sign in or create your account", path: "/auth", noindex: true });
@@ -23,7 +27,9 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const turnstileRef = useRef<TurnstileInstance>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
@@ -57,6 +63,49 @@ const Auth = () => {
   // Always show close button in browser; hide only in installed app/PWA to avoid loop.
   const showClose = !shouldShowAppAuthFirst();
 
+  // Supabase Auth verifies this token server-side when Turnstile is enabled in
+  // Auth > Bot and Abuse Protection. A configured widget is required in every
+  // environment; production also fails closed if configuration is missing.
+  const captchaRequired = import.meta.env.PROD || Boolean(TURNSTILE_SITE_KEY);
+  const resetCaptcha = () => {
+    setCaptchaToken(null);
+    turnstileRef.current?.reset();
+  };
+  const requireCaptcha = (): boolean => {
+    if (!captchaRequired || captchaToken) return true;
+    toast({
+      title: "Verification required",
+      description: TURNSTILE_SITE_KEY
+        ? "Complete the verification and try again."
+        : "Verification is temporarily unavailable. Please try again later.",
+      variant: "destructive",
+    });
+    return false;
+  };
+  const reportAuthError = (operation: AuthOperation, error: unknown) => {
+    console.error(`[auth] ${operation} failed`, error);
+    toast({
+      title: operation === "signup" ? "Sign up failed" : operation === "reset" ? "Password reset" : "Sign-in failed",
+      description: authErrorMessage(operation),
+      variant: "destructive",
+    });
+  };
+
+  const captchaWidget = TURNSTILE_SITE_KEY ? (
+    <Turnstile
+      ref={turnstileRef}
+      siteKey={TURNSTILE_SITE_KEY}
+      onSuccess={setCaptchaToken}
+      onExpire={() => setCaptchaToken(null)}
+      onError={() => setCaptchaToken(null)}
+      options={{ theme: "auto" }}
+    />
+  ) : import.meta.env.PROD ? (
+    <p role="alert" className="text-center text-xs text-destructive">
+      Verification is temporarily unavailable.
+    </p>
+  ) : null;
+
   const handleGoogleSignIn = async () => {
     triggerHapticFeedback('light');
     setGoogleLoading(true);
@@ -70,21 +119,13 @@ const Auth = () => {
         redirect_uri: getOAuthRedirectUrl(),
       });
       if (result.error) {
-        toast({
-          title: "Google sign-in failed",
-          description: result.error.message,
-          variant: "destructive",
-        });
+        reportAuthError("google", result.error);
       } else if (!result.redirected) {
         // Session was set by the lovable bridge — navigate into the app.
         navigate(nextPath, { replace: true });
       }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error?.message || "An unexpected error occurred",
-        variant: "destructive",
-      });
+    } catch (error: unknown) {
+      reportAuthError("google", error);
     } finally {
       setGoogleLoading(false);
     }
@@ -104,11 +145,7 @@ const Auth = () => {
         if ("fallback" in native) {
           if (native.fallback === "none") {
             if (native.error && native.error !== "canceled") {
-              toast({
-                title: "Apple sign-in failed",
-                description: native.error,
-                variant: "destructive",
-              });
+              reportAuthError("apple", native.error);
             }
             return;
           }
@@ -126,11 +163,7 @@ const Auth = () => {
             return;
           }
           // Guideline 4.8: never fall back to WebView OAuth after a native token.
-          toast({
-            title: "Apple sign-in failed",
-            description: error.message,
-            variant: "destructive",
-          });
+          reportAuthError("apple", error);
           return;
         }
       }
@@ -139,20 +172,12 @@ const Auth = () => {
         redirect_uri: getOAuthRedirectUrl(),
       });
       if (result.error) {
-        toast({
-          title: "Apple sign-in failed",
-          description: result.error.message,
-          variant: "destructive",
-        });
+        reportAuthError("apple", result.error);
       } else if (!result.redirected) {
         navigate(nextPath, { replace: true });
       }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error?.message || "An unexpected error occurred",
-        variant: "destructive",
-      });
+    } catch (error: unknown) {
+      reportAuthError("apple", error);
     } finally {
       setAppleLoading(false);
     }
@@ -169,39 +194,35 @@ const Auth = () => {
       });
       return;
     }
+    if (!requireCaptcha()) return;
     setLoading(true);
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth?reset=true`,
+        captchaToken: captchaToken ?? undefined,
       });
 
       if (error) {
-        toast({
-          title: "Reset failed",
-          description: error.message,
-          variant: "destructive",
-        });
+        reportAuthError("reset", error);
       } else {
         toast({
           title: "Check your email",
-          description: "We've sent you a password reset link",
+          description: authErrorMessage("reset"),
         });
         setShowForgotPassword(false);
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred",
-        variant: "destructive",
-      });
+    } catch (error: unknown) {
+      reportAuthError("reset", error);
     } finally {
+      resetCaptcha();
       setLoading(false);
     }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!requireCaptcha()) return;
     triggerHapticFeedback('medium');
     setLoading(true);
 
@@ -211,34 +232,29 @@ const Auth = () => {
         password,
         options: {
           emailRedirectTo: `${window.location.origin}${nextPath}`,
+          captchaToken: captchaToken ?? undefined,
         },
       });
 
       if (error) {
-        toast({
-          title: "Sign up failed",
-          description: error.message,
-          variant: "destructive",
-        });
+        reportAuthError("signup", error);
       } else {
         toast({
           title: "Success!",
           description: "Account created successfully. You can now log in.",
         });
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred",
-        variant: "destructive",
-      });
+    } catch (error: unknown) {
+      reportAuthError("signup", error);
     } finally {
+      resetCaptcha();
       setLoading(false);
     }
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!requireCaptcha()) return;
     triggerHapticFeedback('medium');
     setLoading(true);
 
@@ -246,14 +262,11 @@ const Auth = () => {
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
+        options: { captchaToken: captchaToken ?? undefined },
       });
 
       if (error) {
-        toast({
-          title: "Login failed",
-          description: error.message,
-          variant: "destructive",
-        });
+        reportAuthError("password", error);
       } else {
         toast({
           title: "Welcome back!",
@@ -261,13 +274,10 @@ const Auth = () => {
         });
         navigate(nextPath);
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred",
-        variant: "destructive",
-      });
+    } catch (error: unknown) {
+      reportAuthError("password", error);
     } finally {
+      resetCaptcha();
       setLoading(false);
     }
   };
@@ -324,6 +334,7 @@ const Auth = () => {
               <p className="text-sm text-muted-foreground">
                 Enter your email address and we'll send you a link to reset your password.
               </p>
+              <div className="flex justify-center">{captchaWidget}</div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? (
                   <>
@@ -419,6 +430,7 @@ const Auth = () => {
                     minLength={6}
                   />
                 </div>
+                <div className="flex justify-center">{captchaWidget}</div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? (
                     <>
@@ -465,6 +477,7 @@ const Auth = () => {
                     minLength={6}
                   />
                 </div>
+                <div className="flex justify-center">{captchaWidget}</div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? (
                     <>

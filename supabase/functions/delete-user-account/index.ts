@@ -223,7 +223,8 @@ serve(async (req) => {
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!supabaseUrl || !anonKey || !serviceRoleKey) {
-      return jsonResponse({ error: "Server is missing required Supabase secrets" }, 500);
+      console.error("delete-user-account: required Supabase configuration is missing");
+      return jsonResponse({ error: "Service temporarily unavailable" }, 503);
     }
 
     const userClient = createClient(supabaseUrl, anonKey, {
@@ -285,21 +286,13 @@ serve(async (req) => {
       console.error("Account deletion failed before auth user deletion", { userId, failures });
       return jsonResponse({
         error: "Could not delete all account data. Auth user was retained so the request can be retried safely.",
-        failures,
-        deletedTables,
-        deletedStorageObjects,
-        skippedTables,
       }, 500);
     }
 
     const { error: deleteUserError } = await adminClient.auth.admin.deleteUser(userId);
     if (deleteUserError) {
-      return jsonResponse({
-        error: deleteUserError.message,
-        deletedTables,
-        deletedStorageObjects,
-        skippedTables,
-      }, 500);
+      console.error("Auth user deletion failed", { userId, error: deleteUserError });
+      return jsonResponse({ error: "Could not delete account. Please try again." }, 500);
     }
 
     // Best-effort third-party erasure. Failures here must not revive the
@@ -320,6 +313,6 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error("Delete account error:", error);
-    return jsonResponse({ error: error instanceof Error ? error.message : "Unknown error" }, 500);
+    return jsonResponse({ error: "Could not delete account. Please try again." }, 500);
   }
 });

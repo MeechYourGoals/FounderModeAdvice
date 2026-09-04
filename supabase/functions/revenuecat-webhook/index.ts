@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
   const expectedAuth = Deno.env.get("REVENUECAT_WEBHOOK_AUTH");
   if (!expectedAuth) {
     console.error("REVENUECAT_WEBHOOK_AUTH not configured; rejecting webhook");
-    return new Response("Webhook auth not configured", { status: 500 });
+    return new Response("Service temporarily unavailable", { status: 503 });
   }
   const gotAuth = req.headers.get("Authorization") ?? "";
   if (!safeEqual(gotAuth, expectedAuth)) {
@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
   const rcKey = Deno.env.get("REVENUECAT_API_KEY");
   if (!rcKey) {
     console.error("REVENUECAT_API_KEY not configured; cannot verify entitlements");
-    return new Response("Server not configured", { status: 500 });
+    return new Response("Service temporarily unavailable", { status: 503 });
   }
 
   let event: Record<string, unknown>;
