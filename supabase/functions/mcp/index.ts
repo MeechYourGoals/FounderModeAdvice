@@ -82,7 +82,10 @@ var list_analyses_default = defineTool({
     if (query) request = request.ilike("title", `%${query}%`);
     if (topic) request = request.contains("topics", [topic]);
     const { data, error } = await request;
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    if (error) {
+      console.error("list_analyses query failed", error);
+      return { content: [{ type: "text", text: "Could not load analyses." }], isError: true };
+    }
     return {
       content: [{ type: "text", text: JSON.stringify(data ?? [], null, 2) }],
       structuredContent: { analyses: data ?? [] }
@@ -110,7 +113,8 @@ var get_analysis_default = defineTool2({
       "id, title, url, platform, source_type, founders, topics, custom_prompt, analysis_status, created_at"
     ).eq("id", analysis_id).maybeSingle();
     if (episodeError) {
-      return { content: [{ type: "text", text: episodeError.message }], isError: true };
+      console.error("get_analysis episode query failed", episodeError);
+      return { content: [{ type: "text", text: "Could not load analysis." }], isError: true };
     }
     if (!episode) {
       return {
@@ -122,7 +126,8 @@ var get_analysis_default = defineTool2({
       "id, lesson_text, category, founder_attribution, impact_score, actionability_score, personalized_insights(personalized_text, action_items, relevance_score)"
     ).eq("episode_id", analysis_id).order("impact_score", { ascending: false });
     if (lessonsError) {
-      return { content: [{ type: "text", text: lessonsError.message }], isError: true };
+      console.error("get_analysis lessons query failed", lessonsError);
+      return { content: [{ type: "text", text: "Could not load analysis." }], isError: true };
     }
     const payload = { ...episode, lessons: lessons ?? [] };
     return {
@@ -155,7 +160,10 @@ var search_lessons_default = defineTool3({
     ).eq("episodes.analyzed_by", ctx.getUserId()).ilike("lesson_text", `%${query}%`).order("impact_score", { ascending: false }).limit(limit ?? 20);
     if (category) request = request.eq("category", category);
     const { data, error } = await request;
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    if (error) {
+      console.error("search_lessons query failed", error);
+      return { content: [{ type: "text", text: "Could not search lessons." }], isError: true };
+    }
     return {
       content: [{ type: "text", text: JSON.stringify(data ?? [], null, 2) }],
       structuredContent: { lessons: data ?? [] }
@@ -177,7 +185,10 @@ var list_startup_profiles_default = defineTool4({
     }
     const supabase = supabaseForUser(ctx);
     const { data, error } = await supabase.from("user_startup_profiles").select("*").order("created_at", { ascending: false });
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    if (error) {
+      console.error("list_startup_profiles query failed", error);
+      return { content: [{ type: "text", text: "Could not load startup profiles." }], isError: true };
+    }
     return {
       content: [{ type: "text", text: JSON.stringify(data ?? [], null, 2) }],
       structuredContent: { profiles: data ?? [] }

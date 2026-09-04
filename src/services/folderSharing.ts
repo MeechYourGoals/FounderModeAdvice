@@ -134,20 +134,10 @@ export async function listFolderCollaborators(folderId: string): Promise<FolderI
 
 /** Revoke an invite and, if it was already accepted, remove the collaborator. */
 export async function revokeFolderInvite(invite: FolderInvite): Promise<void> {
-  const { error } = await supabase
-    .from("folder_invites")
-    .update({ status: "revoked" })
-    .eq("id", invite.id);
+  const { error } = await supabase.rpc("revoke_folder_invite", {
+    p_invite_id: invite.id,
+  });
   if (error) throw error;
-
-  if (invite.accepted_by_user_id) {
-    const { error: delErr } = await supabase
-      .from("folder_members")
-      .delete()
-      .eq("folder_id", invite.folder_id)
-      .eq("user_id", invite.accepted_by_user_id);
-    if (delErr) throw delErr;
-  }
 }
 
 /** Redeem an invite link for the signed-in user. Returns the shared folder id. */

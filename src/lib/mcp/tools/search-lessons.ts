@@ -31,7 +31,10 @@ export default defineTool({
     if (category) request = request.eq("category", category);
 
     const { data, error } = await request;
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    if (error) {
+      console.error("search_lessons query failed", error);
+      return { content: [{ type: "text", text: "Could not search lessons." }], isError: true };
+    }
 
     return {
       content: [{ type: "text", text: JSON.stringify(data ?? [], null, 2) }],

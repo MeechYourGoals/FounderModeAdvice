@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
 
     if (!rcKey) {
       console.error("REVENUECAT_API_KEY not configured; refusing to overwrite subscription state");
-      return json({ error: "REVENUECAT_API_KEY not configured" }, 500);
+      return json({ error: "Service temporarily unavailable" }, 503);
     }
 
     const admin = createClient(supabaseUrl, serviceRoleKey, {
@@ -58,6 +58,9 @@ Deno.serve(async (req) => {
     const message = e instanceof Error ? e.message : String(e);
     // RevenueCat unreachable → 502 so clients treat it as transient.
     const status = /RevenueCat verification failed/.test(message) ? 502 : 500;
-    return json({ error: message }, status);
+    return json(
+      { error: status === 502 ? "Could not verify subscription" : "Service temporarily unavailable" },
+      status,
+    );
   }
 });

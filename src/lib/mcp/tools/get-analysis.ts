@@ -26,7 +26,8 @@ export default defineTool({
       .maybeSingle();
 
     if (episodeError) {
-      return { content: [{ type: "text", text: episodeError.message }], isError: true };
+      console.error("get_analysis episode query failed", episodeError);
+      return { content: [{ type: "text", text: "Could not load analysis." }], isError: true };
     }
     if (!episode) {
       return {
@@ -44,7 +45,8 @@ export default defineTool({
       .order("impact_score", { ascending: false });
 
     if (lessonsError) {
-      return { content: [{ type: "text", text: lessonsError.message }], isError: true };
+      console.error("get_analysis lessons query failed", lessonsError);
+      return { content: [{ type: "text", text: "Could not load analysis." }], isError: true };
     }
 
     const payload = { ...episode, lessons: lessons ?? [] };

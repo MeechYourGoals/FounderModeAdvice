@@ -18,7 +18,10 @@ export default defineTool({
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    if (error) {
+      console.error("list_startup_profiles query failed", error);
+      return { content: [{ type: "text", text: "Could not load startup profiles." }], isError: true };
+    }
     return {
       content: [{ type: "text", text: JSON.stringify(data ?? [], null, 2) }],
       structuredContent: { profiles: data ?? [] },
