@@ -1331,6 +1331,7 @@ export type Database = {
           timezone: string
           updated_at: string
           user_id: string
+          weekly_briefing: boolean
         }
         Insert: {
           collaboration_replies?: boolean
@@ -1342,6 +1343,7 @@ export type Database = {
           timezone?: string
           updated_at?: string
           user_id: string
+          weekly_briefing?: boolean
         }
         Update: {
           collaboration_replies?: boolean
@@ -1353,6 +1355,7 @@ export type Database = {
           timezone?: string
           updated_at?: string
           user_id?: string
+          weekly_briefing?: boolean
         }
         Relationships: []
       }
