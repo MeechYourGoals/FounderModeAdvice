@@ -1331,7 +1331,6 @@ export type Database = {
           timezone: string
           updated_at: string
           user_id: string
-          weekly_briefing: boolean
         }
         Insert: {
           collaboration_replies?: boolean
@@ -1343,7 +1342,6 @@ export type Database = {
           timezone?: string
           updated_at?: string
           user_id: string
-          weekly_briefing?: boolean
         }
         Update: {
           collaboration_replies?: boolean
@@ -1355,7 +1353,6 @@ export type Database = {
           timezone?: string
           updated_at?: string
           user_id?: string
-          weekly_briefing?: boolean
         }
         Relationships: []
       }
@@ -1705,6 +1702,14 @@ export type Database = {
       }
       refund_rate_limit: {
         Args: { _key: string; _user_id: string; _window: string }
+        Returns: undefined
+      }
+      revoke_analysis_invite: {
+        Args: { p_invite_id: string }
+        Returns: undefined
+      }
+      revoke_folder_invite: {
+        Args: { p_invite_id: string }
         Returns: undefined
       }
       set_recommendation_state: {
