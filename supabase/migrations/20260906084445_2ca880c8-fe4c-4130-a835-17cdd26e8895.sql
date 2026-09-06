@@ -1,0 +1,1 @@
+ALTER TABLE public.user_notification_prefs ADD COLUMN IF NOT EXISTS weekly_briefing boolean NOT NULL DEFAULT true;

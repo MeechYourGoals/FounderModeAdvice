@@ -1,4 +1,4 @@
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
@@ -65,11 +65,31 @@ function appleAppSiteAssociationPlugin(): Plugin {
   };
 }
 
+// Public (publishable) backend identifiers for the connected project. These are
+// browser-visible by design and protected by RLS — never put secret/service keys
+// here. They act only as a fallback so a hosted build without a local .env file
+// still resolves the same connected backend.
+const FALLBACK_SUPABASE_PROJECT_ID = "iffcuueutmsusgdfekvm";
+const FALLBACK_SUPABASE_URL = `https://${FALLBACK_SUPABASE_PROJECT_ID}.supabase.co`;
+const FALLBACK_SUPABASE_PUBLISHABLE_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlmZmN1dWV1dG1zdXNnZGZla3ZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk4NzIzMjAsImV4cCI6MjA3NTQ0ODMyMH0.4WotR4GhYL21TZ2VgxyWh1mAoAadKKwAqMIbxekhhy0";
+
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, __dirname, "");
+  const supabaseUrl = env.VITE_SUPABASE_URL || FALLBACK_SUPABASE_URL;
+  const supabaseKey =
+    env.VITE_SUPABASE_PUBLISHABLE_KEY || FALLBACK_SUPABASE_PUBLISHABLE_KEY;
+  const supabaseProjectId =
+    env.VITE_SUPABASE_PROJECT_ID || FALLBACK_SUPABASE_PROJECT_ID;
+
+  return {
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
     __BUILD_ID__: JSON.stringify(BUILD_ID),
+    "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(supabaseUrl),
+    "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(supabaseKey),
+    "import.meta.env.VITE_SUPABASE_PROJECT_ID": JSON.stringify(supabaseProjectId),
   },
   server: {
     host: "::",
@@ -140,4 +160,5 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-}));
+  };
+});

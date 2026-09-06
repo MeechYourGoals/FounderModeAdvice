@@ -1707,6 +1707,14 @@ export type Database = {
         Args: { _key: string; _user_id: string; _window: string }
         Returns: undefined
       }
+      revoke_analysis_invite: {
+        Args: { p_invite_id: string }
+        Returns: undefined
+      }
+      revoke_folder_invite: {
+        Args: { p_invite_id: string }
+        Returns: undefined
+      }
       set_recommendation_state: {
         Args: {
           p_episode_id?: string
