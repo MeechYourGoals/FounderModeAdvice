@@ -33,7 +33,8 @@ type ShellMessage =
   | { type: "appleSignIn" }
   | { type: "share"; title: string; text: string; url: string; imageDataUrl?: string }
   | { type: "openExternal"; url: string }
-  | { type: "theme"; dark: boolean; backgroundColor: string };
+  | { type: "theme"; dark: boolean; backgroundColor: string }
+  | { type: "ready" };
 
 export type ShellAppleSignInResult =
   | {
@@ -228,3 +229,6 @@ export const openShellExternalUrl = (url: string): boolean =>
 export const syncShellTheme = (dark: boolean, backgroundColor: string): void => {
   postToShell({ type: "theme", dark, backgroundColor });
 };
+
+/** Signal that React has painted — native shell hides splash on this, not onLoadEnd. */
+export const notifyShellReady = (): boolean => postToShell({ type: "ready" });

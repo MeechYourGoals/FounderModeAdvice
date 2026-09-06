@@ -5,6 +5,10 @@ import "./index.css";
 import { initializeNativePlugins, handleBackButton, initKeyboardViewportWatcher } from "./lib/capacitor";
 import { isDespia } from "./services/despiaService";
 import { isExpoShell, syncShellTheme } from "./services/expoShellService";
+import {
+  installExpoShellBootErrorHandlers,
+  purgeExpoShellServiceWorkers,
+} from "./lib/expoShellBoot";
 import { isNativeWrapper, isStandalonePWA, getRuntimeSurface } from "./lib/appMode";
 import { initPushNotifications } from "./services/pushService";
 import { initAnalytics, captureEvent } from "./services/analytics";
@@ -19,6 +23,14 @@ if (typeof window !== "undefined" && window.location.hostname === "www.foundermo
   window.location.replace(`https://foundermodeadvice.com${pathname}${search}${hash}`);
 }
 
+
+// Expo shell WebView: stale PWA service workers can serve broken hashed bundles
+// and leave TestFlight users on a permanent white screen. index.html blocks
+// registration; this clears any SW registered on a prior visit.
+if (isExpoShell()) {
+  installExpoShellBootErrorHandlers();
+  void purgeExpoShellServiceWorkers();
+}
 
 // Dev / Lovable-preview only: purge any service worker + Workbox caches left
 // behind on this origin by an earlier build. The PWA plugin doesn't emit a

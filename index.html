@@ -59,6 +59,32 @@
   <meta property="og:description" content="Paste almost any public URL — articles, posts, newsletters, videos, podcasts — or upload private docs, and get operating memos, risks, action items, and follow-up Q&amp;A tailored to your company, stage, and next decision Share any insight as a branded card, or search the Community Library for what other founders have already found.">
   <meta name="twitter:description" content="Paste almost any public URL — articles, posts, newsletters, videos, podcasts — or upload private docs, and get operating memos, risks, action items, and follow-up Q&amp;A tailored to your company, stage, and next decision Share any insight as a branded card, or search the Community Library for what other founders have already found.">
 
+    <!-- Expo shell (TestFlight): disable PWA service workers in WKWebView and
+         keep the pre-CSS gap dark so a stale SW / slow boot never reads as a
+         permanent white screen. Must run before vite-plugin-pwa registerSW.js. -->
+    <script>
+      (function () {
+        if (typeof navigator === "undefined" || !navigator.userAgent.includes("FMAShell")) return;
+        var style = document.createElement("style");
+        style.textContent = "html,body{background:#0c0e15!important;color:#e7e9f0}";
+        document.head.appendChild(style);
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function (regs) {
+            return Promise.all(regs.map(function (r) { return r.unregister(); }));
+          }).then(function () {
+            if ("caches" in window) {
+              return caches.keys().then(function (keys) {
+                return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+              });
+            }
+          });
+          navigator.serviceWorker.register = function () {
+            return Promise.resolve(null);
+          };
+        }
+      })();
+    </script>
+
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",

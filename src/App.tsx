@@ -43,6 +43,7 @@ const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 import { OfflineBadge } from "@/components/OfflineBadge";
 import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import { AppChrome } from "@/components/AppChrome";
+import { ShellBootReporter } from "@/components/ShellBootReporter";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { AUTH_ALIASES, HOME_HASH_ALIASES } from "@/lib/homeAliases";
 
@@ -103,6 +104,7 @@ const App = () => (
   <AppErrorBoundary>
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme={THEME_DEFAULT} enableSystem={THEME_ENABLE_SYSTEM}>
+      <ShellBootReporter />
       <AuthProvider>
       <SubscriptionProvider>
         <ActiveProfileProvider>
