@@ -3,7 +3,7 @@ import * as Haptics from "expo-haptics";
 import * as ExpoLinking from "expo-linking";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useShareIntent } from "expo-share-intent";
+import { useShareIntentContext, ShareIntentProvider } from "expo-share-intent";
 import * as SystemUI from "expo-system-ui";
 import * as WebBrowser from "expo-web-browser";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -62,6 +62,7 @@ const WEB_URL = (extra.webUrl || "https://foundermodeadvice.com").replace(/\/+$/
 const WEB_HOST = new URL(WEB_URL).hostname;
 const START_URL = `${WEB_URL}/?source=app`;
 const APP_SCHEME = "com.foundermodeadvice.app";
+const READY_FALLBACK_MS = 12_000;
 
 /** Best-effort http(s) URL extraction from free-form shared text (e.g. "check this out: https://..."). */
 function firstUrlIn(text: string | undefined | null): string | null {
@@ -208,7 +209,8 @@ type BridgeMessage =
   | { type: "appleSignIn" }
   | { type: "share"; title?: string; text?: string; url?: string; imageDataUrl?: string }
   | { type: "openExternal"; url: string }
-  | { type: "theme"; dark: boolean; backgroundColor: string };
+  | { type: "theme"; dark: boolean; backgroundColor: string }
+  | { type: "ready" };
 
 type AppleSignInAck =
   | {
@@ -321,15 +323,46 @@ function Shell() {
   const webViewRef = useRef<WebView>(null);
   const canGoBackRef = useRef(false);
   const currentUrlRef = useRef(START_URL);
+  const readyFallbackRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [dark, setDark] = useState(true);
   const [background, setBackground] = useState("#0c0e15");
   const [webViewKey, setWebViewKey] = useState(0);
+  const [webReady, setWebReady] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [paywallPlanId, setPaywallPlanId] = useState<IapPlanId>(DEFAULT_IAP_PLAN_ID);
   const incomingUrl = ExpoLinking.useURL();
-  const { hasShareIntent, shareIntent, resetShareIntent } = useShareIntent();
+  const { hasShareIntent, shareIntent, resetShareIntent } = useShareIntentContext();
   const authSessionActiveRef = useRef(false);
+
+  const hideSplash = useCallback(() => {
+    SplashScreen.hideAsync().catch(() => {});
+  }, []);
+
+  const markWebReady = useCallback(() => {
+    if (readyFallbackRef.current) {
+      clearTimeout(readyFallbackRef.current);
+      readyFallbackRef.current = null;
+    }
+    setWebReady(true);
+    hideSplash();
+  }, [hideSplash]);
+
+  const scheduleReadyFallback = useCallback(() => {
+    if (readyFallbackRef.current) clearTimeout(readyFallbackRef.current);
+    readyFallbackRef.current = setTimeout(() => {
+      readyFallbackRef.current = null;
+      setWebReady(true);
+      hideSplash();
+    }, READY_FALLBACK_MS);
+  }, [hideSplash]);
+
+  useEffect(
+    () => () => {
+      if (readyFallbackRef.current) clearTimeout(readyFallbackRef.current);
+    },
+    [],
+  );
 
   /** Route a native callback back to the hosted SPA without leaving auth in Safari. */
   const openWebCallback = useCallback((callbackUrl: string) => {
@@ -370,13 +403,16 @@ function Shell() {
   /**
    * The web app reads --safe-area-top/--safe-area-bottom (Despia convention,
    * env() fallback). env() is unreliable inside Android WebViews, so inject
-   * the real native insets on every load and whenever they change.
+   * the real native insets on every load and whenever they change. Dark
+   * background covers the gap before Tailwind/CSS loads.
    */
   const safeAreaJS = useMemo(
     () =>
       `(function(){var s=document.documentElement.style;` +
       `s.setProperty('--safe-area-top','${Math.round(insets.top)}px');` +
-      `s.setProperty('--safe-area-bottom','${Math.round(insets.bottom)}px');})();true;`,
+      `s.setProperty('--safe-area-bottom','${Math.round(insets.bottom)}px');` +
+      `document.documentElement.style.background='#0c0e15';` +
+      `if(document.body)document.body.style.background='#0c0e15';})();true;`,
     [insets.top, insets.bottom],
   );
 
@@ -652,9 +688,13 @@ function Shell() {
           setDark(message.dark);
           setBackground(message.backgroundColor);
           break;
+
+        case "ready":
+          markWebReady();
+          break;
       }
     },
-    [acknowledgePaywall, notifyPurchaseSuccess],
+    [acknowledgePaywall, markWebReady, notifyPurchaseSuccess],
   );
 
   // OneSignal boots app-wide (before login) so permission prompts and device
@@ -782,9 +822,37 @@ function Shell() {
 
   const reload = useCallback(() => {
     setLoadError(false);
+    setWebReady(false);
     // Remount to recover from renderer crashes, not just navigation errors.
     setWebViewKey((k) => k + 1);
   }, []);
+
+  const onWebViewLoadEnd = useCallback(() => {
+    scheduleReadyFallback();
+  }, [scheduleReadyFallback]);
+
+  const onWebViewError = useCallback(() => {
+    setLoadError(true);
+    hideSplash();
+  }, [hideSplash]);
+
+  const onWebViewHttpError = useCallback(
+    (event: { nativeEvent: { statusCode: number; url?: string } }) => {
+      const { statusCode, url } = event.nativeEvent;
+      if (statusCode < 400) return;
+      try {
+        const host = new URL(url ?? START_URL).hostname;
+        if (host === WEB_HOST || host === "localhost") {
+          setLoadError(true);
+          hideSplash();
+        }
+      } catch {
+        setLoadError(true);
+        hideSplash();
+      }
+    },
+    [hideSplash],
+  );
 
   return (
     <View style={[styles.root, { backgroundColor: background }]}>
@@ -810,7 +878,7 @@ function Shell() {
           key={webViewKey}
           ref={webViewRef}
           source={{ uri: START_URL }}
-          style={styles.webview}
+          style={[styles.webview, { backgroundColor: background }]}
           userAgent={USER_AGENT}
           onMessage={handleMessage}
           injectedJavaScriptBeforeContentLoaded={safeAreaJS}
@@ -820,11 +888,9 @@ function Shell() {
             currentUrlRef.current = nav.url;
           }}
           onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
-          onLoadEnd={() => SplashScreen.hideAsync().catch(() => {})}
-          onError={() => {
-            setLoadError(true);
-            SplashScreen.hideAsync().catch(() => {});
-          }}
+          onLoadEnd={onWebViewLoadEnd}
+          onError={onWebViewError}
+          onHttpError={onWebViewHttpError}
           onRenderProcessGone={reload}
           onContentProcessDidTerminate={reload}
           renderLoading={() => (
@@ -850,6 +916,11 @@ function Shell() {
           textZoom={100}
         />
       )}
+      {!loadError && !webReady ? (
+        <View style={[styles.loading, { backgroundColor: background }]} pointerEvents="none">
+          <ActivityIndicator color={dark ? "#fbfcfe" : "#0c0e15"} />
+        </View>
+      ) : null}
       {paywallOpen ? (
         <Paywall
           purchases={loadPurchases()}
@@ -864,9 +935,11 @@ function Shell() {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <Shell />
-    </SafeAreaProvider>
+    <ShareIntentProvider options={{ scheme: APP_SCHEME }}>
+      <SafeAreaProvider>
+        <Shell />
+      </SafeAreaProvider>
+    </ShareIntentProvider>
   );
 }
 
